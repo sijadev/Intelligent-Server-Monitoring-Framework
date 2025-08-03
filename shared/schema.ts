@@ -67,6 +67,38 @@ export const frameworkConfig = pgTable("framework_config", {
   autoFixEnabled: boolean("auto_fix_enabled").default(false),
   confidenceThreshold: integer("confidence_threshold").default(70), // stored as percentage (0-100)
   backupDirectory: text("backup_directory").default("./backups"),
+  
+  // AI Learning Configuration
+  aiLearningEnabled: boolean("ai_learning_enabled").default(false),
+  aiModelDir: text("ai_model_dir").default("./ai_models"),
+  aiMinConfidence: integer("ai_min_confidence").default(75), // stored as percentage (0-100)
+  aiMaxRiskScore: integer("ai_max_risk_score").default(30), // stored as percentage (0-100)
+  aiMinSuccessProbability: integer("ai_min_success_probability").default(80), // stored as percentage (0-100)
+  aiMaxDeploymentsPerHour: integer("ai_max_deployments_per_hour").default(2),
+  aiRequireApproval: boolean("ai_require_approval").default(true),
+  aiLearningRate: integer("ai_learning_rate").default(10), // stored as percentage (0-100)
+  aiRetrainFrequency: integer("ai_retrain_frequency").default(50),
+  
+  // Deployment Configuration
+  deploymentEnabled: boolean("deployment_enabled").default(false),
+  gitRepoPath: text("git_repo_path").default("."),
+  useDocker: boolean("use_docker").default(true),
+  useKubernetes: boolean("use_kubernetes").default(false),
+  deploymentStrategies: jsonb("deployment_strategies").default({"low_risk": "direct_deployment", "medium_risk": "canary_deployment", "high_risk": "blue_green_deployment"}),
+  testCommands: jsonb("test_commands").default(["python -m pytest tests/ -v"]),
+  dockerImageName: text("docker_image_name").default("mcp-server"),
+  k8sDeploymentName: text("k8s_deployment_name").default("mcp-server-deployment"),
+  k8sNamespace: text("k8s_namespace").default("production"),
+  restartCommand: text("restart_command").default("sudo systemctl restart mcp-server"),
+  rollbackTimeout: integer("rollback_timeout").default(300),
+  
+  // Safety and Monitoring Configuration
+  businessHoursRestriction: boolean("business_hours_restriction").default(true),
+  maxConcurrentDeployments: integer("max_concurrent_deployments").default(1),
+  monitoringPeriod: integer("monitoring_period").default(600),
+  autoRollbackTriggers: jsonb("auto_rollback_triggers").default({"error_rate_increase": 0.5, "response_time_increase": 1.0, "availability_drop": 0.05}),
+  emergencyContacts: jsonb("emergency_contacts").default(["devops@company.com"]),
+  
   updatedAt: timestamp("updated_at").notNull(),
 });
 
@@ -169,6 +201,10 @@ export interface SystemStatus {
   lastUpdate: string;
   codeAnalysisEnabled?: boolean;
   codeIssuesCount?: number;
+  aiLearningEnabled?: boolean;
+  deploymentEnabled?: boolean;
+  activeDeployments?: number;
+  pendingAiInterventions?: number;
 }
 
 export interface DashboardData {
@@ -178,6 +214,9 @@ export interface DashboardData {
   pluginStatus: Plugin[];
   codeIssues?: CodeIssue[];
   lastCodeAnalysisRun?: CodeAnalysisRun | null;
+  aiLearningStats?: AiLearningStats;
+  recentDeployments?: DeploymentSummary[];
+  activeDeployments?: DeploymentSummary[];
 }
 
 export interface LogFilterOptions {
@@ -213,4 +252,153 @@ export interface CodeFixSuggestion {
   originalCode: string;
   suggestedCode: string;
   reasoning: string;
+}
+
+// AI Learning and Deployment tables
+export const aiInterventions = pgTable("ai_interventions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  problemType: text("problem_type").notNull(),
+  issueDescription: text("issue_description").notNull(),
+  solutionApplied: text("solution_applied").notNull(),
+  confidence: integer("confidence").notNull(), // 0-100
+  riskScore: integer("risk_score").notNull(), // 0-100
+  outcome: text("outcome").notNull(), // success, failure, partial
+  timestamp: timestamp("timestamp").notNull(),
+  deploymentId: varchar("deployment_id"),
+  codeIssueId: varchar("code_issue_id"),
+  metadata: jsonb("metadata").default({}),
+});
+
+export const deployments = pgTable("deployments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  type: text("type").notNull(), // ai_fix, manual_fix, rollback
+  strategy: text("strategy").notNull(), // direct_deployment, canary_deployment, blue_green_deployment
+  status: text("status").notNull(), // pending, in_progress, completed, failed, rolled_back
+  initiatedBy: text("initiated_by").notNull(), // ai_system, user_manual
+  commitHash: text("commit_hash"),
+  description: text("description").notNull(),
+  filesChanged: jsonb("files_changed").default([]),
+  testResults: jsonb("test_results").default({}),
+  rollbackCommitHash: text("rollback_commit_hash"),
+  startTime: timestamp("start_time").notNull(),
+  endTime: timestamp("end_time"),
+  duration: integer("duration_ms"), // in milliseconds
+  metadata: jsonb("metadata").default({}),
+});
+
+export const aiModels = pgTable("ai_models", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  version: text("version").notNull(),
+  problemType: text("problem_type").notNull(),
+  modelPath: text("model_path").notNull(),
+  accuracy: integer("accuracy"), // 0-100
+  trainingDataSize: integer("training_data_size"),
+  lastTrained: timestamp("last_trained").notNull(),
+  isActive: boolean("is_active").default(true),
+  metadata: jsonb("metadata").default({}),
+});
+
+export const deploymentMetrics = pgTable("deployment_metrics", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  deploymentId: varchar("deployment_id").notNull(),
+  timestamp: timestamp("timestamp").notNull(),
+  errorRate: integer("error_rate"), // stored as percentage * 100 (e.g., 0.05% = 5)
+  responseTime: integer("response_time_ms"),
+  availability: integer("availability"), // stored as percentage (0-100)
+  cpuUsage: integer("cpu_usage"),
+  memoryUsage: integer("memory_usage"),
+  requestCount: integer("request_count"),
+  metadata: jsonb("metadata").default({}),
+});
+
+// Insert schemas for new tables
+export const insertAiInterventionSchema = createInsertSchema(aiInterventions).omit({
+  id: true,
+});
+
+export const insertDeploymentSchema = createInsertSchema(deployments).omit({
+  id: true,
+  endTime: true,
+  duration: true,
+});
+
+export const insertAiModelSchema = createInsertSchema(aiModels).omit({
+  id: true,
+});
+
+export const insertDeploymentMetricsSchema = createInsertSchema(deploymentMetrics).omit({
+  id: true,
+});
+
+// Types for new tables
+export type InsertAiIntervention = z.infer<typeof insertAiInterventionSchema>;
+export type AiIntervention = typeof aiInterventions.$inferSelect;
+
+export type InsertDeployment = z.infer<typeof insertDeploymentSchema>;
+export type Deployment = typeof deployments.$inferSelect;
+
+export type InsertAiModel = z.infer<typeof insertAiModelSchema>;
+export type AiModel = typeof aiModels.$inferSelect;
+
+export type InsertDeploymentMetrics = z.infer<typeof insertDeploymentMetricsSchema>;
+export type DeploymentMetrics = typeof deploymentMetrics.$inferSelect;
+
+// Enhanced interfaces
+export interface AiLearningConfig {
+  enabled: boolean;
+  modelDir: string;
+  minConfidence: number; // 0.0 - 1.0
+  maxRiskScore: number; // 0.0 - 1.0
+  minSuccessProbability: number; // 0.0 - 1.0
+  maxDeploymentsPerHour: number;
+  requireApproval: boolean;
+  learningRate: number; // 0.0 - 1.0
+  retrainFrequency: number;
+}
+
+export interface DeploymentConfig {
+  enabled: boolean;
+  gitRepoPath: string;
+  useDocker: boolean;
+  useKubernetes: boolean;
+  deploymentStrategies: Record<string, string>;
+  testCommands: string[];
+  dockerImageName: string;
+  k8sDeploymentName: string;
+  k8sNamespace: string;
+  restartCommand: string;
+  rollbackTimeout: number;
+}
+
+export interface SafetyConfig {
+  businessHoursRestriction: boolean;
+  maxConcurrentDeployments: number;
+  monitoringPeriod: number;
+  autoRollbackTriggers: {
+    errorRateIncrease: number;
+    responseTimeIncrease: number;
+    availabilityDrop: number;
+  };
+  emergencyContacts: string[];
+}
+
+export interface AiLearningStats {
+  totalInterventions: number;
+  successRate: number;
+  problemTypesLearned: number;
+  averageConfidence: number;
+  recentDeployments: number;
+  lastModelUpdate: Date | null;
+}
+
+export interface DeploymentSummary {
+  id: string;
+  type: string;
+  status: string;
+  description: string;
+  startTime: Date;
+  duration?: number;
+  initiatedBy: string;
+  filesChanged: string[];
 }

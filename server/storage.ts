@@ -18,7 +18,17 @@ import {
   type InsertCodeIssue,
   type CodeAnalysisRun,
   type InsertCodeAnalysisRun,
-  type CodeAnalysisConfig
+  type CodeAnalysisConfig,
+  type AiIntervention,
+  type InsertAiIntervention,
+  type Deployment,
+  type InsertDeployment,
+  type AiModel,
+  type InsertAiModel,
+  type DeploymentMetrics,
+  type InsertDeploymentMetrics,
+  type AiLearningStats,
+  type DeploymentSummary
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -65,6 +75,31 @@ export interface IStorage {
   createCodeAnalysisRun(run: InsertCodeAnalysisRun): Promise<CodeAnalysisRun>;
   updateCodeAnalysisRun(id: string, updates: Partial<CodeAnalysisRun>): Promise<CodeAnalysisRun | undefined>;
 
+  // AI Interventions
+  getAiInterventions(limit?: number): Promise<AiIntervention[]>;
+  createAiIntervention(intervention: InsertAiIntervention): Promise<AiIntervention>;
+  getRecentAiInterventions(hours?: number): Promise<AiIntervention[]>;
+  
+  // Deployments
+  getDeployments(limit?: number): Promise<Deployment[]>;
+  getActiveDeployments(): Promise<Deployment[]>;
+  createDeployment(deployment: InsertDeployment): Promise<Deployment>;
+  updateDeployment(id: string, updates: Partial<Deployment>): Promise<Deployment | undefined>;
+  getDeployment(id: string): Promise<Deployment | undefined>;
+  
+  // AI Models
+  getAiModels(): Promise<AiModel[]>;
+  getActiveAiModels(): Promise<AiModel[]>;
+  createAiModel(model: InsertAiModel): Promise<AiModel>;
+  updateAiModel(id: string, updates: Partial<AiModel>): Promise<AiModel | undefined>;
+  
+  // Deployment Metrics
+  getDeploymentMetrics(deploymentId: string): Promise<DeploymentMetrics[]>;
+  createDeploymentMetrics(metrics: InsertDeploymentMetrics): Promise<DeploymentMetrics>;
+  
+  // AI Learning Statistics
+  getAiLearningStats(): Promise<AiLearningStats>;
+  
   // Dashboard Data
   getDashboardData(): Promise<DashboardData>;
 }
@@ -78,6 +113,10 @@ export class MemStorage implements IStorage {
   private frameworkConfig: FrameworkConfig | undefined;
   private codeIssues: Map<string, CodeIssue>;
   private codeAnalysisRuns: Map<string, CodeAnalysisRun>;
+  private aiInterventions: Map<string, AiIntervention>;
+  private deployments: Map<string, Deployment>;
+  private aiModels: Map<string, AiModel>;
+  private deploymentMetrics: Map<string, DeploymentMetrics>;
 
   constructor() {
     this.users = new Map();
@@ -88,6 +127,10 @@ export class MemStorage implements IStorage {
     this.frameworkConfig = undefined;
     this.codeIssues = new Map();
     this.codeAnalysisRuns = new Map();
+    this.aiInterventions = new Map();
+    this.deployments = new Map();
+    this.aiModels = new Map();
+    this.deploymentMetrics = new Map();
 
     // Initialize with default config
     this.initializeDefaultConfig();
@@ -150,6 +193,7 @@ export class MemStorage implements IStorage {
     const problem: Problem = {
       ...insertProblem,
       id,
+      timestamp: new Date(insertProblem.timestamp),
       resolved: false,
       resolvedAt: null,
       metadata: insertProblem.metadata || {},
@@ -185,7 +229,7 @@ export class MemStorage implements IStorage {
     const metrics: Metrics = { 
       ...insertMetrics,
       id,
-      timestamp: insertMetrics.timestamp || new Date(),
+      timestamp: new Date(insertMetrics.timestamp || new Date()),
       metadata: insertMetrics.metadata || {},
       cpuUsage: insertMetrics.cpuUsage || null,
       memoryUsage: insertMetrics.memoryUsage || null,
@@ -227,6 +271,7 @@ export class MemStorage implements IStorage {
     const logEntry: LogEntry = { 
       ...insertLogEntry, 
       id,
+      timestamp: new Date(insertLogEntry.timestamp),
       metadata: insertLogEntry.metadata || {},
       rawLine: insertLogEntry.rawLine || null,
     };
@@ -299,6 +344,7 @@ export class MemStorage implements IStorage {
     const codeIssue: CodeIssue = {
       ...insertCodeIssue,
       id,
+      timestamp: new Date(insertCodeIssue.timestamp),
       fixApplied: false,
       metadata: insertCodeIssue.metadata || {},
     };
@@ -342,6 +388,7 @@ export class MemStorage implements IStorage {
     const run: CodeAnalysisRun = {
       ...insertRun,
       id,
+      timestamp: new Date(insertRun.timestamp),
       metadata: insertRun.metadata || {},
     };
     this.codeAnalysisRuns.set(id, run);
@@ -358,6 +405,159 @@ export class MemStorage implements IStorage {
     return undefined;
   }
 
+  // AI Interventions methods
+  async getAiInterventions(limit: number = 50): Promise<AiIntervention[]> {
+    const allInterventions = Array.from(this.aiInterventions.values())
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    return allInterventions.slice(0, limit);
+  }
+
+  async createAiIntervention(insertIntervention: InsertAiIntervention): Promise<AiIntervention> {
+    const id = randomUUID();
+    const intervention: AiIntervention = {
+      ...insertIntervention,
+      id,
+      timestamp: new Date(insertIntervention.timestamp),
+      metadata: insertIntervention.metadata || {},
+    };
+    this.aiInterventions.set(id, intervention);
+    return intervention;
+  }
+
+  async getRecentAiInterventions(hours: number = 24): Promise<AiIntervention[]> {
+    const cutoffTime = new Date(Date.now() - hours * 60 * 60 * 1000);
+    return Array.from(this.aiInterventions.values())
+      .filter(intervention => intervention.timestamp > cutoffTime)
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  }
+
+  // Deployments methods
+  async getDeployments(limit: number = 50): Promise<Deployment[]> {
+    const allDeployments = Array.from(this.deployments.values())
+      .sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
+    return allDeployments.slice(0, limit);
+  }
+
+  async getActiveDeployments(): Promise<Deployment[]> {
+    return Array.from(this.deployments.values())
+      .filter(deployment => ['pending', 'in_progress'].includes(deployment.status))
+      .sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
+  }
+
+  async createDeployment(insertDeployment: InsertDeployment): Promise<Deployment> {
+    const id = randomUUID();
+    const deployment: Deployment = {
+      ...insertDeployment,
+      id,
+      startTime: new Date(insertDeployment.startTime),
+      endTime: insertDeployment.endTime ? new Date(insertDeployment.endTime) : null,
+      metadata: insertDeployment.metadata || {},
+    };
+    this.deployments.set(id, deployment);
+    return deployment;
+  }
+
+  async updateDeployment(id: string, updates: Partial<Deployment>): Promise<Deployment | undefined> {
+    const deployment = this.deployments.get(id);
+    if (deployment) {
+      const updatedDeployment = { ...deployment, ...updates };
+      this.deployments.set(id, updatedDeployment);
+      return updatedDeployment;
+    }
+    return undefined;
+  }
+
+  async getDeployment(id: string): Promise<Deployment | undefined> {
+    return this.deployments.get(id);
+  }
+
+  // AI Models methods
+  async getAiModels(): Promise<AiModel[]> {
+    return Array.from(this.aiModels.values())
+      .sort((a, b) => b.lastTrained.getTime() - a.lastTrained.getTime());
+  }
+
+  async getActiveAiModels(): Promise<AiModel[]> {
+    return Array.from(this.aiModels.values())
+      .filter(model => model.isActive)
+      .sort((a, b) => b.lastTrained.getTime() - a.lastTrained.getTime());
+  }
+
+  async createAiModel(insertModel: InsertAiModel): Promise<AiModel> {
+    const id = randomUUID();
+    const model: AiModel = {
+      ...insertModel,
+      id,
+      lastTrained: new Date(insertModel.lastTrained),
+      metadata: insertModel.metadata || {},
+    };
+    this.aiModels.set(id, model);
+    return model;
+  }
+
+  async updateAiModel(id: string, updates: Partial<AiModel>): Promise<AiModel | undefined> {
+    const model = this.aiModels.get(id);
+    if (model) {
+      const updatedModel = { ...model, ...updates };
+      this.aiModels.set(id, updatedModel);
+      return updatedModel;
+    }
+    return undefined;
+  }
+
+  // Deployment Metrics methods
+  async getDeploymentMetrics(deploymentId: string): Promise<DeploymentMetrics[]> {
+    return Array.from(this.deploymentMetrics.values())
+      .filter(metrics => metrics.deploymentId === deploymentId)
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  }
+
+  async createDeploymentMetrics(insertMetrics: InsertDeploymentMetrics): Promise<DeploymentMetrics> {
+    const id = randomUUID();
+    const metrics: DeploymentMetrics = {
+      ...insertMetrics,
+      id,
+      timestamp: new Date(insertMetrics.timestamp),
+      metadata: insertMetrics.metadata || {},
+    };
+    this.deploymentMetrics.set(id, metrics);
+    return metrics;
+  }
+
+  // AI Learning Statistics
+  async getAiLearningStats(): Promise<AiLearningStats> {
+    const allInterventions = Array.from(this.aiInterventions.values());
+    const successfulInterventions = allInterventions.filter(i => i.outcome === 'success');
+    const recentInterventions = allInterventions.filter(i => 
+      i.timestamp > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // Last 7 days
+    );
+    
+    const problemTypes = new Set(allInterventions.map(i => i.problemType));
+    const totalConfidence = allInterventions.reduce((sum, i) => sum + i.confidence, 0);
+    const avgConfidence = allInterventions.length > 0 ? totalConfidence / allInterventions.length : 0;
+    
+    const successRate = allInterventions.length > 0 ? 
+      successfulInterventions.length / allInterventions.length : 0;
+    
+    const recentDeployments = Array.from(this.deployments.values())
+      .filter(d => d.startTime > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
+      .length;
+    
+    const lastModelUpdate = Array.from(this.aiModels.values())
+      .reduce((latest, model) => {
+        return !latest || model.lastTrained > latest ? model.lastTrained : latest;
+      }, null as Date | null);
+
+    return {
+      totalInterventions: allInterventions.length,
+      successRate,
+      problemTypesLearned: problemTypes.size,
+      averageConfidence: avgConfidence,
+      recentDeployments,
+      lastModelUpdate,
+    };
+  }
+
   async getDashboardData(): Promise<DashboardData> {
     const activeProblems = await this.getActiveProblem();
     const currentMetrics = await this.getLatestMetrics();
@@ -365,6 +565,11 @@ export class MemStorage implements IStorage {
     const activeCodeIssues = await this.getActiveCodeIssues();
     const lastCodeAnalysisRun = await this.getLatestCodeAnalysisRun();
     const config = await this.getFrameworkConfig();
+    const aiLearningStats = await this.getAiLearningStats();
+    const activeDeployments = await this.getActiveDeployments();
+    const recentDeployments = await this.getDeployments(10);
+
+    const recentAiInterventions = await this.getRecentAiInterventions(24);
 
     const status: SystemStatus = {
       running: true,
@@ -374,6 +579,10 @@ export class MemStorage implements IStorage {
       lastUpdate: new Date().toISOString(),
       codeAnalysisEnabled: config?.codeAnalysisEnabled || false,
       codeIssuesCount: activeCodeIssues.length,
+      aiLearningEnabled: config?.aiLearningEnabled || false,
+      deploymentEnabled: config?.deploymentEnabled || false,
+      activeDeployments: activeDeployments.length,
+      pendingAiInterventions: recentAiInterventions.filter(i => i.outcome === 'pending').length,
     };
 
     return {
@@ -383,6 +592,28 @@ export class MemStorage implements IStorage {
       pluginStatus: allPlugins,
       codeIssues: activeCodeIssues.slice(0, 10),
       lastCodeAnalysisRun,
+      aiLearningStats,
+      recentDeployments: recentDeployments.map(deployment => ({
+        id: deployment.id,
+        type: deployment.type,
+        status: deployment.status,
+        description: deployment.description,
+        startTime: deployment.startTime,
+        duration: deployment.endTime ? 
+          deployment.endTime.getTime() - deployment.startTime.getTime() : undefined,
+        initiatedBy: deployment.initiatedBy,
+        filesChanged: deployment.filesChanged,
+      })),
+      activeDeployments: activeDeployments.map(deployment => ({
+        id: deployment.id,
+        type: deployment.type,
+        status: deployment.status,
+        description: deployment.description,
+        startTime: deployment.startTime,
+        duration: undefined, // Active deployments don't have end time yet
+        initiatedBy: deployment.initiatedBy,
+        filesChanged: deployment.filesChanged,
+      })),
     };
   }
 

@@ -17,6 +17,7 @@ import Plugins from "@/pages/plugins";
 import Configuration from "@/pages/configuration";
 import Metrics from "@/pages/metrics";
 import CodeAnalysis from "@/pages/code-analysis";
+import AiDashboard from "@/pages/ai-dashboard";
 import NotFound from "@/pages/not-found";
 
 function AppLayout({ children }: { children: React.ReactNode }) {
@@ -74,6 +75,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
+      <Route path="/ai-dashboard" component={AiDashboard} />
       <Route path="/logs" component={Logs} />
       <Route path="/problems" component={Problems} />
       <Route path="/plugins" component={Plugins} />

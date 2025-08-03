@@ -9,6 +9,10 @@ import {
   insertLogEntrySchema,
   insertPluginSchema,
   insertFrameworkConfigSchema,
+  insertAiInterventionSchema,
+  insertDeploymentSchema,
+  insertAiModelSchema,
+  insertDeploymentMetricsSchema,
   type LogFilterOptions 
 } from "@shared/schema";
 
@@ -348,6 +352,206 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(codeAnalysisConfig);
     } catch (error) {
       res.status(500).json({ message: "Failed to get code analysis configuration" });
+    }
+  });
+
+  // AI Interventions endpoints
+  app.get("/api/ai/interventions", async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      const interventions = await storage.getAiInterventions(limit);
+      res.json(interventions);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get AI interventions" });
+    }
+  });
+
+  app.post("/api/ai/interventions", async (req, res) => {
+    try {
+      const validatedData = insertAiInterventionSchema.parse(req.body);
+      const intervention = await storage.createAiIntervention(validatedData);
+      broadcast('aiIntervention', intervention);
+      res.status(201).json(intervention);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid intervention data" });
+    }
+  });
+
+  app.get("/api/ai/interventions/recent", async (req, res) => {
+    try {
+      const hours = req.query.hours ? parseInt(req.query.hours as string) : 24;
+      const interventions = await storage.getRecentAiInterventions(hours);
+      res.json(interventions);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get recent AI interventions" });
+    }
+  });
+
+  // Deployments endpoints
+  app.get("/api/deployments", async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      const deployments = await storage.getDeployments(limit);
+      res.json(deployments);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get deployments" });
+    }
+  });
+
+  app.get("/api/deployments/active", async (req, res) => {
+    try {
+      const deployments = await storage.getActiveDeployments();
+      res.json(deployments);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get active deployments" });
+    }
+  });
+
+  app.post("/api/deployments", async (req, res) => {
+    try {
+      const validatedData = insertDeploymentSchema.parse(req.body);
+      const deployment = await storage.createDeployment(validatedData);
+      broadcast('deployment', deployment);
+      res.status(201).json(deployment);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid deployment data" });
+    }
+  });
+
+  app.get("/api/deployments/:id", async (req, res) => {
+    try {
+      const deployment = await storage.getDeployment(req.params.id);
+      if (!deployment) {
+        return res.status(404).json({ message: "Deployment not found" });
+      }
+      res.json(deployment);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get deployment" });
+    }
+  });
+
+  app.patch("/api/deployments/:id", async (req, res) => {
+    try {
+      const updates = req.body;
+      const deployment = await storage.updateDeployment(req.params.id, updates);
+      if (!deployment) {
+        return res.status(404).json({ message: "Deployment not found" });
+      }
+      broadcast('deploymentUpdate', deployment);
+      res.json(deployment);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update deployment" });
+    }
+  });
+
+  // AI Models endpoints
+  app.get("/api/ai/models", async (req, res) => {
+    try {
+      const models = await storage.getAiModels();
+      res.json(models);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get AI models" });
+    }
+  });
+
+  app.get("/api/ai/models/active", async (req, res) => {
+    try {
+      const models = await storage.getActiveAiModels();
+      res.json(models);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get active AI models" });
+    }
+  });
+
+  app.post("/api/ai/models", async (req, res) => {
+    try {
+      const validatedData = insertAiModelSchema.parse(req.body);
+      const model = await storage.createAiModel(validatedData);
+      broadcast('aiModel', model);
+      res.status(201).json(model);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid AI model data" });
+    }
+  });
+
+  app.patch("/api/ai/models/:id", async (req, res) => {
+    try {
+      const updates = req.body;
+      const model = await storage.updateAiModel(req.params.id, updates);
+      if (!model) {
+        return res.status(404).json({ message: "AI model not found" });
+      }
+      broadcast('aiModelUpdate', model);
+      res.json(model);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update AI model" });
+    }
+  });
+
+  // Deployment Metrics endpoints
+  app.get("/api/deployments/:id/metrics", async (req, res) => {
+    try {
+      const metrics = await storage.getDeploymentMetrics(req.params.id);
+      res.json(metrics);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get deployment metrics" });
+    }
+  });
+
+  app.post("/api/deployments/:id/metrics", async (req, res) => {
+    try {
+      const validatedData = insertDeploymentMetricsSchema.parse({
+        ...req.body,
+        deploymentId: req.params.id
+      });
+      const metrics = await storage.createDeploymentMetrics(validatedData);
+      broadcast('deploymentMetrics', metrics);
+      res.status(201).json(metrics);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid deployment metrics data" });
+    }
+  });
+
+  // AI Learning Statistics endpoint
+  app.get("/api/ai/stats", async (req, res) => {
+    try {
+      const stats = await storage.getAiLearningStats();
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get AI learning statistics" });
+    }
+  });
+
+  // AI Operations endpoints
+  app.post("/api/ai/train", async (req, res) => {
+    try {
+      // This would trigger AI model training
+      // For now, return a placeholder response
+      res.json({ 
+        message: "AI training initiated",
+        status: "started",
+        estimatedDuration: "5-10 minutes"
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to start AI training" });
+    }
+  });
+
+  app.post("/api/ai/predict", async (req, res) => {
+    try {
+      const { problemType, confidence, riskScore } = req.body;
+      
+      // This would use the AI system to predict intervention success
+      // For now, return a placeholder prediction
+      const prediction = {
+        successProbability: Math.max(0, confidence - riskScore),
+        recommendedAction: confidence > 0.8 ? "auto_apply" : "manual_review",
+        confidence: confidence || 0.5
+      };
+      
+      res.json(prediction);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to generate AI prediction" });
     }
   });
 

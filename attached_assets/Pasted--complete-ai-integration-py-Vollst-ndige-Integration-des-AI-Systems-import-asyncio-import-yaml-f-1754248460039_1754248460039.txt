@@ -1,0 +1,651 @@
+# complete_ai_integration.py - Vollständige Integration des AI-Systems
+
+import asyncio
+import yaml
+from pathlib import Path
+from typing import Dict, Any
+import logging
+
+logger = logging.getLogger(__name__)
+
+# ============================================================================
+# ENHANCED CONFIGURATION WITH AI
+# ============================================================================
+
+def get_ai_enhanced_config() -> Dict[str, Any]:
+    """Vollständige Konfiguration mit AI-Code-Fixing"""
+    
+    return {
+        'server_type': 'mcp',
+        'monitoring_interval': 30,
+        'learning_enabled': True,
+        'auto_remediation': True,
+        
+        # Code Analysis Configuration
+        'code_analysis': {
+            'enabled': True,
+            'source_directories': ['./src', './app', './lib'],
+            'auto_fix': False,
+            'confidence_threshold': 0.7,
+            'backup_directory': './backups'
+        },
+        
+        # AI Learning Configuration
+        'ai_learning': {
+            'enabled': True,
+            'model_dir': './ai_models',
+            'min_confidence': 0.75,
+            'max_risk_score': 0.3,
+            'min_success_probability': 0.8,
+            'max_deployments_per_hour': 2,
+            'require_approval': True,  # Safety first
+            'learning_rate': 0.1,
+            'retrain_frequency': 50  # Retrain after 50 interventions
+        },
+        
+        # Auto-Deployment Configuration
+        'deployment': {
+            'enabled': True,
+            'git_repo_path': '.',
+            'use_docker': True,
+            'use_kubernetes': False,
+            'deployment_strategies': {
+                'low_risk': 'direct_deployment',
+                'medium_risk': 'canary_deployment',
+                'high_risk': 'blue_green_deployment'
+            },
+            'test_commands': [
+                'python -m pytest tests/ -v',
+                'python -m flake8 src/',
+                'python -m mypy src/ --ignore-missing-imports'
+            ],
+            'docker_image_name': 'mcp-server',
+            'k8s_deployment_name': 'mcp-server-deployment',
+            'k8s_namespace': 'production',
+            'restart_command': 'sudo systemctl restart mcp-server',
+            'rollback_timeout': 300  # 5 minutes
+        },
+        
+        # Safety and Monitoring
+        'safety': {
+            'business_hours_restriction': True,
+            'max_concurrent_deployments': 1,
+            'monitoring_period': 600,  # 10 minutes post-deployment
+            'auto_rollback_triggers': {
+                'error_rate_increase': 0.5,  # 50% increase
+                'response_time_increase': 1.0,  # 100% increase
+                'availability_drop': 0.05  # 5% availability drop
+            },
+            'emergency_contacts': ['devops@company.com', 'oncall@company.com']
+        },
+        
+        # Standard Plugin Configuration
+        'plugins': {
+            'metrics_collectors': [
+                {
+                    'name': 'system_metrics_collector',
+                    'config': {}
+                },
+                {
+                    'name': 'log_file_collector',
+                    'config': {
+                        'log_files': [
+                            {'path': '/var/log/mcp-server/application.log', 'type': 'application'},
+                            {'path': '/var/log/mcp-server/error.log', 'type': 'application'},
+                            {'path': '/var/log/nginx/access.log', 'type': 'nginx'},
+                            {'path': '/var/log/nginx/error.log', 'type': 'nginx'}
+                        ]
+                    }
+                }
+            ],
+            
+            'problem_detectors': [
+                {
+                    'name': 'threshold_detector',
+                    'config': {
+                        'thresholds': {
+                            'cpu_usage': {'warning': 75, 'critical': 90},
+                            'memory_usage': {'warning': 80, 'critical': 95},
+                            'disk_usage': {'warning': 85, 'critical': 95}
+                        }
+                    }
+                },
+                {
+                    'name': 'log_pattern_detector', 
+                    'config': {
+                        'custom_patterns': [
+                            {
+                                'name': 'api_timeout',
+                                'regex': '(api.*timeout|gateway.*timeout|request.*timeout)',
+                                'severity': 'critical',
+                                'description': 'API timeout issues detected'
+                            },
+                            {
+                                'name': 'database_connection',
+                                'regex': '(database.*connection|db.*pool|connection.*timeout)',
+                                'severity': 'critical', 
+                                'description': 'Database connectivity issues'
+                            },
+                            {
+                                'name': 'memory_pressure',
+                                'regex': '(out of memory|memory.*allocation|heap.*space)',
+                                'severity': 'critical',
+                                'description': 'Memory pressure detected'
+                            }
+                        ]
+                    }
+                },
+                {
+                    'name': 'code_analysis_detector',
+                    'config': {
+                        'source_directories': ['./src', './app'],
+                        'confidence_threshold': 0.7
+                    }
+                }
+            ],
+            
+            'remediators': [
+                {
+                    'name': 'system_remediation',
+                    'config': {
+                        'allowed_actions': ['clear_cache', 'log_rotation', 'process_restart']
+                    }
+                },
+                {
+                    'name': 'code_fix_remediation',
+                    'config': {
+                        'auto_apply': False,
+                        'backup_dir': './backups'
+                    }
+                },
+                {
+                    'name': 'ai_code_fixing',
+                    'config': {
+                        'ai_learning': {
+                            'min_confidence': 0.8,
+                            'require_approval': True
+                        },
+                        'deployment': {
+                            'use_docker': True,
+                            'test_commands': ['python -m pytest tests/']
+                        }
+                    }
+                }
+            ],
+            
+            'notifiers': [
+                {
+                    'name': 'slack_notifier',
+                    'config': {
+                        'webhook_url': '${SLACK_WEBHOOK_URL}',
+                        'channel': '#ai-deployments',
+                        'mention_on_critical': True
+                    }
+                },
+                {
+                    'name': 'email_notifier',
+                    'config': {
+                        'smtp_server': 'smtp.company.com',
+                        'recipients': ['devops@company.com'],
+                        'critical_only': True
+                    }
+                }
+            ]
+        }
+    }
+
+# ============================================================================
+# COMPLETE AI-ENHANCED FRAMEWORK
+# ============================================================================
+
+async def create_ai_enhanced_framework(config_path: str = None) -> 'IntelligentMonitoringFramework':
+    """Erstellt vollständiges Framework mit AI-Fähigkeiten"""
+    
+    # Load configuration
+    if config_path and Path(config_path).exists():
+        with open(config_path, 'r') as f:
+            config_data = yaml.safe_load(f)
+    else:
+        config_data = get_ai_enhanced_config()
+    
+    # Import required components
+    from framework_prototype import IntelligentMonitoringFramework, FrameworkConfig
+    from framework_prototype import (SystemMetricsCollectorPlugin, LogFileCollectorPlugin,
+                                   ThresholdDetectorPlugin, LogPatternDetectorPlugin,
+                                   SystemRemediationPlugin)
+    from code_analysis_plugin import CodeAnalysisPlugin, CodeFixRemediationPlugin
+    from ai_code_learning_system import AICodeFixingPlugin
+    
+    # Create base framework
+    base_config = FrameworkConfig(
+        server_type=config_data.get('server_type', 'mcp'),
+        monitoring_interval=config_data.get('monitoring_interval', 30),
+        learning_enabled=config_data.get('learning_enabled', True),
+        auto_remediation=config_data.get('auto_remediation', True)
+    )
+    
+    framework = IntelligentMonitoringFramework(base_config)
+    
+    # Add all plugins based on configuration
+    await _setup_all_plugins(framework, config_data)
+    
+    await framework.initialize()
+    return framework
+
+async def _setup_all_plugins(framework, config_data: Dict[str, Any]):
+    """Setup aller Plugins basierend auf Konfiguration"""
+    
+    plugins_config = config_data.get('plugins', {})
+    
+    # Metrics Collectors
+    for collector_config in plugins_config.get('metrics_collectors', []):
+        plugin = await _create_metrics_plugin(collector_config)
+        if plugin:
+            framework.register_plugin(plugin, 'collectors')
+    
+    # Problem Detectors  
+    for detector_config in plugins_config.get('problem_detectors', []):
+        plugin = await _create_detector_plugin(detector_config, config_data)
+        if plugin:
+            framework.register_plugin(plugin, 'detectors')
+    
+    # Remediators
+    for remediation_config in plugins_config.get('remediators', []):
+        plugin = await _create_remediation_plugin(remediation_config, config_data)
+        if plugin:
+            framework.register_plugin(plugin, 'remediators')
+
+async def _create_metrics_plugin(config: Dict[str, Any]):
+    """Erstellt Metrics Plugin"""
+    
+    plugin_name = config.get('name')
+    plugin_config = config.get('config', {})
+    
+    if plugin_name == 'system_metrics_collector':
+        from framework_prototype import SystemMetricsCollectorPlugin
+        plugin = SystemMetricsCollectorPlugin()
+        await plugin.initialize(plugin_config)
+        return plugin
+    
+    elif plugin_name == 'log_file_collector':
+        from framework_prototype import LogFileCollectorPlugin
+        plugin = LogFileCollectorPlugin()
+        await plugin.initialize(plugin_config)
+        return plugin
+    
+    return None
+
+async def _create_detector_plugin(config: Dict[str, Any], full_config: Dict[str, Any]):
+    """Erstellt Detector Plugin"""
+    
+    plugin_name = config.get('name')
+    plugin_config = config.get('config', {})
+    
+    if plugin_name == 'threshold_detector':
+        from framework_prototype import ThresholdDetectorPlugin
+        plugin = ThresholdDetectorPlugin()
+        await plugin.initialize(plugin_config)
+        return plugin
+    
+    elif plugin_name == 'log_pattern_detector':
+        from framework_prototype import LogPatternDetectorPlugin
+        plugin = LogPatternDetectorPlugin()
+        await plugin.initialize(plugin_config)
+        return plugin
+    
+    elif plugin_name == 'code_analysis_detector':
+        code_analysis_config = full_config.get('code_analysis', {})
+        if code_analysis_config.get('enabled', False):
+            from code_analysis_plugin import CodeAnalysisPlugin
+            source_dirs = code_analysis_config.get('source_directories', [])
+            plugin = CodeAnalysisPlugin(source_dirs)
+            await plugin.initialize(plugin_config)
+            return plugin
+    
+    return None
+
+async def _create_remediation_plugin(config: Dict[str, Any], full_config: Dict[str, Any]):
+    """Erstellt Remediation Plugin"""
+    
+    plugin_name = config.get('name')
+    plugin_config = config.get('config', {})
+    
+    if plugin_name == 'system_remediation':
+        from framework_prototype import SystemRemediationPlugin
+        plugin = SystemRemediationPlugin()
+        await plugin.initialize(plugin_config)
+        return plugin
+    
+    elif plugin_name == 'code_fix_remediation':
+        code_analysis_config = full_config.get('code_analysis', {})
+        if code_analysis_config.get('enabled', False):
+            from code_analysis_plugin import CodeFixRemediationPlugin
+            source_dirs = code_analysis_config.get('source_directories', [])
+            plugin = CodeFixRemediationPlugin(source_dirs)
+            await plugin.initialize(plugin_config)
+            return plugin
+    
+    elif plugin_name == 'ai_code_fixing':
+        ai_config = full_config.get('ai_learning', {})
+        if ai_config.get('enabled', False):
+            from ai_code_learning_system import AICodeFixingPlugin
+            
+            # Merge configurations
+            complete_config = {
+                'ai_learning': ai_config,
+                'deployment': full_config.get('deployment', {}),
+                **plugin_config
+            }
+            
+            plugin = AICodeFixingPlugin(complete_config)
+            await plugin.initialize(complete_config)
+            return plugin
+    
+    return None
+
+# ============================================================================
+# ENHANCED CLI WITH AI FEATURES
+# ============================================================================
+
+class AIEnhancedCLI:
+    """CLI mit vollständigen AI-Features"""
+    
+    def __init__(self):
+        self.framework = None
+    
+    async def run_interactive(self):
+        """Interaktiver Modus mit AI-Features"""
+        print("🤖 AI-Enhanced Intelligent Monitoring Framework")
+        print("   Advanced Code Learning & Auto-Deployment")
+        print("=" * 70)
+        
+        while True:
+            try:
+                print("\nAI-Enhanced Commands:")
+                print("1. start-ai - Start with AI code fixing")
+                print("2. status - Show AI system status")
+                print("3. config-ai - Create AI-enhanced config")
+                print("4. demo-ai - Run AI fixing demo")
+                print("5. train-ai - Train AI models")
+                print("6. deploy-fix - Manual AI fix deployment")
+                print("7. rollback - Rollback last deployment")
+                print("8. learning-stats - Show AI learning statistics")
+                print("9. quit - Exit")
+                
+                choice = input("\nEnter command: ").strip().lower()
+                
+                if choice in ['1', 'start-ai']:
+                    await self._start_ai_monitoring()
+                elif choice in ['2', 'status']:
+                    await self._show_ai_status()
+                elif choice in ['3', 'config-ai']:
+                    self._create_ai_config()
+                elif choice in ['4', 'demo-ai']:
+                    await self._run_ai_demo()
+                elif choice in ['5', 'train-ai']:
+                    await self._train_ai_models()
+                elif choice in ['6', 'deploy-fix']:
+                    await self._manual_deploy_fix()
+                elif choice in ['7', 'rollback']:
+                    await self._rollback_deployment()
+                elif choice in ['8', 'learning-stats']:
+                    await self._show_learning_stats()
+                elif choice in ['9', 'quit', 'exit']:
+                    break
+                else:
+                    print("Invalid command")
+                    
+            except KeyboardInterrupt:
+                print("\nExiting...")
+                break
+        
+        if self.framework:
+            await self.framework.stop()
+    
+    async def _start_ai_monitoring(self):
+        """Startet AI-Enhanced Monitoring"""
+        print("\n🚀 Starting AI-Enhanced Monitoring Framework...")
+        
+        config_file = "ai_enhanced_config.yaml"
+        
+        if Path(config_file).exists():
+            self.framework = await create_ai_enhanced_framework(config_file)
+        else:
+            print("No AI config found, using defaults")
+            self.framework = await create_ai_enhanced_framework()
+        
+        print("✅ AI-Enhanced Framework started!")
+        print("🧠 AI learning active")
+        print("🔧 Auto code-fixing enabled")
+        print("🚀 Auto-deployment configured")
+        print("\nPress Ctrl+C to stop monitoring.")
+        
+        try:
+            await self.framework.start()
+        except KeyboardInterrupt:
+            print("\n⏹️ AI monitoring stopped")
+    
+    async def _show_ai_status(self):
+        """Zeigt AI-System Status"""
+        if not self.framework:
+            print("Framework not started")
+            return
+        
+        status = self.framework.get_status()
+        print("\n🤖 AI-Enhanced Framework Status:")
+        print("=" * 50)
+        
+        # Basic status
+        print(f"🟢 Running: {status['running']}")
+        print(f"⚙️  Server Type: {status['config']['server_type']}")
+        print(f"🔄 Monitoring Interval: {status['config']['monitoring_interval']}s")
+        
+        # AI-specific status
+        ai_plugins = [p for plugins in status['plugins'].values() 
+                     for p in plugins if 'ai' in p.lower() or 'code' in p.lower()]
+        
+        print(f"\n🧠 AI Features:")
+        print(f"  AI Plugins: {len(ai_plugins)}")
+        print(f"  Code Analysis: {'✅' if any('code' in p for p in ai_plugins) else '❌'}")
+        print(f"  AI Fixing: {'✅' if any('ai' in p for p in ai_plugins) else '❌'}")
+        
+        # Learning statistics
+        learning = status['learning_summary']
+        print(f"\n📚 Learning Statistics:")
+        print(f"  Total Interventions: {learning['total_interventions']}")
+        print(f"  Problem Types Learned: {learning['problem_types_learned']}")
+        
+        if learning['success_rates']:
+            print("  Success Rates:")
+            for problem_type, rate in learning['success_rates'].items():
+                emoji = "🤖" if "ai" in problem_type else "🔧" if "code" in problem_type else "⚙️"
+                print(f"    {emoji} {problem_type}: {rate:.1%}")
+    
+    def _create_ai_config(self):
+        """Erstellt AI-Enhanced Konfiguration"""
+        config = get_ai_enhanced_config()
+        
+        print("\n🔧 AI-Enhanced Configuration Setup")
+        print("=" * 40)
+        
+        # AI Learning configuration
+        print("\n🧠 AI Learning Settings:")
+        
+        confidence = input("Minimum AI confidence (0.1-1.0, default 0.75): ").strip()
+        if confidence:
+            try:
+                config['ai_learning']['min_confidence'] = float(confidence)
+            except ValueError:
+                print("Invalid value, using default")
+        
+        auto_deploy = input("Enable automatic deployment? (y/n, default: n): ").lower().startswith('y')
+        config['ai_learning']['require_approval'] = not auto_deploy
+        
+        max_deploys = input("Max deployments per hour (default: 2): ").strip()
+        if max_deploys:
+            try:
+                config['ai_learning']['max_deployments_per_hour'] = int(max_deploys)
+            except ValueError:
+                print("Invalid value, using default")
+        
+        # Deployment configuration
+        print("\n🚀 Deployment Settings:")
+        
+        use_docker = input("Use Docker for deployment? (y/n, default: y): ").lower()
+        config['deployment']['use_docker'] = not use_docker.startswith('n')
+        
+        use_k8s = input("Use Kubernetes? (y/n, default: n): ").lower().startswith('y')
+        config['deployment']['use_kubernetes'] = use_k8s
+        
+        # Safety settings
+        print("\n🛡️ Safety Settings:")
+        
+        business_hours = input("Restrict deployments during business hours? (y/n, default: y): ").lower()
+        config['safety']['business_hours_restriction'] = not business_hours.startswith('n')
+        
+        # Source directories
+        print("\n📁 Source Code Settings:")
+        
+        source_dirs = input("Source directories (comma-separated, default: ./src,./app): ").strip()
+        if source_dirs:
+            dirs = [d.strip() for d in source_dirs.split(',')]
+            config['code_analysis']['source_directories'] = dirs
+        
+        # Save configuration
+        config_file = "ai_enhanced_config.yaml"
+        with open(config_file, 'w') as f:
+            yaml.dump(config, f, default_flow_style=False, indent=2)
+        
+        print(f"\n✅ AI-Enhanced configuration saved: {config_file}")
+        print("\nConfiguration Summary:")
+        print(f"  🧠 AI Confidence: {config['ai_learning']['min_confidence']}")
+        print(f"  🚀 Auto-Deploy: {'❌' if config['ai_learning']['require_approval'] else '✅'}")
+        print(f"  🐳 Docker: {'✅' if config['deployment']['use_docker'] else '❌'}")
+        print(f"  ☸️  Kubernetes: {'✅' if config['deployment']['use_kubernetes'] else '❌'}")
+        print(f"  🛡️ Business Hours Restriction: {'✅' if config['safety']['business_hours_restriction'] else '❌'}")
+    
+    async def _run_ai_demo(self):
+        """Führt AI-Demo aus"""
+        print("\n🎬 Running AI Code Fixing Demo...")
+        
+        from ai_code_learning_system import demo_ai_code_fixing
+        await demo_ai_code_fixing()
+    
+    async def _train_ai_models(self):
+        """Trainiert AI-Modelle"""
+        print("\n🧠 Training AI Models...")
+        
+        if not self.framework:
+            print("Framework not started")
+            return
+        
+        # Find AI plugin
+        ai_plugin = None
+        for plugin in self.framework.plugins.get('remediators', []):
+            if hasattr(plugin, 'ai_engine'):
+                ai_plugin = plugin
+                break
+        
+        if not ai_plugin:
+            print("AI plugin not found")
+            return
+        
+        print("Retraining models with accumulated data...")
+        await ai_plugin.ai_engine._retrain_models()
+        
+        print("✅ AI models retrained successfully")
+    
+    async def _manual_deploy_fix(self):
+        """Manueller Fix-Deployment"""
+        print("\n🔧 Manual AI Fix Deployment")
+        
+        print("This would show pending AI fixes and allow manual deployment")
+        print("Feature would integrate with the AI system to show:")
+        print("  - Pending fixes with confidence scores")
+        print("  - Risk assessments")
+        print("  - Deployment strategies")
+        print("  - Manual approval workflow")
+    
+    async def _rollback_deployment(self):
+        """Rollback des letzten Deployments"""
+        print("\n↩️ Deployment Rollback")
+        
+        print("This would integrate with deployment system to:")
+        print("  - Show recent deployments")
+        print("  - Allow selection of deployment to rollback")
+        print("  - Execute automatic rollback")
+        print("  - Update AI learning with rollback data")
+    
+    async def _show_learning_stats(self):
+        """Zeigt detaillierte Lern-Statistiken"""
+        print("\n📚 AI Learning Statistics")
+        print("=" * 40)
+        
+        if not self.framework:
+            print("Framework not started")
+            return
+        
+        # This would show detailed AI learning statistics
+        print("Detailed learning statistics would include:")
+        print("  📊 Success rates by problem type")
+        print("  🎯 Confidence score distributions")
+        print("  ⏱️ Average fix development time")
+        print("  🚀 Deployment success rates")
+        print("  🔄 Model accuracy over time")
+        print("  💡 Most effective fix patterns")
+
+# ============================================================================
+# MAIN ENTRY POINT
+# ============================================================================
+
+async def main_ai_enhanced():
+    """AI-Enhanced main entry point"""
+    import sys
+    
+    if len(sys.argv) > 1:
+        command = sys.argv[1].lower()
+        
+        if command == 'start-ai':
+            config_file = sys.argv[2] if len(sys.argv) > 2 else "ai_enhanced_config.yaml"
+            
+            framework = await create_ai_enhanced_framework(config_file)
+            
+            print("🤖 Starting AI-Enhanced Intelligent Monitoring Framework...")
+            print("🧠 AI learning and auto-deployment active")
+            await framework.start()
+            
+        elif command == 'demo-ai':
+            from ai_code_learning_system import demo_ai_code_fixing
+            await demo_ai_code_fixing()
+            
+        elif command == 'config-ai':
+            cli = AIEnhancedCLI()
+            cli._create_ai_config()
+            
+        elif command == 'help':
+            print("AI-Enhanced Framework Commands:")
+            print("  start-ai [config.yaml] - Start with AI capabilities")
+            print("  demo-ai                - Run AI fixing demo")
+            print("  config-ai              - Create AI configuration")
+            print("  interactive            - Interactive mode")
+            
+        else:
+            print("Unknown command. Use 'help' for available commands.")
+    else:
+        # Interactive mode
+        cli = AIEnhancedCLI()
+        await cli.run_interactive()
+
+if __name__ == "__main__":
+    print("🤖 AI-Enhanced Intelligent Monitoring Framework v3.0.0")
+    print("   Self-Learning Code Fixing & Auto-Deployment")
+    print("=" * 70)
+    
+    try:
+        asyncio.run(main_ai_enhanced())
+    except KeyboardInterrupt:
+        print("\nGoodbye! 🤖👋")
+    except Exception as e:
+        print(f"Error: {e}")
+        import traceback
+        traceback.print_exc()

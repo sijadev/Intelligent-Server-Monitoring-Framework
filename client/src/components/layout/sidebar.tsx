@@ -9,7 +9,8 @@ import {
   Settings, 
   BarChart3,
   Home,
-  Code
+  Code,
+  Brain
 } from "lucide-react";
 
 interface SidebarProps {
@@ -23,6 +24,7 @@ export function Sidebar({ uptime = "0h 0m", problemCount = 0, systemStatus = 'ru
 
   const navigation = [
     { name: 'Overview', href: '/', icon: Home },
+    { name: 'AI Dashboard', href: '/ai-dashboard', icon: Brain },
     { name: 'Log Analysis', href: '/logs', icon: FileText },
     { name: 'Problems', href: '/problems', icon: AlertTriangle, badge: problemCount > 0 ? problemCount : undefined },
     { name: 'Code Analysis', href: '/code-analysis', icon: Code },

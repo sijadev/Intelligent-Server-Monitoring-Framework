@@ -63,7 +63,7 @@ class ProblemSeverity(Enum):
 
 @dataclass
 class FrameworkConfig:
-    """Framework Konfiguration"""
+    """Framework Konfiguration mit AI und Deployment"""
     server_type: str = "generic"
     monitoring_interval: int = 30
     learning_enabled: bool = True
@@ -71,12 +71,78 @@ class FrameworkConfig:
     log_level: str = "INFO"
     data_dir: str = "./data"
     plugin_dirs: List[str] = field(default_factory=lambda: ["plugins"])
+    
     # Code Analysis Configuration
     code_analysis_enabled: bool = False
     source_directories: List[str] = field(default_factory=list)
     auto_fix_enabled: bool = False
     confidence_threshold: float = 0.7
     backup_directory: str = "./backups"
+    
+    # AI Learning Configuration
+    ai_learning_enabled: bool = False
+    ai_model_dir: str = "./ai_models"
+    ai_min_confidence: float = 0.75
+    ai_max_risk_score: float = 0.3
+    ai_min_success_probability: float = 0.8
+    ai_max_deployments_per_hour: int = 2
+    ai_require_approval: bool = True
+    ai_learning_rate: float = 0.1
+    ai_retrain_frequency: int = 50
+    
+    # Deployment Configuration
+    deployment_enabled: bool = False
+    git_repo_path: str = "."
+    use_docker: bool = True
+    use_kubernetes: bool = False
+    deployment_strategies: Dict[str, str] = field(default_factory=lambda: {
+        "low_risk": "direct_deployment",
+        "medium_risk": "canary_deployment", 
+        "high_risk": "blue_green_deployment"
+    })
+    test_commands: List[str] = field(default_factory=lambda: [
+        "python -m pytest tests/ -v",
+        "python -m flake8 src/",
+        "python -m mypy src/ --ignore-missing-imports"
+    ])
+    docker_image_name: str = "mcp-server"
+    k8s_deployment_name: str = "mcp-server-deployment"
+    k8s_namespace: str = "production"
+    restart_command: str = "sudo systemctl restart mcp-server"
+    rollback_timeout: int = 300
+    
+    # Safety and Monitoring Configuration
+    business_hours_restriction: bool = True
+    max_concurrent_deployments: int = 1
+    monitoring_period: int = 600  # 10 minutes post-deployment
+    auto_rollback_triggers: Dict[str, float] = field(default_factory=lambda: {
+        "error_rate_increase": 0.5,
+        "response_time_increase": 1.0,
+        "availability_drop": 0.05
+    })
+    emergency_contacts: List[str] = field(default_factory=lambda: ["devops@company.com", "oncall@company.com"])
+    
+    # Enhanced Plugin Configuration
+    plugin_config: Dict[str, Any] = field(default_factory=lambda: {
+        "metrics_collectors": [
+            {"name": "system_metrics_collector", "config": {}},
+            {"name": "log_file_collector", "config": {"log_files": []}}
+        ],
+        "problem_detectors": [
+            {"name": "threshold_detector", "config": {"thresholds": {}}},
+            {"name": "log_pattern_detector", "config": {"custom_patterns": []}},
+            {"name": "code_analysis_detector", "config": {}}
+        ],
+        "remediators": [
+            {"name": "system_remediation", "config": {"allowed_actions": []}},
+            {"name": "code_fix_remediation", "config": {}},
+            {"name": "ai_code_fixing", "config": {}}
+        ],
+        "notifiers": [
+            {"name": "slack_notifier", "config": {}},
+            {"name": "email_notifier", "config": {}}
+        ]
+    })
 
 @dataclass
 class LogEntry:
