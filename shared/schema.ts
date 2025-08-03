@@ -61,6 +61,12 @@ export const frameworkConfig = pgTable("framework_config", {
   logLevel: text("log_level").default("INFO"),
   dataDir: text("data_dir").default("./data"),
   logFiles: jsonb("log_files").default([]),
+  // Code Analysis Configuration
+  codeAnalysisEnabled: boolean("code_analysis_enabled").default(false),
+  sourceDirectories: jsonb("source_directories").default([]),
+  autoFixEnabled: boolean("auto_fix_enabled").default(false),
+  confidenceThreshold: integer("confidence_threshold").default(70), // stored as percentage (0-100)
+  backupDirectory: text("backup_directory").default("./backups"),
   updatedAt: timestamp("updated_at").notNull(),
 });
 
@@ -110,6 +116,50 @@ export type Plugin = typeof plugins.$inferSelect;
 export type InsertFrameworkConfig = z.infer<typeof insertFrameworkConfigSchema>;
 export type FrameworkConfig = typeof frameworkConfig.$inferSelect;
 
+// Code Analysis types
+export const codeIssues = pgTable("code_issues", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  issueType: text("issue_type").notNull(), // syntax_error, logic_error, security_issue, performance_issue
+  severity: text("severity").notNull(), // LOW, MEDIUM, HIGH, CRITICAL
+  description: text("description").notNull(),
+  filePath: text("file_path").notNull(),
+  lineNumber: integer("line_number"),
+  functionName: text("function_name"),
+  confidence: integer("confidence").notNull(), // 0-100
+  suggestedFix: text("suggested_fix"),
+  fixApplied: boolean("fix_applied").default(false),
+  timestamp: timestamp("timestamp").notNull(),
+  metadata: jsonb("metadata").default({}),
+});
+
+export const codeAnalysisRuns = pgTable("code_analysis_runs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  timestamp: timestamp("timestamp").notNull(),
+  sourceDirectories: jsonb("source_directories").notNull(),
+  filesAnalyzed: integer("files_analyzed").notNull(),
+  issuesFound: integer("issues_found").notNull(),
+  fixesApplied: integer("fixes_applied").default(0),
+  status: text("status").notNull(), // running, completed, failed
+  duration: integer("duration_ms"), // in milliseconds
+  metadata: jsonb("metadata").default({}),
+});
+
+// Insert schemas for new tables
+export const insertCodeIssueSchema = createInsertSchema(codeIssues).omit({
+  id: true,
+});
+
+export const insertCodeAnalysisRunSchema = createInsertSchema(codeAnalysisRuns).omit({
+  id: true,
+});
+
+// Types for new tables
+export type InsertCodeIssue = z.infer<typeof insertCodeIssueSchema>;
+export type CodeIssue = typeof codeIssues.$inferSelect;
+
+export type InsertCodeAnalysisRun = z.infer<typeof insertCodeAnalysisRunSchema>;
+export type CodeAnalysisRun = typeof codeAnalysisRuns.$inferSelect;
+
 // API Response types
 export interface SystemStatus {
   running: boolean;
@@ -117,6 +167,8 @@ export interface SystemStatus {
   pluginCount: number;
   activeProblems: number;
   lastUpdate: string;
+  codeAnalysisEnabled?: boolean;
+  codeIssuesCount?: number;
 }
 
 export interface DashboardData {
@@ -124,6 +176,8 @@ export interface DashboardData {
   recentProblems: Problem[];
   currentMetrics: Metrics | null;
   pluginStatus: Plugin[];
+  codeIssues?: CodeIssue[];
+  lastCodeAnalysisRun?: CodeAnalysisRun | null;
 }
 
 export interface LogFilterOptions {
@@ -131,4 +185,32 @@ export interface LogFilterOptions {
   source?: string;
   limit?: number;
   since?: Date;
+}
+
+// Code Analysis specific interfaces
+export interface CodeAnalysisConfig {
+  enabled: boolean;
+  sourceDirectories: string[];
+  autoFix: boolean;
+  confidenceThreshold: number; // 0.0 - 1.0
+  backupDirectory: string;
+}
+
+export interface CodeAnalysisReport {
+  id: string;
+  timestamp: Date;
+  filesAnalyzed: number;
+  issuesFound: CodeIssue[];
+  fixesApplied: number;
+  duration: number;
+  status: 'running' | 'completed' | 'failed';
+}
+
+export interface CodeFixSuggestion {
+  issueId: string;
+  description: string;
+  confidence: number;
+  originalCode: string;
+  suggestedCode: string;
+  reasoning: string;
 }

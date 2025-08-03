@@ -29,6 +29,18 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Conditional import for code analysis
+try:
+    from code_analysis_plugin import (
+        CodeAnalysisPlugin, 
+        CodeFixRemediationPlugin, 
+        LogToCodeMapperPlugin
+    )
+    CODE_ANALYSIS_AVAILABLE = True
+except ImportError:
+    logger.warning("Code analysis plugins not available. Install dependencies to enable code analysis.")
+    CODE_ANALYSIS_AVAILABLE = False
+
 # ============================================================================
 # JSON Serializer for datetime objects
 # ============================================================================
@@ -59,6 +71,12 @@ class FrameworkConfig:
     log_level: str = "INFO"
     data_dir: str = "./data"
     plugin_dirs: List[str] = field(default_factory=lambda: ["plugins"])
+    # Code Analysis Configuration
+    code_analysis_enabled: bool = False
+    source_directories: List[str] = field(default_factory=list)
+    auto_fix_enabled: bool = False
+    confidence_threshold: float = 0.7
+    backup_directory: str = "./backups"
 
 @dataclass
 class LogEntry:
@@ -708,6 +726,26 @@ class IntelligentMonitoringFramework:
         
         # Remediators
         await self._register_plugin(SystemRemediationPlugin(), 'remediators')
+        
+        # Code Analysis Plugins (conditional)
+        if CODE_ANALYSIS_AVAILABLE and self.config and self.config.code_analysis_enabled:
+            try:
+                from code_analysis_plugin import (
+                    CodeAnalysisPlugin, 
+                    CodeFixRemediationPlugin, 
+                    LogToCodeMapperPlugin
+                )
+                
+                # Register code analysis plugins
+                await self._register_plugin(CodeAnalysisPlugin(), 'collectors')
+                await self._register_plugin(CodeFixRemediationPlugin(), 'remediators')
+                await self._register_plugin(LogToCodeMapperPlugin(), 'detectors')
+                
+                logger.info("Code analysis plugins registered successfully")
+            except ImportError as e:
+                logger.warning(f"Failed to import code analysis plugins: {e}")
+            except Exception as e:
+                logger.error(f"Error registering code analysis plugins: {e}")
     
     async def _register_plugin(self, plugin: PluginInterface, plugin_type: str):
         """Registriert ein Plugin"""

@@ -100,5 +100,26 @@ export const api = {
   getFrameworkStatus: async (): Promise<{ running: boolean; processId?: number }> => {
     const response = await apiRequest('GET', '/api/framework/status');
     return response.json();
+  },
+
+  // Generic HTTP methods for code analysis endpoints
+  get: async (url: string): Promise<any> => {
+    const response = await apiRequest('GET', url);
+    return response.json();
+  },
+
+  post: async (url: string, data?: any): Promise<any> => {
+    const response = await apiRequest('POST', url, data);
+    return response.json();
+  },
+
+  put: async (url: string, data?: any): Promise<any> => {
+    const response = await apiRequest('PUT', url, data);
+    return response.json();
+  },
+
+  patch: async (url: string, data?: any): Promise<any> => {
+    const response = await apiRequest('PATCH', url, data);
+    return response.json();
   }
 };

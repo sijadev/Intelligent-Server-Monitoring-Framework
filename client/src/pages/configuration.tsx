@@ -24,6 +24,11 @@ const configSchema = z.object({
   autoRemediation: z.boolean(),
   logLevel: z.string(),
   dataDir: z.string(),
+  // Code Analysis fields
+  codeAnalysisEnabled: z.boolean(),
+  autoFixEnabled: z.boolean(),
+  confidenceThreshold: z.number().min(0).max(100),
+  backupDirectory: z.string(),
 });
 
 type ConfigFormData = z.infer<typeof configSchema>;
@@ -33,11 +38,17 @@ interface LogFile {
   type: string;
 }
 
+interface SourceDirectory {
+  path: string;
+}
+
 export default function Configuration() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [logFiles, setLogFiles] = useState<LogFile[]>([]);
   const [newLogFile, setNewLogFile] = useState({ path: "", type: "application" });
+  const [sourceDirectories, setSourceDirectories] = useState<SourceDirectory[]>([]);
+  const [newSourceDir, setNewSourceDir] = useState({ path: "" });
 
   const { data: config, isLoading, refetch } = useQuery({
     queryKey: ['/api/config'],
@@ -72,6 +83,10 @@ export default function Configuration() {
       autoRemediation: config?.autoRemediation || true,
       logLevel: config?.logLevel || "INFO",
       dataDir: config?.dataDir || "./data",
+      codeAnalysisEnabled: config?.codeAnalysisEnabled || false,
+      autoFixEnabled: config?.autoFixEnabled || false,
+      confidenceThreshold: config?.confidenceThreshold || 70,
+      backupDirectory: config?.backupDirectory || "./backups",
     },
   });
 
@@ -85,9 +100,16 @@ export default function Configuration() {
         autoRemediation: config.autoRemediation || true,
         logLevel: config.logLevel || "INFO",
         dataDir: config.dataDir || "./data",
+        codeAnalysisEnabled: config.codeAnalysisEnabled || false,
+        autoFixEnabled: config.autoFixEnabled || false,
+        confidenceThreshold: config.confidenceThreshold || 70,
+        backupDirectory: config.backupDirectory || "./backups",
       });
       if (Array.isArray(config.logFiles)) {
         setLogFiles(config.logFiles as LogFile[]);
+      }
+      if (Array.isArray(config.sourceDirectories)) {
+        setSourceDirectories(config.sourceDirectories.map((dir: string) => ({ path: dir })));
       }
     }
   }, [config, form]);
@@ -96,6 +118,7 @@ export default function Configuration() {
     updateConfigMutation.mutate({
       ...data,
       logFiles: logFiles,
+      sourceDirectories: sourceDirectories.map(dir => dir.path),
       updatedAt: new Date(),
     });
   };
@@ -109,6 +132,17 @@ export default function Configuration() {
 
   const removeLogFile = (index: number) => {
     setLogFiles(logFiles.filter((_, i) => i !== index));
+  };
+
+  const addSourceDirectory = () => {
+    if (newSourceDir.path.trim()) {
+      setSourceDirectories([...sourceDirectories, { ...newSourceDir }]);
+      setNewSourceDir({ path: "" });
+    }
+  };
+
+  const removeSourceDirectory = (index: number) => {
+    setSourceDirectories(sourceDirectories.filter((_, i) => i !== index));
   };
 
   if (isLoading) {
@@ -288,6 +322,119 @@ export default function Configuration() {
                     </Button>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Code Analysis Configuration */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium">Code Analysis Configuration</h3>
+                  <Switch
+                    checked={form.watch("codeAnalysisEnabled")}
+                    onCheckedChange={(checked) => form.setValue("codeAnalysisEnabled", checked)}
+                  />
+                </div>
+                <p className="text-sm text-gray-500">
+                  Enable intelligent code analysis to detect issues, security vulnerabilities, and performance problems in your codebase.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {form.watch("codeAnalysisEnabled") && (
+                  <>
+                    {/* Source Directories */}
+                    <div className="space-y-4">
+                      <Label>Source Directories</Label>
+                      <p className="text-sm text-gray-500">
+                        Specify the directories containing source code to analyze
+                      </p>
+                      
+                      {/* Existing Source Directories */}
+                      <div className="space-y-3">
+                        {sourceDirectories.map((sourceDir, index) => (
+                          <div key={index} className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                            <div className="flex-1">
+                              <div className="font-medium text-gray-900 dark:text-gray-100">{sourceDir.path}</div>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeSourceDirectory(index)}
+                              className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Add New Source Directory */}
+                      <div className="border-t pt-4">
+                        <div className="flex space-x-2">
+                          <div className="flex-1">
+                            <Input
+                              placeholder="Source directory path (e.g., ./src, ./app)"
+                              value={newSourceDir.path}
+                              onChange={(e) => setNewSourceDir({ path: e.target.value })}
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            onClick={addSourceDirectory}
+                            variant="outline"
+                            disabled={!newSourceDir.path.trim()}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Code Analysis Settings */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="confidenceThreshold">Confidence Threshold (%)</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          {...form.register("confidenceThreshold", { valueAsNumber: true })}
+                        />
+                        <p className="text-xs text-gray-500">
+                          Minimum confidence level for code issue detection (0-100%)
+                        </p>
+                        {form.formState.errors.confidenceThreshold && (
+                          <p className="text-sm text-red-600">
+                            {form.formState.errors.confidenceThreshold.message}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="backupDirectory">Backup Directory</Label>
+                        <Input {...form.register("backupDirectory")} />
+                        <p className="text-xs text-gray-500">
+                          Directory where backup files are stored before applying fixes
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Auto-Fix Setting */}
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>Automatic Code Fixes</Label>
+                        <p className="text-sm text-gray-500">
+                          Automatically apply high-confidence code fixes (requires backup directory)
+                        </p>
+                      </div>
+                      <Switch
+                        checked={form.watch("autoFixEnabled")}
+                        onCheckedChange={(checked) => form.setValue("autoFixEnabled", checked)}
+                      />
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
 

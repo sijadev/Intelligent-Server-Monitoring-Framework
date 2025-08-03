@@ -8,7 +8,8 @@ import {
   Puzzle, 
   Settings, 
   BarChart3,
-  Home
+  Home,
+  Code
 } from "lucide-react";
 
 interface SidebarProps {
@@ -24,6 +25,7 @@ export function Sidebar({ uptime = "0h 0m", problemCount = 0, systemStatus = 'ru
     { name: 'Overview', href: '/', icon: Home },
     { name: 'Log Analysis', href: '/logs', icon: FileText },
     { name: 'Problems', href: '/problems', icon: AlertTriangle, badge: problemCount > 0 ? problemCount : undefined },
+    { name: 'Code Analysis', href: '/code-analysis', icon: Code },
     { name: 'Plugins', href: '/plugins', icon: Puzzle },
     { name: 'Configuration', href: '/configuration', icon: Settings },
     { name: 'Metrics', href: '/metrics', icon: BarChart3 },

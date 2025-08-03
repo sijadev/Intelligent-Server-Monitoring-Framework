@@ -16,6 +16,7 @@ import Problems from "@/pages/problems";
 import Plugins from "@/pages/plugins";
 import Configuration from "@/pages/configuration";
 import Metrics from "@/pages/metrics";
+import CodeAnalysis from "@/pages/code-analysis";
 import NotFound from "@/pages/not-found";
 
 function AppLayout({ children }: { children: React.ReactNode }) {
@@ -78,6 +79,7 @@ function Router() {
       <Route path="/plugins" component={Plugins} />
       <Route path="/configuration" component={Configuration} />
       <Route path="/metrics" component={Metrics} />
+      <Route path="/code-analysis" component={CodeAnalysis} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -1,0 +1,664 @@
+# code_analysis_integration.py - Integration der Code-Analyse in das Framework
+
+import asyncio
+from pathlib import Path
+from typing import Dict, List, Any
+import yaml
+
+# Extended Framework Configuration
+class EnhancedFrameworkConfig:
+    """Erweiterte Framework-Konfiguration mit Code-Analyse"""
+    
+    def __init__(self, config_data: Dict[str, Any]):
+        # Basic config
+        self.server_type = config_data.get('server_type', 'generic')
+        self.monitoring_interval = config_data.get('monitoring_interval', 30)
+        self.learning_enabled = config_data.get('learning_enabled', True)
+        self.auto_remediation = config_data.get('auto_remediation', True)
+        
+        # Code analysis config
+        code_analysis_config = config_data.get('code_analysis', {})
+        self.code_analysis_enabled = code_analysis_config.get('enabled', False)
+        self.source_directories = code_analysis_config.get('source_directories', [])
+        self.auto_fix_enabled = code_analysis_config.get('auto_fix', False)
+        self.confidence_threshold = code_analysis_config.get('confidence_threshold', 0.7)
+        self.backup_directory = code_analysis_config.get('backup_directory', './backups')
+
+async def create_enhanced_framework(config_path: str = None, 
+                                  config_data: Dict[str, Any] = None):
+    """Erstellt Framework mit Code-Analyse-Fähigkeiten"""
+    
+    if config_path:
+        with open(config_path, 'r') as f:
+            config_data = yaml.safe_load(f)
+    
+    if not config_data:
+        config_data = get_default_enhanced_config()
+    
+    config = EnhancedFrameworkConfig(config_data)
+    
+    # Import main framework
+    from framework_prototype import IntelligentMonitoringFramework, FrameworkConfig
+    from framework_prototype import (SystemMetricsCollectorPlugin, LogFileCollectorPlugin, 
+                                   ThresholdDetectorPlugin, LogPatternDetectorPlugin,
+                                   SystemRemediationPlugin)
+    
+    # Import code analysis
+    from code_analysis_plugin import CodeAnalysisPlugin, CodeFixRemediationPlugin
+    
+    # Create base framework config
+    base_config = FrameworkConfig(
+        server_type=config.server_type,
+        monitoring_interval=config.monitoring_interval,
+        learning_enabled=config.learning_enabled,
+        auto_remediation=config.auto_remediation
+    )
+    
+    framework = IntelligentMonitoringFramework(base_config)
+    
+    # Add standard plugins
+    await _add_standard_plugins(framework, config_data)
+    
+    # Add code analysis plugins if enabled
+    if config.code_analysis_enabled and config.source_directories:
+        await _add_code_analysis_plugins(framework, config)
+    
+    await framework.initialize()
+    return framework
+
+async def _add_standard_plugins(framework, config_data: Dict[str, Any]):
+    """Fügt Standard-Plugins hinzu"""
+    
+    plugins_config = config_data.get('plugins', {})
+    
+    # Metrics collectors
+    collectors_config = plugins_config.get('metrics_collectors', [])
+    for collector_config in collectors_config:
+        plugin = await _create_plugin_from_config(collector_config, 'collector')
+        if plugin:
+            framework.register_plugin(plugin, 'collectors')
+    
+    # Problem detectors  
+    detectors_config = plugins_config.get('problem_detectors', [])
+    for detector_config in detectors_config:
+        plugin = await _create_plugin_from_config(detector_config, 'detector')
+        if plugin:
+            framework.register_plugin(plugin, 'detectors')
+    
+    # Remediators
+    remediators_config = plugins_config.get('remediators', [])
+    for remediation_config in remediators_config:
+        plugin = await _create_plugin_from_config(remediation_config, 'remediation')
+        if plugin:
+            framework.register_plugin(plugin, 'remediators')
+
+async def _add_code_analysis_plugins(framework, config: EnhancedFrameworkConfig):
+    """Fügt Code-Analyse-Plugins hinzu"""
+    
+    # Code Analysis Detector
+    code_detector = CodeAnalysisPlugin(config.source_directories)
+    detector_config = {
+        'confidence_threshold': config.confidence_threshold,
+        'source_directories': config.source_directories
+    }
+    await code_detector.initialize(detector_config)
+    framework.register_plugin(code_detector, 'detectors')
+    
+    # Code Fix Remediation
+    code_remediation = CodeFixRemediationPlugin(
+        config.source_directories, 
+        auto_apply=config.auto_fix_enabled
+    )
+    remediation_config = {
+        'auto_apply': config.auto_fix_enabled,
+        'backup_dir': config.backup_directory
+    }
+    await code_remediation.initialize(remediation_config)
+    framework.register_plugin(code_remediation, 'remediators')
+
+async def _create_plugin_from_config(plugin_config: Dict[str, Any], 
+                                   plugin_type: str):
+    """Erstellt Plugin aus Konfiguration"""
+    
+    plugin_name = plugin_config.get('name')
+    plugin_settings = plugin_config.get('config', {})
+    
+    if plugin_type == 'collector':
+        if plugin_name == 'system_metrics_collector':
+            from framework_prototype import SystemMetricsCollectorPlugin
+            plugin = SystemMetricsCollectorPlugin()
+            await plugin.initialize(plugin_settings)
+            return plugin
+        elif plugin_name == 'log_file_collector':
+            from framework_prototype import LogFileCollectorPlugin
+            plugin = LogFileCollectorPlugin()
+            await plugin.initialize(plugin_settings)
+            return plugin
+    
+    elif plugin_type == 'detector':
+        if plugin_name == 'threshold_detector':
+            from framework_prototype import ThresholdDetectorPlugin
+            plugin = ThresholdDetectorPlugin()
+            await plugin.initialize(plugin_settings)
+            return plugin
+        elif plugin_name == 'log_pattern_detector':
+            from framework_prototype import LogPatternDetectorPlugin
+            plugin = LogPatternDetectorPlugin()
+            await plugin.initialize(plugin_settings)
+            return plugin
+    
+    elif plugin_type == 'remediation':
+        if plugin_name == 'system_remediation':
+            from framework_prototype import SystemRemediationPlugin
+            plugin = SystemRemediationPlugin()
+            await plugin.initialize(plugin_settings)
+            return plugin
+    
+    return None
+
+def get_default_enhanced_config() -> Dict[str, Any]:
+    """Gibt Standard-Konfiguration mit Code-Analyse zurück"""
+    
+    return {
+        'server_type': 'mcp',
+        'monitoring_interval': 30,
+        'learning_enabled': True,
+        'auto_remediation': True,
+        
+        'code_analysis': {
+            'enabled': True,
+            'source_directories': ['./src', './app', './lib'],
+            'auto_fix': False,  # Sicherheit: Fixes zunächst nur vorschlagen
+            'confidence_threshold': 0.7,
+            'backup_directory': './backups'
+        },
+        
+        'plugins': {
+            'metrics_collectors': [
+                {
+                    'name': 'system_metrics_collector',
+                    'config': {}
+                },
+                {
+                    'name': 'log_file_collector',
+                    'config': {
+                        'log_files': [
+                            {'path': '/var/log/application.log', 'type': 'application'},
+                            {'path': './logs/error.log', 'type': 'application'},
+                            {'path': '/var/log/syslog', 'type': 'syslog'}
+                        ]
+                    }
+                }
+            ],
+            
+            'problem_detectors': [
+                {
+                    'name': 'threshold_detector',
+                    'config': {
+                        'thresholds': {
+                            'cpu_usage': {'warning': 80, 'critical': 95},
+                            'memory_usage': {'warning': 85, 'critical': 95},
+                            'disk_usage': {'warning': 85, 'critical': 95}
+                        }
+                    }
+                },
+                {
+                    'name': 'log_pattern_detector',
+                    'config': {
+                        'custom_patterns': [
+                            {
+                                'name': 'api_error',
+                                'regex': '(api.*error|service.*unavailable|gateway.*timeout)',
+                                'severity': 'critical',
+                                'description': 'API service errors detected'
+                            },
+                            {
+                                'name': 'database_issues',
+                                'regex': '(database.*error|connection.*pool|query.*timeout)',
+                                'severity': 'critical',
+                                'description': 'Database connectivity issues'
+                            }
+                        ]
+                    }
+                }
+            ],
+            
+            'remediators': [
+                {
+                    'name': 'system_remediation',
+                    'config': {
+                        'allowed_actions': ['clear_cache', 'log_rotation', 'process_restart']
+                    }
+                }
+            ]
+        }
+    }
+
+# ============================================================================
+# ENHANCED CLI WITH CODE ANALYSIS
+# ============================================================================
+
+class EnhancedFrameworkCLI:
+    """Erweiterte CLI mit Code-Analyse-Features"""
+    
+    def __init__(self):
+        self.framework = None
+    
+    async def run_interactive(self):
+        """Interaktiver Modus mit Code-Analyse"""
+        print("🤖 Enhanced Intelligent Monitoring Framework")
+        print("   with Code Analysis Capabilities")
+        print("=" * 60)
+        
+        while True:
+            try:
+                print("\nCommands:")
+                print("1. start - Start monitoring with code analysis")
+                print("2. status - Show framework status")
+                print("3. config - Create enhanced configuration")
+                print("4. analyze-code - Analyze code without monitoring")
+                print("5. demo-code - Run code analysis demo")
+                print("6. fix-code - Generate code fixes")
+                print("7. quit - Exit")
+                
+                choice = input("\nEnter command: ").strip().lower()
+                
+                if choice in ['1', 'start']:
+                    await self._start_enhanced_monitoring()
+                elif choice in ['2', 'status']:
+                    await self._show_enhanced_status()
+                elif choice in ['3', 'config']:
+                    self._create_enhanced_config()
+                elif choice in ['4', 'analyze-code']:
+                    await self._analyze_code_only()
+                elif choice in ['5', 'demo-code']:
+                    await self._run_code_demo()
+                elif choice in ['6', 'fix-code']:
+                    await self._generate_code_fixes()
+                elif choice in ['7', 'quit', 'exit']:
+                    break
+                else:
+                    print("Invalid command")
+                    
+            except KeyboardInterrupt:
+                print("\nExiting...")
+                break
+        
+        if self.framework:
+            await self.framework.stop()
+    
+    async def _start_enhanced_monitoring(self):
+        """Startet Enhanced Monitoring"""
+        print("\n🚀 Starting Enhanced Monitoring Framework...")
+        
+        config_file = "enhanced_config.yaml"
+        if Path(config_file).exists():
+            print(f"Loading enhanced configuration from {config_file}")
+            self.framework = await create_enhanced_framework(config_path=config_file)
+        else:
+            print("Using default enhanced configuration")
+            self.framework = await create_enhanced_framework()
+        
+        print("✅ Enhanced Framework started!")
+        print("📊 Code analysis enabled - monitoring logs for code issues...")
+        print("Press Ctrl+C to stop monitoring.")
+        
+        try:
+            await self.framework.start()
+        except KeyboardInterrupt:
+            print("\n⏹️ Monitoring stopped")
+    
+    async def _show_enhanced_status(self):
+        """Zeigt erweiterten Status"""
+        if not self.framework:
+            print("Framework not started yet")
+            return
+        
+        status = self.framework.get_status()
+        print("\n📊 Enhanced Framework Status:")
+        print(f"Running: {status['running']}")
+        print(f"Server Type: {status['config']['server_type']}")
+        print(f"Learning Enabled: {status['config']['learning_enabled']}")
+        
+        print("\n🔌 Loaded Plugins:")
+        for plugin_type, plugins in status['plugins'].items():
+            print(f"  {plugin_type.capitalize()}: {', '.join(plugins)}")
+        
+        # Check for code analysis plugins
+        code_analysis_active = any('code' in plugin.lower() for plugins in status['plugins'].values() for plugin in plugins)
+        print(f"\n🔍 Code Analysis: {'✅ Active' if code_analysis_active else '❌ Inactive'}")
+        
+        learning = status['learning_summary']
+        print(f"\n🧠 Learning Summary:")
+        print(f"  Total Interventions: {learning['total_interventions']}")
+        print(f"  Problem Types: {learning['problem_types_learned']}")
+        
+        if learning['success_rates']:
+            print("  Success Rates:")
+            for problem_type, rate in learning['success_rates'].items():
+                emoji = "🔧" if "code" in problem_type else "⚙️"
+                print(f"    {emoji} {problem_type}: {rate:.1%}")
+    
+    def _create_enhanced_config(self):
+        """Erstellt erweiterte Konfiguration"""
+        config = get_default_enhanced_config()
+        
+        # Interactive configuration
+        print("\n🔧 Enhanced Configuration Setup")
+        
+        # Code analysis setup
+        enable_code_analysis = input("Enable code analysis? (y/n): ").lower().startswith('y')
+        config['code_analysis']['enabled'] = enable_code_analysis
+        
+        if enable_code_analysis:
+            print("\nCode Analysis Configuration:")
+            
+            # Source directories
+            dirs_input = input("Source directories (comma-separated, default: ./src,./app): ").strip()
+            if dirs_input:
+                dirs = [d.strip() for d in dirs_input.split(',')]
+                config['code_analysis']['source_directories'] = dirs
+            
+            # Auto-fix
+            auto_fix = input("Enable automatic code fixes? (y/n, default: n): ").lower().startswith('y')
+            config['code_analysis']['auto_fix'] = auto_fix
+            
+            # Confidence threshold
+            confidence_input = input("Confidence threshold (0.1-1.0, default: 0.7): ").strip()
+            if confidence_input:
+                try:
+                    confidence = float(confidence_input)
+                    if 0.1 <= confidence <= 1.0:
+                        config['code_analysis']['confidence_threshold'] = confidence
+                except ValueError:
+                    print("Invalid confidence value, using default")
+        
+        # Log files setup
+        print("\nLog Files Configuration:")
+        log_files_input = input("Log files (comma-separated paths, or press Enter for defaults): ").strip()
+        if log_files_input:
+            log_files = []
+            for path in log_files_input.split(','):
+                path = path.strip()
+                log_type = 'application'
+                if 'nginx' in path.lower():
+                    log_type = 'nginx'
+                elif 'syslog' in path.lower():
+                    log_type = 'syslog'
+                
+                log_files.append({'path': path, 'type': log_type})
+            
+            config['plugins']['metrics_collectors'][1]['config']['log_files'] = log_files
+        
+        # Save configuration
+        config_file = "enhanced_config.yaml"
+        with open(config_file, 'w') as f:
+            yaml.dump(config, f, default_flow_style=False, indent=2)
+        
+        print(f"✅ Enhanced configuration saved: {config_file}")
+        print("\nConfiguration highlights:")
+        print(f"  🔍 Code Analysis: {'✅' if config['code_analysis']['enabled'] else '❌'}")
+        print(f"  🛠️ Auto-Fix: {'✅' if config['code_analysis']['auto_fix'] else '❌'}")
+        print(f"  📁 Source Dirs: {len(config['code_analysis']['source_directories'])}")
+        print(f"  📝 Log Files: {len(config['plugins']['metrics_collectors'][1]['config']['log_files'])}")
+    
+    async def _analyze_code_only(self):
+        """Führt Code-Analyse ohne Monitoring aus"""
+        print("\n🔍 Standalone Code Analysis")
+        
+        source_dirs = input("Source directories (comma-separated): ").strip().split(',')
+        source_dirs = [d.strip() for d in source_dirs if d.strip()]
+        
+        if not source_dirs:
+            print("No source directories specified")
+            return
+        
+        # Validate directories
+        valid_dirs = []
+        for d in source_dirs:
+            if Path(d).exists():
+                valid_dirs.append(d)
+                print(f"✅ Found directory: {d}")
+            else:
+                print(f"❌ Directory not found: {d}")
+        
+        if not valid_dirs:
+            print("No valid directories found")
+            return
+        
+        # Initialize code mapper
+        from code_analysis_plugin import LogToCodeMapperPlugin
+        
+        print(f"\n🧠 Analyzing code in {len(valid_dirs)} directories...")
+        
+        code_mapper = LogToCodeMapperPlugin(valid_dirs)
+        await code_mapper.initialize()
+        
+        print(f"📊 Analysis Results:")
+        print(f"  Files indexed: {len(code_mapper.code_index)}")
+        print(f"  Functions found: {len(code_mapper.function_map)}")
+        print(f"  Log patterns: {len(code_mapper.error_patterns)}")
+        
+        # Show function distribution
+        file_functions = {}
+        for func_name, locations in code_mapper.function_map.items():
+            for loc in locations:
+                file_path = Path(loc['file']).name
+                if file_path not in file_functions:
+                    file_functions[file_path] = 0
+                file_functions[file_path] += 1
+        
+        print(f"\n📁 Functions per file:")
+        for file_name, count in sorted(file_functions.items(), key=lambda x: x[1], reverse=True)[:10]:
+            print(f"  {file_name}: {count} functions")
+    
+    async def _run_code_demo(self):
+        """Führt Code-Analyse Demo aus"""
+        print("\n🎬 Running Code Analysis Demo...")
+        
+        from code_analysis_plugin import demo_code_analysis
+        await demo_code_analysis()
+    
+    async def _generate_code_fixes(self):
+        """Generiert Code-Fixes basierend auf Logs"""
+        print("\n🛠️ Code Fix Generation")
+        
+        # Get source directories
+        source_dirs = input("Source directories (comma-separated): ").strip().split(',')
+        source_dirs = [d.strip() for d in source_dirs if d.strip() and Path(d).exists()]
+        
+        if not source_dirs:
+            print("No valid source directories specified")
+            return
+        
+        # Get log file
+        log_file = input("Log file path: ").strip()
+        if not log_file or not Path(log_file).exists():
+            print("Log file not found")
+            return
+        
+        print(f"\n🔍 Analyzing logs and generating fixes...")
+        
+        # Initialize components
+        from code_analysis_plugin import LogToCodeMapperPlugin, CodeIssueAnalyzer, CodeFixRemediationPlugin
+        
+        code_mapper = LogToCodeMapperPlugin(source_dirs)
+        await code_mapper.initialize()
+        
+        issue_analyzer = CodeIssueAnalyzer(code_mapper)
+        code_fixer = CodeFixRemediationPlugin(source_dirs, auto_apply=False)
+        await code_fixer.initialize({})
+        
+        # Parse log file
+        from framework_prototype import LogEntry
+        from datetime import datetime
+        
+        log_entries = []
+        try:
+            with open(log_file, 'r') as f:
+                for line_num, line in enumerate(f, 1):
+                    if line.strip():
+                        # Simple log parsing
+                        parts = line.strip().split(' ', 3)
+                        if len(parts) >= 4:
+                            try:
+                                timestamp = datetime.strptime(f"{parts[0]} {parts[1]}", "%Y-%m-%d %H:%M:%S")
+                                level = parts[2]
+                                message = parts[3]
+                                
+                                log_entries.append(LogEntry(
+                                    timestamp=timestamp,
+                                    level=level,
+                                    message=message,
+                                    source=log_file,
+                                    raw_line=line.strip()
+                                ))
+                            except ValueError:
+                                # Skip malformed lines
+                                continue
+        except Exception as e:
+            print(f"Error reading log file: {e}")
+            return
+        
+        if not log_entries:
+            print("No valid log entries found")
+            return
+        
+        print(f"📝 Parsed {len(log_entries)} log entries")
+        
+        # Analyze issues
+        problem_frequency = {}
+        for entry in log_entries:
+            problem_type = issue_analyzer._classify_problem(entry.message)
+            if problem_type:
+                problem_frequency[problem_type] = problem_frequency.get(problem_type, 0) + 1
+        
+        issues = await issue_analyzer.analyze_code_issues(log_entries, problem_frequency)
+        
+        print(f"🚨 Found {len(issues)} potential code issues")
+        
+        # Generate fixes for high-confidence issues
+        fixes_generated = 0
+        for issue in issues:
+            if issue.confidence > 0.6:
+                print(f"\n📍 Issue: {issue.description}")
+                print(f"   File: {issue.location.file_path}:{issue.location.line_number}")
+                print(f"   Confidence: {issue.confidence:.1%}")
+                
+                # Generate fix
+                problem_data = type('Problem', (), {
+                    'type': f'code_issue_{issue.issue_type}',
+                    'metadata': {
+                        'code_location': {
+                            'file': issue.location.file_path,
+                            'line': issue.location.line_number,
+                            'function': issue.location.function_name
+                        }
+                    }
+                })()
+                
+                fix_result = await code_fixer.execute_remediation(problem_data, {})
+                
+                if fix_result['success']:
+                    print(f"   ✅ Fix: {fix_result.get('fix_description', 'Generated')}")
+                    
+                    if 'code_fix' in fix_result:
+                        fix = fix_result['code_fix']
+                        if fix.get('type') == 'line_replacement':
+                            print(f"      - {fix['original_line']}")
+                            print(f"      + {fix['fixed_line']}")
+                        elif fix.get('type') == 'suggestion':
+                            print(f"      💡 {fix['suggestion']}")
+                    
+                    fixes_generated += 1
+                else:
+                    print(f"   ❌ Could not generate fix")
+        
+        print(f"\n✅ Generated {fixes_generated} code fixes")
+        
+        if fixes_generated > 0:
+            apply_fixes = input("\nApply fixes automatically? (y/n): ").lower().startswith('y')
+            if apply_fixes:
+                print("🚧 Automatic fix application would be implemented here")
+                print("   (Requires careful backup and validation logic)")
+
+# ============================================================================
+# MAIN ENHANCED ENTRY POINT
+# ============================================================================
+
+async def main_enhanced():
+    """Enhanced main entry point"""
+    import sys
+    
+    if len(sys.argv) > 1:
+        command = sys.argv[1].lower()
+        
+        if command == 'start':
+            # Direct start with enhanced config
+            config_file = sys.argv[2] if len(sys.argv) > 2 else "enhanced_config.yaml"
+            
+            if Path(config_file).exists():
+                framework = await create_enhanced_framework(config_path=config_file)
+            else:
+                print(f"Config file {config_file} not found, using enhanced defaults")
+                framework = await create_enhanced_framework()
+            
+            print("🚀 Starting Enhanced Intelligent Monitoring Framework...")
+            print("🔍 Code analysis capabilities enabled")
+            await framework.start()
+            
+        elif command == 'demo-code':
+            from code_analysis_plugin import demo_code_analysis
+            await demo_code_analysis()
+            
+        elif command == 'analyze':
+            # Quick code analysis
+            if len(sys.argv) < 3:
+                print("Usage: python enhanced_framework.py analyze <source_directory>")
+                return
+            
+            source_dir = sys.argv[2]
+            if not Path(source_dir).exists():
+                print(f"Directory not found: {source_dir}")
+                return
+            
+            from code_analysis_plugin import LogToCodeMapperPlugin
+            
+            print(f"🔍 Analyzing code in {source_dir}...")
+            mapper = LogToCodeMapperPlugin([source_dir])
+            await mapper.initialize()
+            
+            print(f"✅ Analysis complete:")
+            print(f"  Files: {len(mapper.code_index)}")
+            print(f"  Functions: {len(mapper.function_map)}")
+            print(f"  Patterns: {len(mapper.error_patterns)}")
+            
+        elif command == 'config':
+            cli = EnhancedFrameworkCLI()
+            cli._create_enhanced_config()
+            
+        else:
+            print("Enhanced Framework Commands:")
+            print("  start [config.yaml]  - Start with code analysis")
+            print("  demo-code           - Run code analysis demo")
+            print("  analyze <directory> - Analyze code directory")
+            print("  config              - Create enhanced config")
+            print("  interactive         - Interactive mode")
+    else:
+        # Interactive mode
+        cli = EnhancedFrameworkCLI()
+        await cli.run_interactive()
+
+if __name__ == "__main__":
+    print("🤖 Enhanced Intelligent Monitoring Framework v2.0.0")
+    print("   with Advanced Code Analysis")
+    print("=" * 60)
+    
+    try:
+        asyncio.run(main_enhanced())
+    except KeyboardInterrupt:
+        print("\nGoodbye! 👋")
+    except Exception as e:
+        print(f"Error: {e}")
+        import traceback
+        traceback.print_exc()
