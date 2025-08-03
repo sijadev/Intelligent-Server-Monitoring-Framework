@@ -12,12 +12,10 @@ import { cn } from "@/lib/utils";
 // Pages
 import Dashboard from "@/pages/dashboard";
 import Logs from "@/pages/logs";
-import Problems from "@/pages/problems";
-import Plugins from "@/pages/plugins";
 import Configuration from "@/pages/configuration";
-import Metrics from "@/pages/metrics";
 import CodeAnalysis from "@/pages/code-analysis";
 import AiDashboard from "@/pages/ai-dashboard";
+import MCPDashboard from "@/pages/mcp-dashboard";
 import NotFound from "@/pages/not-found";
 
 function AppLayout({ children }: { children: React.ReactNode }) {
@@ -76,11 +74,9 @@ function Router() {
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/ai-dashboard" component={AiDashboard} />
+      <Route path="/mcp-dashboard" component={MCPDashboard} />
       <Route path="/logs" component={Logs} />
-      <Route path="/problems" component={Problems} />
-      <Route path="/plugins" component={Plugins} />
       <Route path="/configuration" component={Configuration} />
-      <Route path="/metrics" component={Metrics} />
       <Route path="/code-analysis" component={CodeAnalysis} />
       <Route component={NotFound} />
     </Switch>

@@ -28,7 +28,12 @@ import {
   type DeploymentMetrics,
   type InsertDeploymentMetrics,
   type AiLearningStats,
-  type DeploymentSummary
+  type DeploymentSummary,
+  type MCPServer,
+  type InsertMCPServer,
+  type MCPServerMetrics,
+  type InsertMCPServerMetrics,
+  type MCPServerDashboardData
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -97,6 +102,18 @@ export interface IStorage {
   getDeploymentMetrics(deploymentId: string): Promise<DeploymentMetrics[]>;
   createDeploymentMetrics(metrics: InsertDeploymentMetrics): Promise<DeploymentMetrics>;
   
+  // MCP Servers
+  getMcpServers(): Promise<MCPServer[]>;
+  getMcpServer(serverId: string): Promise<MCPServer | undefined>;
+  createMcpServer(server: InsertMCPServer): Promise<MCPServer>;
+  updateMcpServer(serverId: string, updates: Partial<MCPServer>): Promise<MCPServer | undefined>;
+  deleteMcpServer(serverId: string): Promise<boolean>;
+  
+  // MCP Server Metrics
+  getMcpServerMetrics(serverId: string, limit?: number): Promise<MCPServerMetrics[]>;
+  createMcpServerMetrics(metrics: InsertMCPServerMetrics): Promise<MCPServerMetrics>;
+  getMcpServerDashboardData(): Promise<MCPServerDashboardData>;
+  
   // AI Learning Statistics
   getAiLearningStats(): Promise<AiLearningStats>;
   
@@ -117,6 +134,8 @@ export class MemStorage implements IStorage {
   private deployments: Map<string, Deployment>;
   private aiModels: Map<string, AiModel>;
   private deploymentMetrics: Map<string, DeploymentMetrics>;
+  private mcpServers: Map<string, MCPServer>;
+  private mcpServerMetrics: Map<string, MCPServerMetrics>;
 
   constructor() {
     this.users = new Map();
@@ -131,6 +150,8 @@ export class MemStorage implements IStorage {
     this.deployments = new Map();
     this.aiModels = new Map();
     this.deploymentMetrics = new Map();
+    this.mcpServers = new Map();
+    this.mcpServerMetrics = new Map();
 
     // Initialize with default config
     this.initializeDefaultConfig();
@@ -628,6 +649,129 @@ export class MemStorage implements IStorage {
     const seconds = Math.floor((uptime % (1000 * 60)) / 1000);
     
     return `${hours}h ${minutes}m ${seconds}s`;
+  }
+
+  // ============================================================================
+  // MCP SERVER METHODS
+  // ============================================================================
+
+  async getMcpServers(): Promise<MCPServer[]> {
+    return Array.from(this.mcpServers.values())
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  async getMcpServer(serverId: string): Promise<MCPServer | undefined> {
+    return Array.from(this.mcpServers.values())
+      .find(server => server.serverId === serverId);
+  }
+
+  async createMcpServer(insertServer: InsertMCPServer): Promise<MCPServer> {
+    const id = randomUUID();
+    const server: MCPServer = {
+      ...insertServer,
+      id,
+      discoveredAt: new Date(insertServer.discoveredAt),
+      lastSeen: new Date(insertServer.lastSeen),
+      metadata: insertServer.metadata || {},
+      logFiles: insertServer.logFiles || [],
+      capabilities: insertServer.capabilities || [],
+    };
+    this.mcpServers.set(id, server);
+    return server;
+  }
+
+  async updateMcpServer(serverId: string, updates: Partial<MCPServer>): Promise<MCPServer | undefined> {
+    const server = await this.getMcpServer(serverId);
+    if (server) {
+      const updatedServer = { ...server, ...updates };
+      if (updates.lastSeen) {
+        updatedServer.lastSeen = new Date(updates.lastSeen);
+      }
+      this.mcpServers.set(server.id, updatedServer);
+      return updatedServer;
+    }
+    return undefined;
+  }
+
+  async deleteMcpServer(serverId: string): Promise<boolean> {
+    const server = await this.getMcpServer(serverId);
+    if (server) {
+      this.mcpServers.delete(server.id);
+      // Also clean up related metrics
+      const metricsToDelete = Array.from(this.mcpServerMetrics.entries())
+        .filter(([_, metrics]) => metrics.serverId === serverId)
+        .map(([id, _]) => id);
+      
+      metricsToDelete.forEach(id => this.mcpServerMetrics.delete(id));
+      return true;
+    }
+    return false;
+  }
+
+  async getMcpServerMetrics(serverId: string, limit: number = 100): Promise<MCPServerMetrics[]> {
+    const allMetrics = Array.from(this.mcpServerMetrics.values())
+      .filter(metrics => metrics.serverId === serverId)
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    return allMetrics.slice(0, limit);
+  }
+
+  async createMcpServerMetrics(insertMetrics: InsertMCPServerMetrics): Promise<MCPServerMetrics> {
+    const id = randomUUID();
+    const metrics: MCPServerMetrics = {
+      ...insertMetrics,
+      id,
+      timestamp: new Date(insertMetrics.timestamp),
+      metadata: insertMetrics.metadata || {},
+    };
+    this.mcpServerMetrics.set(id, metrics);
+    return metrics;
+  }
+
+  async getMcpServerDashboardData(): Promise<MCPServerDashboardData> {
+    const allServers = Array.from(this.mcpServers.values());
+    const totalServers = allServers.length;
+    const runningServers = allServers.filter(server => server.status === 'running').length;
+    const stoppedServers = allServers.filter(server => server.status === 'stopped').length;
+
+    // Calculate average response time from recent metrics
+    const recentMetrics = Array.from(this.mcpServerMetrics.values())
+      .filter(metrics => {
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+        return metrics.timestamp > oneHourAgo && metrics.responseTime !== null;
+      });
+
+    const averageResponseTime = recentMetrics.length > 0
+      ? recentMetrics.reduce((sum, metrics) => sum + (metrics.responseTime || 0), 0) / recentMetrics.length
+      : 0;
+
+    const totalErrors = recentMetrics.reduce((sum, metrics) => sum + (metrics.errorCount || 0), 0);
+
+    // Recent discoveries (last 24 hours)
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const recentDiscoveries = allServers.filter(server => server.discoveredAt > oneDayAgo).length;
+
+    // Group by protocol
+    const serversByProtocol: Record<string, number> = {};
+    allServers.forEach(server => {
+      serversByProtocol[server.protocol] = (serversByProtocol[server.protocol] || 0) + 1;
+    });
+
+    // Group by discovery method
+    const serversByDiscoveryMethod: Record<string, number> = {};
+    allServers.forEach(server => {
+      serversByDiscoveryMethod[server.discoveryMethod] = (serversByDiscoveryMethod[server.discoveryMethod] || 0) + 1;
+    });
+
+    return {
+      totalServers,
+      runningServers,
+      stoppedServers,
+      averageResponseTime,
+      totalErrors,
+      recentDiscoveries,
+      serversByProtocol,
+      serversByDiscoveryMethod,
+    };
   }
 }
 

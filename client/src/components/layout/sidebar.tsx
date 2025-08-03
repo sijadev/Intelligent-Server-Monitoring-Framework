@@ -10,7 +10,8 @@ import {
   BarChart3,
   Home,
   Code,
-  Brain
+  Brain,
+  Network
 } from "lucide-react";
 
 interface SidebarProps {
@@ -25,13 +26,11 @@ export function Sidebar({ uptime = "0h 0m", problemCount = 0, systemStatus = 'ru
   const navigation = [
     { name: 'Overview', href: '/', icon: Home },
     { name: 'AI Dashboard', href: '/ai-dashboard', icon: Brain },
+    { name: 'MCP Dashboard', href: '/mcp-dashboard', icon: Network },
     { name: 'Log Analysis', href: '/logs', icon: FileText },
-    { name: 'Problems', href: '/problems', icon: AlertTriangle, badge: problemCount > 0 ? problemCount : undefined },
     { name: 'Code Analysis', href: '/code-analysis', icon: Code },
-    { name: 'Plugins', href: '/plugins', icon: Puzzle },
     { name: 'Configuration', href: '/configuration', icon: Settings },
-    { name: 'Metrics', href: '/metrics', icon: BarChart3 },
-  ];
+  ] as const;
 
   return (
     <div className="hidden md:flex md:flex-shrink-0">
@@ -63,11 +62,6 @@ export function Sidebar({ uptime = "0h 0m", problemCount = 0, systemStatus = 'ru
               >
                 <Icon className={cn("mr-3 h-5 w-5", isActive ? "text-primary" : "")} />
                 {item.name}
-                {item.badge && (
-                  <span className="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                    {item.badge}
-                  </span>
-                )}
               </Link>
             );
           })}

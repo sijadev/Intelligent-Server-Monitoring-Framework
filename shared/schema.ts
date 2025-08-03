@@ -402,3 +402,89 @@ export interface DeploymentSummary {
   initiatedBy: string;
   filesChanged: string[];
 }
+
+// ============================================================================
+// MCP SERVER TABLES
+// ============================================================================
+
+export const mcpServers = pgTable("mcp_servers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  serverId: text("server_id").notNull().unique(),
+  name: text("name").notNull(),
+  host: text("host").notNull(),
+  port: integer("port").notNull(),
+  protocol: text("protocol").notNull(), // http, https, websocket
+  status: text("status").notNull(), // running, stopped, unknown
+  
+  // Process information
+  pid: integer("pid"),
+  processName: text("process_name"),
+  commandLine: text("command_line"),
+  workingDirectory: text("working_directory"),
+  
+  // Code location
+  executablePath: text("executable_path"),
+  sourceDirectory: text("source_directory"),
+  configFile: text("config_file"),
+  logFiles: text("log_files").array(),
+  
+  // Runtime information
+  version: text("version"),
+  capabilities: text("capabilities").array(),
+  healthEndpoint: text("health_endpoint"),
+  metricsEndpoint: text("metrics_endpoint"),
+  
+  // Container information (if containerized)
+  containerId: text("container_id"),
+  containerName: text("container_name"),
+  imageName: text("image_name"),
+  
+  // Discovery metadata
+  discoveryMethod: text("discovery_method").notNull(),
+  discoveredAt: timestamp("discovered_at").notNull(),
+  lastSeen: timestamp("last_seen").notNull(),
+  
+  metadata: jsonb("metadata").default({}),
+});
+
+export const mcpServerMetrics = pgTable("mcp_server_metrics", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  serverId: text("server_id").notNull(),
+  timestamp: timestamp("timestamp").notNull(),
+  
+  // Basic metrics
+  responseTime: integer("response_time"), // milliseconds
+  uptime: integer("uptime"), // seconds
+  requestCount: integer("request_count"),
+  errorCount: integer("error_count"),
+  
+  // Process metrics
+  processCpuPercent: integer("process_cpu_percent"), // percentage
+  processMemoryMb: integer("process_memory_mb"),
+  processThreads: integer("process_threads"),
+  processOpenFiles: integer("process_open_files"),
+  processConnections: integer("process_connections"),
+  
+  metadata: jsonb("metadata").default({}),
+});
+
+// MCP Server schemas and types
+export const insertMcpServerSchema = createInsertSchema(mcpServers);
+export const insertMcpServerMetricsSchema = createInsertSchema(mcpServerMetrics);
+
+export type MCPServer = typeof mcpServers.$inferSelect;
+export type InsertMCPServer = z.infer<typeof insertMcpServerSchema>;
+export type MCPServerMetrics = typeof mcpServerMetrics.$inferSelect;
+export type InsertMCPServerMetrics = z.infer<typeof insertMcpServerMetricsSchema>;
+
+// MCP Server dashboard data
+export interface MCPServerDashboardData {
+  totalServers: number;
+  runningServers: number;
+  stoppedServers: number;
+  averageResponseTime: number;
+  totalErrors: number;
+  recentDiscoveries: number;
+  serversByProtocol: Record<string, number>;
+  serversByDiscoveryMethod: Record<string, number>;
+}

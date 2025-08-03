@@ -13,6 +13,8 @@ import {
   insertDeploymentSchema,
   insertAiModelSchema,
   insertDeploymentMetricsSchema,
+  insertMcpServerSchema,
+  insertMcpServerMetricsSchema,
   type LogFilterOptions 
 } from "@shared/schema";
 
@@ -589,6 +591,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(status);
     } catch (error) {
       res.status(500).json({ message: "Failed to get framework status" });
+    }
+  });
+
+  // MCP Server endpoints
+  app.get("/api/mcp/servers", async (req, res) => {
+    try {
+      const servers = await storage.getMcpServers();
+      res.json(servers);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get MCP servers" });
+    }
+  });
+
+  app.get("/api/mcp/servers/:serverId", async (req, res) => {
+    try {
+      const server = await storage.getMcpServer(req.params.serverId);
+      if (!server) {
+        return res.status(404).json({ message: "MCP server not found" });
+      }
+      res.json(server);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get MCP server" });
+    }
+  });
+
+  app.post("/api/mcp/servers", async (req, res) => {
+    try {
+      const server = insertMcpServerSchema.parse(req.body);
+      const created = await storage.createMcpServer(server);
+      res.json(created);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid MCP server data" });
+    }
+  });
+
+  app.put("/api/mcp/servers/:serverId", async (req, res) => {
+    try {
+      const updates = req.body;
+      const updated = await storage.updateMcpServer(req.params.serverId, updates);
+      if (!updated) {
+        return res.status(404).json({ message: "MCP server not found" });
+      }
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update MCP server" });
+    }
+  });
+
+  app.delete("/api/mcp/servers/:serverId", async (req, res) => {
+    try {
+      const deleted = await storage.deleteMcpServer(req.params.serverId);
+      if (!deleted) {
+        return res.status(404).json({ message: "MCP server not found" });
+      }
+      res.json({ message: "MCP server deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete MCP server" });
+    }
+  });
+
+  app.get("/api/mcp/servers/:serverId/metrics", async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      const metrics = await storage.getMcpServerMetrics(req.params.serverId, limit);
+      res.json(metrics);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get MCP server metrics" });
+    }
+  });
+
+  app.post("/api/mcp/metrics", async (req, res) => {
+    try {
+      const metrics = insertMcpServerMetricsSchema.parse(req.body);
+      const created = await storage.createMcpServerMetrics(metrics);
+      res.json(created);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid MCP server metrics data" });
+    }
+  });
+
+  app.get("/api/mcp/dashboard", async (req, res) => {
+    try {
+      const dashboard = await storage.getMcpServerDashboardData();
+      res.json(dashboard);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get MCP dashboard data" });
     }
   });
 

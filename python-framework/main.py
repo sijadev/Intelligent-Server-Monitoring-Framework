@@ -41,15 +41,28 @@ except ImportError:
     logger.warning("Code analysis plugins not available. Install dependencies to enable code analysis.")
     CODE_ANALYSIS_AVAILABLE = False
 
+# Conditional import for MCP monitoring
+try:
+    from mcp_monitoring_plugin import (
+        MCPServerDiscovery,
+        MCPMetricsCollectorPlugin,
+        MCPPatternDetectorPlugin, 
+        MCPServerRemediationPlugin
+    )
+    MCP_MONITORING_AVAILABLE = True
+except ImportError:
+    logger.warning("MCP monitoring plugins not available. Install dependencies to enable MCP monitoring.")
+    MCP_MONITORING_AVAILABLE = False
+
 # ============================================================================
 # JSON Serializer for datetime objects
 # ============================================================================
 
 class DateTimeEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, datetime):
-            return obj.isoformat()
-        return super().default(obj)
+    def default(self, o):
+        if isinstance(o, datetime):
+            return o.isoformat()
+        return super().default(o)
 
 # ============================================================================
 # CORE FRAMEWORK CLASSES
@@ -803,15 +816,50 @@ class IntelligentMonitoringFramework:
                 )
                 
                 # Register code analysis plugins
-                await self._register_plugin(CodeAnalysisPlugin(), 'collectors')
-                await self._register_plugin(CodeFixRemediationPlugin(), 'remediators')
-                await self._register_plugin(LogToCodeMapperPlugin(), 'detectors')
+                await self._register_plugin(CodeAnalysisPlugin(source_directories=[]), 'collectors')
+                await self._register_plugin(CodeFixRemediationPlugin(source_directories=[]), 'remediators')
+                await self._register_plugin(LogToCodeMapperPlugin(source_directories=[]), 'detectors')
                 
                 logger.info("Code analysis plugins registered successfully")
             except ImportError as e:
                 logger.warning(f"Failed to import code analysis plugins: {e}")
             except Exception as e:
                 logger.error(f"Error registering code analysis plugins: {e}")
+        
+        # MCP Monitoring Plugins (conditional)
+        if MCP_MONITORING_AVAILABLE:
+            try:
+                from mcp_monitoring_plugin import (
+                    MCPServerDiscovery,
+                    MCPMetricsCollectorPlugin,
+                    MCPPatternDetectorPlugin,
+                    MCPServerRemediationPlugin
+                )
+                
+                # Discover MCP servers first
+                discovery = MCPServerDiscovery({
+                    'scan_ports': [8000, 8080, 3000, 5000, 9000],
+                    'scan_hosts': ['localhost', '127.0.0.1'],
+                    'discovery_methods': ['process_scan', 'port_scan', 'docker_scan', 'config_file_scan']
+                })
+                
+                discovered_servers = await discovery.discover_all_servers()
+                logger.info(f"Discovered {len(discovered_servers)} MCP servers")
+                
+                # Convert server list to dictionary format
+                servers_dict = {server.server_id: server for server in discovered_servers}
+                
+                # Register MCP monitoring plugins with discovered servers
+                if discovered_servers:
+                    await self._register_plugin(MCPMetricsCollectorPlugin(discovered_servers), 'collectors')
+                    await self._register_plugin(MCPPatternDetectorPlugin(servers_dict), 'detectors')
+                    await self._register_plugin(MCPServerRemediationPlugin(servers_dict), 'remediators')
+                
+                logger.info("MCP monitoring plugins registered successfully")
+            except ImportError as e:
+                logger.warning(f"Failed to import MCP monitoring plugins: {e}")
+            except Exception as e:
+                logger.error(f"Error registering MCP monitoring plugins: {e}")
     
     async def _register_plugin(self, plugin: PluginInterface, plugin_type: str):
         """Registriert ein Plugin"""
