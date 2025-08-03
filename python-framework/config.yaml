@@ -1,0 +1,37 @@
+# Intelligent Monitoring Framework Configuration
+server_type: generic
+monitoring_interval: 30
+learning_enabled: true
+auto_remediation: true
+log_level: INFO
+data_dir: ./data
+
+# Log files to monitor
+log_files:
+  - path: "/var/log/application.log"
+    type: "application"
+  - path: "/var/log/system.log"
+    type: "system"
+
+# Plugin configuration
+plugins:
+  collectors:
+    - log_file_collector
+    - system_metrics_collector
+  detectors:
+    - log_pattern_detector
+    - threshold_detector
+  remediators:
+    - system_remediation
+
+# Threshold configuration
+thresholds:
+  cpu_usage:
+    warning: 80
+    critical: 95
+  memory_usage:
+    warning: 85
+    critical: 95
+  disk_usage:
+    warning: 85
+    critical: 95
