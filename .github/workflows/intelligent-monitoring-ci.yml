@@ -170,19 +170,19 @@ jobs:
           case "${{ matrix.test-group }}" in
             unit)
               echo "🧪 Running unit tests..."
-              npx vitest run "server/test/!(long-term|intelligent-mcp-monitoring)*.test.ts"
+              npx vitest run server/test/basic-storage.test.ts server/test/config.test.ts server/test/services.test.ts server/test/routes-api.test.ts
               ;;
             integration)
               echo "🔗 Running integration tests..."
-              npx vitest run "server/test/integration*.test.ts" || npx vitest run "server/test/*integration*.test.ts"
+              npx vitest run server/test/integration.test.ts server/test/mcp-integration.test.ts server/test/end-to-end-integration.test.ts
               ;;
             mcp-api)
               echo "📡 Running MCP API tests..."
-              npx vitest run "server/test/mcp-api.test.ts"
+              npx vitest run server/test/mcp-api.test.ts server/test/mcp-simple-test.test.ts
               ;;
             intelligent-monitoring)
               echo "🤖 Running intelligent monitoring tests..."
-              npx vitest run "server/test/intelligent-mcp-monitoring.test.ts"
+              npx vitest run server/test/intelligent-mcp-monitoring.test.ts server/test/code-issue-detection.test.ts
               ;;
           esac
         env:
