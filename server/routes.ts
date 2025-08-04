@@ -127,11 +127,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/problems", async (req, res) => {
     try {
+      // Convert timestamp string to Date object if needed
+      if (req.body.timestamp && typeof req.body.timestamp === 'string') {
+        req.body.timestamp = new Date(req.body.timestamp);
+      }
+      
       const problem = insertProblemSchema.parse(req.body);
       const created = await storage.createProblem(problem);
       res.json(created);
     } catch (error) {
-      res.status(400).json({ message: "Invalid problem data" });
+      res.status(400).json({ message: "Invalid problem data", error: error.message });
     }
   });
 
@@ -169,11 +174,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/metrics", async (req, res) => {
     try {
+      // Convert timestamp string to Date object if needed
+      if (req.body.timestamp && typeof req.body.timestamp === 'string') {
+        req.body.timestamp = new Date(req.body.timestamp);
+      }
+      
       const metrics = insertMetricsSchema.parse(req.body);
       const created = await storage.createMetrics(metrics);
       res.json(created);
     } catch (error) {
-      res.status(400).json({ message: "Invalid metrics data" });
+      res.status(400).json({ message: "Invalid metrics data", error: error.message });
     }
   });
 
@@ -196,11 +206,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/logs", async (req, res) => {
     try {
+      // Convert timestamp string to Date object if needed
+      if (req.body.timestamp && typeof req.body.timestamp === 'string') {
+        req.body.timestamp = new Date(req.body.timestamp);
+      }
+      
       const logEntry = insertLogEntrySchema.parse(req.body);
       const created = await storage.createLogEntry(logEntry);
       res.json(created);
     } catch (error) {
-      res.status(400).json({ message: "Invalid log entry data" });
+      res.status(400).json({ message: "Invalid log entry data", error: error.message });
     }
   });
 
@@ -228,9 +243,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/plugins", async (req, res) => {
     try {
+      // Set default status if not provided
+      if (!req.body.status) {
+        req.body.status = 'running';
+      }
+      
       const plugin = insertPluginSchema.parse(req.body);
-      // Set status to 'running' for new plugins
-      plugin.status = 'running';
+      
       const created = await storage.createOrUpdatePlugin(plugin);
       
       // Notify Python framework about new plugin
@@ -242,7 +261,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(created);
     } catch (error) {
-      res.status(400).json({ message: "Invalid plugin data" });
+      res.status(400).json({ message: "Invalid plugin data", error: error.message });
     }
   });
 

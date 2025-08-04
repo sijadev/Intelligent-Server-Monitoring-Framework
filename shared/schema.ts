@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, boolean, timestamp, jsonb, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -23,10 +23,10 @@ export const problems = pgTable("problems", {
 export const metrics = pgTable("metrics", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   timestamp: timestamp("timestamp").notNull(),
-  cpuUsage: integer("cpu_usage"),
-  memoryUsage: integer("memory_usage"),
-  diskUsage: integer("disk_usage"),
-  loadAverage: integer("load_average"),
+  cpuUsage: real("cpu_usage"),
+  memoryUsage: real("memory_usage"),
+  diskUsage: real("disk_usage"),
+  loadAverage: real("load_average"),
   networkConnections: integer("network_connections"),
   processes: integer("processes"),
   metadata: jsonb("metadata").default({}),
