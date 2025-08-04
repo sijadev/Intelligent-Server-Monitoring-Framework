@@ -1,0 +1,35 @@
+[
+  {
+    "name": "CPU_SPIKE_model",
+    "version": "v1754311138",
+    "problem_type": "CPU_SPIKE",
+    "model_path": "test_integration_models/CPU_SPIKE_model.json",
+    "accuracy": 0.9,
+    "training_data_size": 10,
+    "last_trained": "2025-08-04T14:38:58.863439",
+    "is_active": true,
+    "metadata": {}
+  },
+  {
+    "name": "DISK_FULL_model",
+    "version": "v1754311138",
+    "problem_type": "DISK_FULL",
+    "model_path": "test_integration_models/DISK_FULL_model.json",
+    "accuracy": 0.7,
+    "training_data_size": 10,
+    "last_trained": "2025-08-04T14:38:58.863546",
+    "is_active": true,
+    "metadata": {}
+  },
+  {
+    "name": "NETWORK_TIMEOUT_model",
+    "version": "v1754311138",
+    "problem_type": "NETWORK_TIMEOUT",
+    "model_path": "test_integration_models/NETWORK_TIMEOUT_model.json",
+    "accuracy": 0.8,
+    "training_data_size": 10,
+    "last_trained": "2025-08-04T14:38:58.863637",
+    "is_active": true,
+    "metadata": {}
+  }
+]
