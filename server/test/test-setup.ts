@@ -102,6 +102,14 @@ async function cleanupTestDatabase() {
 
   try {
     // Clear all test data in reverse dependency order
+    await (testStorage as any).query('DELETE FROM mcp_server_metrics WHERE 1=1');
+    await (testStorage as any).query('DELETE FROM mcp_servers WHERE 1=1');
+    await (testStorage as any).query('DELETE FROM deployment_metrics WHERE 1=1');
+    await (testStorage as any).query('DELETE FROM deployments WHERE 1=1');
+    await (testStorage as any).query('DELETE FROM ai_interventions WHERE 1=1');
+    await (testStorage as any).query('DELETE FROM ai_models WHERE 1=1');
+    await (testStorage as any).query('DELETE FROM code_analysis_runs WHERE 1=1');
+    await (testStorage as any).query('DELETE FROM code_issues WHERE 1=1');
     await (testStorage as any).query('DELETE FROM log_entries WHERE 1=1');
     await (testStorage as any).query('DELETE FROM metrics WHERE 1=1');
     await (testStorage as any).query('DELETE FROM problems WHERE 1=1');

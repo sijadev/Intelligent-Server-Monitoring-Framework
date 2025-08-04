@@ -756,11 +756,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/mcp/servers", async (req, res) => {
     try {
+      // Convert timestamp strings to Date objects if needed
+      if (req.body.discoveredAt && typeof req.body.discoveredAt === 'string') {
+        req.body.discoveredAt = new Date(req.body.discoveredAt);
+      }
+      if (req.body.lastSeen && typeof req.body.lastSeen === 'string') {
+        req.body.lastSeen = new Date(req.body.lastSeen);
+      }
+      
       const server = insertMcpServerSchema.parse(req.body);
       const created = await storage.createMcpServer(server);
       res.json(created);
     } catch (error) {
-      res.status(400).json({ message: "Invalid MCP server data" });
+      console.error("MCP server creation error:", error);
+      res.status(400).json({ message: "Invalid MCP server data", error: (error as Error).message });
     }
   });
 
@@ -801,11 +810,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/mcp/metrics", async (req, res) => {
     try {
+      // Convert timestamp strings to Date objects if needed
+      if (req.body.timestamp && typeof req.body.timestamp === 'string') {
+        req.body.timestamp = new Date(req.body.timestamp);
+      }
+      
       const metrics = insertMcpServerMetricsSchema.parse(req.body);
       const created = await storage.createMcpServerMetrics(metrics);
       res.json(created);
     } catch (error) {
-      res.status(400).json({ message: "Invalid MCP server metrics data" });
+      console.error("MCP server metrics creation error:", error);
+      res.status(400).json({ message: "Invalid MCP server metrics data", error: (error as Error).message });
     }
   });
 

@@ -200,7 +200,10 @@ class MockCodeAnalyzer {
       const language = this.detectLanguage(filePath);
       return await this.analyzeCode(code, filePath, language);
     } catch (error) {
-      console.error(`Error analyzing file ${filePath}:`, error);
+      // Only log errors in non-test environments to avoid noisy test output
+      if (process.env.NODE_ENV !== 'test') {
+        console.error(`Error analyzing file ${filePath}:`, error);
+      }
       return [];
     }
   }

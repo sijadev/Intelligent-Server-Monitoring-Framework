@@ -469,8 +469,12 @@ export const mcpServerMetrics = pgTable("mcp_server_metrics", {
 });
 
 // MCP Server schemas and types
-export const insertMcpServerSchema = createInsertSchema(mcpServers);
-export const insertMcpServerMetricsSchema = createInsertSchema(mcpServerMetrics);
+export const insertMcpServerSchema = createInsertSchema(mcpServers).omit({
+  id: true,
+});
+export const insertMcpServerMetricsSchema = createInsertSchema(mcpServerMetrics).omit({
+  id: true,
+});
 
 export type MCPServer = typeof mcpServers.$inferSelect;
 export type InsertMCPServer = z.infer<typeof insertMcpServerSchema>;
