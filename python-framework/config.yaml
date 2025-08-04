@@ -1,6 +1,6 @@
 # Intelligent Monitoring Framework Configuration
 server_type: generic
-monitoring_interval: 60
+monitoring_interval: 120
 learning_enabled: false
 auto_remediation: true
 log_level: DEBUG

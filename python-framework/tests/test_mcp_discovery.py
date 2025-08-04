@@ -264,10 +264,13 @@ class TestMCPMetricsCollectorPlugin:
         server = self.test_servers[0]  # HTTP server
         
         # Mock aiohttp session
-        with patch('aiohttp.ClientSession') as mock_session:
-            mock_response = Mock()
+        with patch('aiohttp.ClientSession') as mock_session_class:
+            mock_session = AsyncMock()
+            mock_session_class.return_value.__aenter__.return_value = mock_session
+            
+            mock_response = AsyncMock()
             mock_response.status = 200
-            mock_session.return_value.__aenter__.return_value.get.return_value.__aenter__.return_value = mock_response
+            mock_session.get.return_value.__aenter__.return_value = mock_response
             
             is_alive = await self.collector._test_server_alive(server)
             
@@ -356,7 +359,7 @@ class TestMCPPatternDetectorPlugin:
             }
         }
         
-        problems = await self.detector.detect_problems(test_data)
+        problems = await self.detector.detect_problems(test_data, {})
         
         # Should detect high response time as a problem
         assert len(problems) > 0

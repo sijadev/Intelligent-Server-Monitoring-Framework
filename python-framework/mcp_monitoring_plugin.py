@@ -715,7 +715,6 @@ class MCPMetricsCollectorPlugin:
     
     async def _test_server_alive(self, server: MCPServerInfo) -> bool:
         """Test if server is reachable"""
-        
         try:
             if server.protocol == 'http':
                 if AIOHTTP_AVAILABLE:
@@ -866,10 +865,13 @@ class MCPPatternDetectorPlugin:
         from main import Problem, ProblemSeverity
         problems = []
         
-        # Check each server's status
-        for server_id, server in self.servers.items():
-            server_problems = await self._detect_server_problems(server_id, server, metrics)
-            problems.extend(server_problems)
+        # Check each server's status  
+        server_metrics = metrics.get('server_metrics', {})
+        for server_id, server_data in server_metrics.items():
+            if server_id in self.servers:
+                server = self.servers[server_id]
+                server_problems = await self._detect_server_problems(server_id, server, server_data)
+                problems.extend(server_problems)
         
         # Check cross-server patterns
         cross_server_problems = await self._detect_cross_server_problems(metrics)
@@ -878,16 +880,14 @@ class MCPPatternDetectorPlugin:
         return problems
     
     async def _detect_server_problems(self, server_id: str, server: MCPServerInfo, 
-                                    metrics: Dict[str, Any]) -> List:
+                                    server_data: Dict[str, Any]) -> List:
         """Detect problems for individual server"""
         
         from main import Problem, ProblemSeverity
         problems = []
         
-        server_prefix = f"mcp_{server_id}_"
-        
         # Server down
-        status = metrics.get(f"{server_prefix}status")
+        status = server_data.get('status')
         if status == 'stopped' or status == 'error':
             problems.append(Problem(
                 type="mcp_server_down",
@@ -904,8 +904,10 @@ class MCPPatternDetectorPlugin:
             ))
         
         # High response time
-        response_time = metrics.get(f"{server_prefix}response_time", 0)
-        if response_time > 5.0:  # 5 seconds
+        response_time = server_data.get('response_time', 0)
+        if response_time > 5.0:  # 5 seconds (convert from milliseconds if needed)
+            if response_time > 1000:  # Assume milliseconds
+                response_time = response_time / 1000.0
             problems.append(Problem(
                 type="mcp_high_response_time",
                 severity=ProblemSeverity.HIGH if response_time > 10 else ProblemSeverity.MEDIUM,
@@ -920,8 +922,8 @@ class MCPPatternDetectorPlugin:
             ))
         
         # High error rate
-        error_count = metrics.get(f"{server_prefix}error_count", 0)
-        request_count = metrics.get(f"{server_prefix}request_count", 1)
+        error_count = server_data.get('error_count', 0)
+        request_count = server_data.get('request_count', 1)
         error_rate = error_count / max(request_count, 1)
         
         if error_rate > 0.1:  # 10% error rate
@@ -1001,10 +1003,14 @@ class MCPServerRemediationPlugin:
         """Check if this plugin can handle the problem"""
         return problem.type.startswith('mcp_')
     
+    async def remediate_problem(self, problem) -> Dict[str, Any]:
+        """Remediate a problem (wrapper for execute_remediation)"""
+        return await self.execute_remediation(problem, {})
+    
     async def execute_remediation(self, problem, context: Dict[str, Any]) -> Dict[str, Any]:
         """Execute remediation for MCP server problems"""
         
-        server_id = problem.metadata.get('server_id')
+        server_id = getattr(problem, 'metadata', problem).get('server_id')
         if not server_id or server_id not in self.servers:
             return {'success': False, 'message': 'Server not found'}
         
