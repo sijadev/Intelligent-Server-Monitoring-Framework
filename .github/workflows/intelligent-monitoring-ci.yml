@@ -69,7 +69,11 @@ jobs:
       - name: 📦 Install dependencies
         run: |
           npm ci
-          cd python-framework && pip install -r requirements.txt
+          if [ -f python-framework/requirements.txt ]; then
+            cd python-framework && pip install -r requirements.txt
+          else
+            echo "⚠️ No Python requirements.txt found - skipping ML dependencies"
+          fi
 
       - name: 🗃️ Setup database
         run: npm run db:migrate
@@ -141,7 +145,11 @@ jobs:
       - name: 📦 Install dependencies
         run: |
           npm ci
-          cd python-framework && pip install -r requirements.txt
+          if [ -f python-framework/requirements.txt ]; then
+            cd python-framework && pip install -r requirements.txt
+          else
+            echo "⚠️ No Python requirements.txt found - skipping ML dependencies"
+          fi
 
       - name: 🗃️ Setup database
         run: npm run db:migrate
@@ -232,7 +240,11 @@ jobs:
       - name: 📦 Install dependencies
         run: |
           npm ci
-          cd python-framework && pip install -r requirements.txt
+          if [ -f python-framework/requirements.txt ]; then
+            cd python-framework && pip install -r requirements.txt
+          else
+            echo "⚠️ No Python requirements.txt found - skipping ML dependencies"
+          fi
 
       - name: 🏗️ Build
         run: npm run build
