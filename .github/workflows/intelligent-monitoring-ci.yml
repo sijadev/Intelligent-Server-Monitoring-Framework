@@ -86,7 +86,7 @@ jobs:
         id: longterm_tests
         run: |
           echo "🎯 Starting long-term ML tests..."
-          ls -la server/test/long-term/ || echo "Directory not found"
+          mkdir -p test-results python-framework/ai_models python-framework/demo_mcp_code
           npx vitest run server/test/long-term/mcp-monitoring-continuous-learning-simple.test.ts
         env:
           DATABASE_URL: ${{ env.DATABASE_URL }}
@@ -108,8 +108,11 @@ jobs:
         with:
           name: ml-test-results
           path: |
-            test-results/
-            python-framework/ai_models/
+            test-results/**/*
+            python-framework/ai_models/**/*
+            python-framework/demo_mcp_code/**/*
+            *.log
+          if-no-files-found: ignore
           retention-days: 30
 
   # Standard Tests (Error tolerant)
