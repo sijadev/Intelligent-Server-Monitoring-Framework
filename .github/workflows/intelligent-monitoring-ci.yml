@@ -84,7 +84,10 @@ jobs:
 
       - name: 🎯 Run Long-term ML Tests
         id: longterm_tests
-        run: npm test -- --run server/test/long-term/mcp-monitoring-continuous-learning-simple.test.ts
+        run: |
+          echo "🎯 Starting long-term ML tests..."
+          ls -la server/test/long-term/ || echo "Directory not found"
+          npx vitest run server/test/long-term/mcp-monitoring-continuous-learning-simple.test.ts
         env:
           DATABASE_URL: ${{ env.DATABASE_URL }}
           PYTHON_PATH: python3
@@ -166,16 +169,20 @@ jobs:
         run: |
           case "${{ matrix.test-group }}" in
             unit)
-              npm test -- --run "server/test/!(long-term|intelligent-mcp-monitoring)/**/*.test.ts"
+              echo "🧪 Running unit tests..."
+              npx vitest run "server/test/!(long-term|intelligent-mcp-monitoring)*.test.ts"
               ;;
             integration)
-              npm test -- --run "server/test/integration/*.test.ts"
+              echo "🔗 Running integration tests..."
+              npx vitest run "server/test/integration*.test.ts" || npx vitest run "server/test/*integration*.test.ts"
               ;;
             mcp-api)
-              npm test -- --run "server/test/mcp-api.test.ts"
+              echo "📡 Running MCP API tests..."
+              npx vitest run "server/test/mcp-api.test.ts"
               ;;
             intelligent-monitoring)
-              npm test -- --run "server/test/intelligent-mcp-monitoring.test.ts"
+              echo "🤖 Running intelligent monitoring tests..."
+              npx vitest run "server/test/intelligent-mcp-monitoring.test.ts"
               ;;
           esac
         env:
