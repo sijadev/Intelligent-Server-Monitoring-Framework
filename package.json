@@ -13,6 +13,10 @@
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
+    "test:isolated": "vitest run --pool=forks --isolate",
+    "test:db": "TEST_DATABASE_URL=postgresql://test:test@localhost:5432/imf_test_db vitest run",
+    "test:db-setup": "./scripts/setup-test-db.sh",
+    "test:db-clean": "TEST_DATABASE_URL=postgresql://test:test@localhost:5432/imf_test_db psql -c 'DROP DATABASE IF EXISTS imf_test_db; CREATE DATABASE imf_test_db;'",
     "test:simple": "node test-simple.js",
     "test:python": "cd python-framework && python -m pytest tests/ -v"
   },

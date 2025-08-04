@@ -895,6 +895,26 @@ export class MemStorage implements IStorage {
       serversByDiscoveryMethod,
     };
   }
+
+  /**
+   * Clear all data from memory storage (useful for testing)
+   */
+  clear(): void {
+    this.users.clear();
+    this.problems.clear();
+    this.metrics.clear();
+    this.logEntries.clear();
+    this.plugins.clear();
+    this.frameworkConfig = undefined;
+    this.codeIssues.clear();
+    this.codeAnalysisRuns.clear();
+    this.aiInterventions.clear();
+    this.deployments.clear();
+    this.aiModels.clear();
+    this.deploymentMetrics.clear();
+    this.mcpServers.clear();
+    this.mcpServerMetrics.clear();
+  }
 }
 
 // Storage initialization is now handled in storage-init.ts to ensure proper env loading
