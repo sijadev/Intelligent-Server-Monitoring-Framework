@@ -1010,21 +1010,28 @@ class MCPServerRemediationPlugin:
     async def execute_remediation(self, problem, context: Dict[str, Any]) -> Dict[str, Any]:
         """Execute remediation for MCP server problems"""
         
-        server_id = getattr(problem, 'metadata', problem).get('server_id')
+        # Handle both Problem objects and dictionary formats
+        if hasattr(problem, 'metadata'):
+            server_id = problem.metadata.get('server_id')
+        else:
+            server_id = problem.get('server_id')
         if not server_id or server_id not in self.servers:
             return {'success': False, 'message': 'Server not found'}
         
         server = self.servers[server_id]
         
         try:
-            if problem.type == 'mcp_server_down':
+            # Get problem type from object or dictionary
+            problem_type = getattr(problem, 'type', problem.get('type'))
+            
+            if problem_type == 'server_down' or problem_type == 'mcp_server_down':
                 return await self._restart_server(server)
-            elif problem.type == 'mcp_high_response_time':
+            elif problem_type == 'mcp_high_response_time':
                 return await self._optimize_server_performance(server)
-            elif problem.type == 'mcp_high_error_rate':
+            elif problem_type == 'mcp_high_error_rate':
                 return await self._investigate_errors(server)
             else:
-                return {'success': False, 'message': f'No remediation for problem type: {problem.type}'}
+                return {'success': False, 'message': f'No remediation for problem type: {problem_type}'}
                 
         except Exception as e:
             return {'success': False, 'message': f'Remediation failed: {str(e)}'}
