@@ -51,8 +51,7 @@ jobs:
           fi
 
       - name: 🗃️ Setup database
-        run: |
-          npm run db:push || echo "Database setup failed - using fallback"
+        run: npm run db:push
         env:
           DATABASE_URL: ${{ env.DATABASE_URL }}
 
@@ -63,12 +62,10 @@ jobs:
       - name: 📡 Run API tests
         run: |
           npx vitest run server/test/mcp-api.test.ts
-        continue-on-error: true
 
       - name: 🔗 Run integration tests
         run: |
           npx vitest run server/test/integration.test.ts server/test/end-to-end-integration.test.ts
-        continue-on-error: true
 
   # ML Tests (Required Documentation)
   ml-tests:
@@ -109,7 +106,7 @@ jobs:
           fi
 
       - name: 🗃️ Setup database
-        run: npm run db:push || echo "Using in-memory storage"
+        run: npm run db:push
         env:
           DATABASE_URL: ${{ env.DATABASE_URL }}
 
@@ -119,15 +116,15 @@ jobs:
           echo "🎯 Executing ML Tests..."
           mkdir -p test-results/ml-reports
           
-          # Run ML Test Suite
+          # Run ML Test Suite - MUST PASS
+          echo "Running Continuous Learning Tests..."
           npx vitest run server/test/long-term/mcp-monitoring-continuous-learning-simple.test.ts \
-            --reporter=json --outputFile=test-results/ml-reports/ml-test-results.json \
-            || echo "ML tests completed with issues"
+            --reporter=json --outputFile=test-results/ml-reports/ml-test-results.json
             
-          # Run Intelligent Monitoring Tests
+          # Run Intelligent Monitoring Tests - MUST PASS  
+          echo "Running Intelligent Monitoring Tests..."
           npx vitest run server/test/intelligent-mcp-monitoring.test.ts \
-            --reporter=json --outputFile=test-results/ml-reports/monitoring-test-results.json \
-            || echo "Monitoring tests completed with issues"
+            --reporter=json --outputFile=test-results/ml-reports/monitoring-test-results.json
         env:
           DATABASE_URL: ${{ env.DATABASE_URL }}
           PYTHON_PATH: python3
@@ -159,17 +156,19 @@ jobs:
           echo "" >> test-results/ML_TEST_REPORT.md
           
           if [ "${{ steps.ml_tests.outcome }}" == "success" ]; then
-            echo "## ✅ Status: ML Tests Passed" >> test-results/ML_TEST_REPORT.md
-            echo "The ML system demonstrated successful:" >> test-results/ML_TEST_REPORT.md
+            echo "## ✅ Status: ML Tests PASSED" >> test-results/ML_TEST_REPORT.md
+            echo "All ML tests executed successfully:" >> test-results/ML_TEST_REPORT.md
             echo "- Progressive learning across complexity levels" >> test-results/ML_TEST_REPORT.md
             echo "- Realistic fix success rates (30%+)" >> test-results/ML_TEST_REPORT.md
             echo "- ML model training and validation" >> test-results/ML_TEST_REPORT.md
+            echo "- Continuous learning workflow validated" >> test-results/ML_TEST_REPORT.md
           else
-            echo "## ⚠️ Status: ML Tests Had Issues" >> test-results/ML_TEST_REPORT.md
-            echo "Issues were encountered but documented for analysis:" >> test-results/ML_TEST_REPORT.md
-            echo "- Tests executed successfully" >> test-results/ML_TEST_REPORT.md
-            echo "- Results captured for review" >> test-results/ML_TEST_REPORT.md
-            echo "- System architecture validated" >> test-results/ML_TEST_REPORT.md
+            echo "## ❌ Status: ML Tests FAILED" >> test-results/ML_TEST_REPORT.md
+            echo "ML tests failed and must be fixed:" >> test-results/ML_TEST_REPORT.md
+            echo "- Check test execution logs for details" >> test-results/ML_TEST_REPORT.md
+            echo "- Review ML system configuration" >> test-results/ML_TEST_REPORT.md
+            echo "- Fix failing assertions before deployment" >> test-results/ML_TEST_REPORT.md
+            echo "- **This is a blocking failure**" >> test-results/ML_TEST_REPORT.md
           fi
           
           echo "" >> test-results/ML_TEST_REPORT.md
@@ -233,15 +232,18 @@ jobs:
           echo "🏗️ Build: ${{ needs.build.result }}"
           echo ""
           
-          if [ "${{ needs.build.result }}" == "success" ]; then
+          if [ "${{ needs.test.result }}" == "success" ] && [ "${{ needs.ml-tests.result }}" == "success" ] && [ "${{ needs.build.result }}" == "success" ]; then
             echo "✅ STATUS: PIPELINE SUCCESSFUL"
+            echo "   - All tests passed"
+            echo "   - ML tests validated successfully"
             echo "   - Application built successfully"
-            echo "   - ML tests executed and documented" 
             echo "   - Ready for deployment"
           else
-            echo "❌ STATUS: PIPELINE ISSUES"
-            echo "   - Check individual job results"
-            echo "   - ML test documentation available"
+            echo "❌ STATUS: PIPELINE FAILED"
+            echo "   - Standard Tests: ${{ needs.test.result }}"
+            echo "   - ML Tests: ${{ needs.ml-tests.result }}"
+            echo "   - Build: ${{ needs.build.result }}"
+            echo "   - **Deployment blocked due to failures**"
           fi
           
           echo ""
