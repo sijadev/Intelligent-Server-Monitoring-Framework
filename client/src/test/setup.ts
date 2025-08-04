@@ -6,11 +6,12 @@ import * as matchers from '@testing-library/jest-dom/matchers'
 expect.extend(matchers)
 
 // Global type declaration for jest-dom matchers
-declare global {
-  namespace Vi {
-    interface JestAssertion<T = any> extends jest.Matchers<void, T> {
-      toBeInTheDocument(): T
-    }
+declare module 'vitest' {
+  interface Assertion<T = any> extends jest.Matchers<void, T> {
+    toBeInTheDocument(): T
+  }
+  interface AsymmetricMatchersContaining extends jest.Matchers<void, any> {
+    toBeInTheDocument(): any
   }
 }
 

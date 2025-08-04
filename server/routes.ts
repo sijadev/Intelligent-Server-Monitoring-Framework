@@ -1,8 +1,10 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
-import { storage } from "./storage";
+import { config } from "./config";
+import { storage } from "./storage-init";
 import { pythonMonitorService } from "./services/python-monitor";
+import { logAggregator } from "./services/log-aggregator";
 import { 
   insertProblemSchema, 
   insertMetricsSchema, 
@@ -22,7 +24,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
 
   // Initialize Python monitoring service
-  pythonMonitorService.start().catch(console.error);
+  if (config.PYTHON_FRAMEWORK_ENABLED) {
+    pythonMonitorService.start().catch(error => {
+      console.warn('Failed to start Python monitoring service:', error.message);
+      console.log('Python monitoring will be disabled. Install psutil: pip install psutil');
+    });
+  } else {
+    console.log('Python framework disabled via PYTHON_FRAMEWORK_ENABLED=false');
+  }
 
   // Setup WebSocket server
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
@@ -58,9 +67,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     broadcast('status', status);
   });
 
+  // Listen to log aggregator events
+  logAggregator.on('log', (logEntry) => {
+    broadcast('logEntries', [logEntry]);
+  });
+
+
   // WebSocket connection handling
   wss.on('connection', (ws) => {
-    console.log('WebSocket client connected');
+    const clientId = Math.random().toString(36).substr(2, 9);
+    console.log(`👋 WebSocket client connected (${clientId})`);
+    logAggregator.logWebSocket('client_connected', clientId);
 
     // Send initial data
     storage.getDashboardData().then(data => {
@@ -68,11 +85,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
 
     ws.on('close', () => {
-      console.log('WebSocket client disconnected');
+      console.log(`✋ WebSocket client disconnected (${clientId})`);
+      logAggregator.logWebSocket('client_disconnected', clientId);
     });
 
     ws.on('error', (error) => {
       console.error('WebSocket error:', error);
+      logAggregator.logWebSocket('client_error', clientId, { error: error.message });
     });
   });
 
@@ -210,10 +229,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/plugins", async (req, res) => {
     try {
       const plugin = insertPluginSchema.parse(req.body);
+      // Set status to 'running' for new plugins
+      plugin.status = 'running';
       const created = await storage.createOrUpdatePlugin(plugin);
+      
+      // Notify Python framework about new plugin
+      try {
+        await pythonMonitorService.sendCommand('reload_plugins');
+      } catch (error) {
+        console.warn('Failed to notify Python framework about new plugin:', error);
+      }
+      
       res.json(created);
     } catch (error) {
       res.status(400).json({ message: "Invalid plugin data" });
+    }
+  });
+
+  app.put("/api/plugins/:pluginId", async (req, res) => {
+    try {
+      const plugin = insertPluginSchema.parse(req.body);
+      const updated = await storage.updatePlugin(req.params.pluginId, plugin);
+      if (!updated) {
+        return res.status(404).json({ message: "Plugin not found" });
+      }
+      
+      // Notify Python framework about plugin update
+      try {
+        await pythonMonitorService.sendCommand('reload_plugins');
+      } catch (error) {
+        console.warn('Failed to notify Python framework about plugin update:', error);
+      }
+      
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update plugin" });
+    }
+  });
+
+  app.delete("/api/plugins/:pluginId", async (req, res) => {
+    try {
+      const deleted = await storage.deletePlugin(req.params.pluginId);
+      if (!deleted) {
+        return res.status(404).json({ message: "Plugin not found" });
+      }
+      
+      // Notify Python framework about plugin deletion
+      try {
+        await pythonMonitorService.sendCommand('reload_plugins');
+      } catch (error) {
+        console.warn('Failed to notify Python framework about plugin deletion:', error);
+      }
+      
+      res.json({ message: "Plugin deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete plugin" });
+    }
+  });
+
+  // Plugin control endpoints
+  app.post("/api/plugins/:pluginId/start", async (req, res) => {
+    try {
+      const plugin = await storage.getPlugin(req.params.pluginId);
+      if (!plugin) {
+        return res.status(404).json({ message: "Plugin not found" });
+      }
+      
+      const updated = await storage.updatePlugin(req.params.pluginId, { 
+        status: 'running' 
+      });
+      
+      // Notify Python framework
+      try {
+        await pythonMonitorService.sendCommand('start_plugin', { pluginId: req.params.pluginId });
+      } catch (error) {
+        console.warn('Failed to start plugin in Python framework:', error);
+      }
+      
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to start plugin" });
+    }
+  });
+
+  app.post("/api/plugins/:pluginId/stop", async (req, res) => {
+    try {
+      const plugin = await storage.getPlugin(req.params.pluginId);
+      if (!plugin) {
+        return res.status(404).json({ message: "Plugin not found" });
+      }
+      
+      const updated = await storage.updatePlugin(req.params.pluginId, { 
+        status: 'stopped' 
+      });
+      
+      // Notify Python framework
+      try {
+        await pythonMonitorService.sendCommand('stop_plugin', { pluginId: req.params.pluginId });
+      } catch (error) {
+        console.warn('Failed to stop plugin in Python framework:', error);
+      }
+      
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to stop plugin" });
     }
   });
 
@@ -671,12 +790,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============================================================================
+  // MCP SERVER MANAGEMENT API
+  // ============================================================================
+
   app.get("/api/mcp/dashboard", async (req, res) => {
     try {
       const dashboard = await storage.getMcpServerDashboardData();
       res.json(dashboard);
     } catch (error) {
       res.status(500).json({ message: "Failed to get MCP dashboard data" });
+    }
+  });
+
+  // Debug endpoint to test storage
+  app.get("/api/debug/storage", async (req, res) => {
+    try {
+      console.log('🔍 Testing storage system...');
+      
+      // Test storage type
+      const storageType = storage.constructor.name;
+      console.log('  - Storage type:', storageType);
+      
+      // Test basic operations
+      const plugins = await storage.getPlugins();
+      console.log('  - Plugins count:', plugins.length);
+      
+      const problems = await storage.getProblems();
+      console.log('  - Problems count:', problems.length);
+      
+      // Test creating a plugin
+      try {
+        const testPlugin = await storage.createOrUpdatePlugin({
+          name: 'test_plugin',
+          version: '1.0.0',
+          type: 'collector',
+          status: 'running',
+          config: { test: true }
+        });
+        console.log('  - Test plugin created:', testPlugin.id);
+      } catch (error) {
+        console.error('  - Failed to create test plugin:', error);
+      }
+      
+      res.json({
+        storageType,
+        pluginsCount: plugins.length,
+        problemsCount: problems.length,
+        databaseUrl: config.DATABASE_URL ? 'present' : 'missing',
+        configuration: {
+          nodeEnv: config.NODE_ENV,
+          port: config.PORT,
+          pythonFrameworkEnabled: config.PYTHON_FRAMEWORK_ENABLED,
+          monitoringInterval: config.MONITORING_INTERVAL,
+          logLevel: config.LOG_LEVEL
+        },
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('❌ Storage debug failed:', error);
+      res.status(500).json({ error: (error as Error).message });
     }
   });
 

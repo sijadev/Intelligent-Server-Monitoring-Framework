@@ -70,6 +70,20 @@ export const api = {
     return response.json();
   },
 
+  createPlugin: async (plugin: any): Promise<Plugin> => {
+    const response = await apiRequest('POST', '/api/plugins', plugin);
+    return response.json();
+  },
+
+  updatePlugin: async (id: string, plugin: any): Promise<Plugin> => {
+    const response = await apiRequest('PUT', `/api/plugins/${id}`, plugin);
+    return response.json();
+  },
+
+  deletePlugin: async (id: string): Promise<void> => {
+    await apiRequest('DELETE', `/api/plugins/${id}`);
+  },
+
   // Configuration
   getConfig: async (): Promise<FrameworkConfig> => {
     const response = await apiRequest('GET', '/api/config');

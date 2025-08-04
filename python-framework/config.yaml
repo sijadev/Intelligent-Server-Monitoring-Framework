@@ -1,17 +1,17 @@
 # Intelligent Monitoring Framework Configuration
 server_type: generic
-monitoring_interval: 30
-learning_enabled: true
+monitoring_interval: 60
+learning_enabled: false
 auto_remediation: true
-log_level: INFO
-data_dir: ./data
+log_level: DEBUG
+data_dir: /tmp/imf
 
 # Log files to monitor
 log_files:
-  - path: "/var/log/application.log"
-    type: "application"
   - path: "/var/log/system.log"
     type: "system"
+  - path: "/var/log/app.log"
+    type: "application"
 
 # Plugin configuration
 plugins:

@@ -61,7 +61,11 @@ export interface IStorage {
   // Plugins
   getPlugins(): Promise<Plugin[]>;
   getPlugin(name: string): Promise<Plugin | undefined>;
+  getPluginById(id: string): Promise<Plugin | undefined>;
   createOrUpdatePlugin(plugin: InsertPlugin): Promise<Plugin>;
+  createPlugin(plugin: InsertPlugin): Promise<Plugin>;
+  updatePlugin(id: string, plugin: Partial<InsertPlugin>): Promise<Plugin | undefined>;
+  deletePlugin(id: string): Promise<Plugin | undefined>;
 
   // Framework Config
   getFrameworkConfig(): Promise<FrameworkConfig | undefined>;
@@ -309,6 +313,10 @@ export class MemStorage implements IStorage {
     return Array.from(this.plugins.values()).find(plugin => plugin.name === name);
   }
 
+  async getPluginById(id: string): Promise<Plugin | undefined> {
+    return this.plugins.get(id);
+  }
+
   async createOrUpdatePlugin(insertPlugin: InsertPlugin): Promise<Plugin> {
     const existing = await this.getPlugin(insertPlugin.name);
     const id = existing?.id || randomUUID();
@@ -322,6 +330,41 @@ export class MemStorage implements IStorage {
     return plugin;
   }
 
+  async createPlugin(insertPlugin: InsertPlugin): Promise<Plugin> {
+    const id = randomUUID();
+    const plugin: Plugin = {
+      ...insertPlugin,
+      id,
+      lastUpdate: new Date(),
+      config: insertPlugin.config || {},
+    };
+    this.plugins.set(id, plugin);
+    return plugin;
+  }
+
+  async updatePlugin(id: string, pluginUpdate: Partial<InsertPlugin>): Promise<Plugin | undefined> {
+    const existing = this.plugins.get(id);
+    if (!existing) return undefined;
+    
+    const updated: Plugin = {
+      ...existing,
+      ...pluginUpdate,
+      id, // Keep original ID
+      lastUpdate: new Date(),
+      config: pluginUpdate.config || existing.config || {},
+    };
+    this.plugins.set(id, updated);
+    return updated;
+  }
+
+  async deletePlugin(id: string): Promise<Plugin | undefined> {
+    const plugin = this.plugins.get(id);
+    if (plugin) {
+      this.plugins.delete(id);
+    }
+    return plugin;
+  }
+
   async getFrameworkConfig(): Promise<FrameworkConfig | undefined> {
     return this.frameworkConfig;
   }
@@ -329,6 +372,7 @@ export class MemStorage implements IStorage {
   async updateFrameworkConfig(insertConfig: InsertFrameworkConfig): Promise<FrameworkConfig> {
     const id = this.frameworkConfig?.id || randomUUID();
     this.frameworkConfig = {
+      id,
       serverType: insertConfig.serverType || "generic",
       monitoringInterval: insertConfig.monitoringInterval || 30,
       learningEnabled: insertConfig.learningEnabled || true,
@@ -341,7 +385,34 @@ export class MemStorage implements IStorage {
       autoFixEnabled: insertConfig.autoFixEnabled || false,
       confidenceThreshold: insertConfig.confidenceThreshold || 70,
       backupDirectory: insertConfig.backupDirectory || "./backups",
-      id,
+      // AI Learning Configuration
+      aiLearningEnabled: insertConfig.aiLearningEnabled || false,
+      aiModelDir: insertConfig.aiModelDir || "./ai_models",
+      aiMinConfidence: insertConfig.aiMinConfidence || 75,
+      aiMaxRiskScore: insertConfig.aiMaxRiskScore || 30,
+      aiMinSuccessProbability: insertConfig.aiMinSuccessProbability || 80,
+      aiMaxDeploymentsPerHour: insertConfig.aiMaxDeploymentsPerHour || 2,
+      aiRequireApproval: insertConfig.aiRequireApproval !== undefined ? insertConfig.aiRequireApproval : true,
+      aiLearningRate: insertConfig.aiLearningRate || 10,
+      aiRetrainFrequency: insertConfig.aiRetrainFrequency || 50,
+      // Deployment Configuration
+      deploymentEnabled: insertConfig.deploymentEnabled || false,
+      gitRepoPath: insertConfig.gitRepoPath || ".",
+      useDocker: insertConfig.useDocker !== undefined ? insertConfig.useDocker : true,
+      useKubernetes: insertConfig.useKubernetes || false,
+      deploymentStrategies: insertConfig.deploymentStrategies || {"low_risk": "direct_deployment", "medium_risk": "canary_deployment", "high_risk": "blue_green_deployment"},
+      testCommands: insertConfig.testCommands || ["python -m pytest tests/ -v"],
+      dockerImageName: insertConfig.dockerImageName || "mcp-server",
+      k8sDeploymentName: insertConfig.k8sDeploymentName || "mcp-server-deployment",
+      k8sNamespace: insertConfig.k8sNamespace || "production",
+      restartCommand: insertConfig.restartCommand || "sudo systemctl restart mcp-server",
+      rollbackTimeout: insertConfig.rollbackTimeout || 300,
+      // Safety and Monitoring Configuration
+      businessHoursRestriction: insertConfig.businessHoursRestriction !== undefined ? insertConfig.businessHoursRestriction : true,
+      maxConcurrentDeployments: insertConfig.maxConcurrentDeployments || 1,
+      monitoringPeriod: insertConfig.monitoringPeriod || 600,
+      autoRollbackTriggers: insertConfig.autoRollbackTriggers || {"error_rate_increase": 0.5, "response_time_increase": 1.0, "availability_drop": 0.05},
+      emergencyContacts: insertConfig.emergencyContacts || ["devops@company.com"],
       updatedAt: new Date(),
     };
     return this.frameworkConfig;
@@ -368,6 +439,9 @@ export class MemStorage implements IStorage {
       timestamp: new Date(insertCodeIssue.timestamp),
       fixApplied: false,
       metadata: insertCodeIssue.metadata || {},
+      lineNumber: insertCodeIssue.lineNumber ?? null,
+      functionName: insertCodeIssue.functionName ?? null,
+      suggestedFix: insertCodeIssue.suggestedFix ?? null,
     };
     this.codeIssues.set(id, codeIssue);
     return codeIssue;
@@ -411,6 +485,8 @@ export class MemStorage implements IStorage {
       id,
       timestamp: new Date(insertRun.timestamp),
       metadata: insertRun.metadata || {},
+      fixesApplied: insertRun.fixesApplied ?? 0,
+      duration: insertRun.duration ?? null,
     };
     this.codeAnalysisRuns.set(id, run);
     return run;
@@ -440,6 +516,8 @@ export class MemStorage implements IStorage {
       id,
       timestamp: new Date(insertIntervention.timestamp),
       metadata: insertIntervention.metadata || {},
+      deploymentId: insertIntervention.deploymentId ?? null,
+      codeIssueId: insertIntervention.codeIssueId ?? null,
     };
     this.aiInterventions.set(id, intervention);
     return intervention;
@@ -471,8 +549,13 @@ export class MemStorage implements IStorage {
       ...insertDeployment,
       id,
       startTime: new Date(insertDeployment.startTime),
-      endTime: insertDeployment.endTime ? new Date(insertDeployment.endTime) : null,
+      endTime: null, // Will be set when deployment completes
       metadata: insertDeployment.metadata || {},
+      duration: null, // Will be calculated when deployment ends
+      commitHash: insertDeployment.commitHash ?? null,
+      filesChanged: insertDeployment.filesChanged || [],
+      testResults: insertDeployment.testResults || {},
+      rollbackCommitHash: insertDeployment.rollbackCommitHash ?? null,
     };
     this.deployments.set(id, deployment);
     return deployment;
@@ -511,6 +594,9 @@ export class MemStorage implements IStorage {
       id,
       lastTrained: new Date(insertModel.lastTrained),
       metadata: insertModel.metadata || {},
+      accuracy: insertModel.accuracy ?? null,
+      trainingDataSize: insertModel.trainingDataSize ?? null,
+      isActive: insertModel.isActive ?? null,
     };
     this.aiModels.set(id, model);
     return model;
@@ -540,6 +626,12 @@ export class MemStorage implements IStorage {
       id,
       timestamp: new Date(insertMetrics.timestamp),
       metadata: insertMetrics.metadata || {},
+      cpuUsage: insertMetrics.cpuUsage ?? null,
+      memoryUsage: insertMetrics.memoryUsage ?? null,
+      errorRate: insertMetrics.errorRate ?? null,
+      responseTime: insertMetrics.responseTime ?? null,
+      availability: insertMetrics.availability ?? null,
+      requestCount: insertMetrics.requestCount ?? null,
     };
     this.deploymentMetrics.set(id, metrics);
     return metrics;
@@ -623,7 +715,7 @@ export class MemStorage implements IStorage {
         duration: deployment.endTime ? 
           deployment.endTime.getTime() - deployment.startTime.getTime() : undefined,
         initiatedBy: deployment.initiatedBy,
-        filesChanged: deployment.filesChanged,
+        filesChanged: Array.isArray(deployment.filesChanged) ? deployment.filesChanged : [],
       })),
       activeDeployments: activeDeployments.map(deployment => ({
         id: deployment.id,
@@ -633,7 +725,7 @@ export class MemStorage implements IStorage {
         startTime: deployment.startTime,
         duration: undefined, // Active deployments don't have end time yet
         initiatedBy: deployment.initiatedBy,
-        filesChanged: deployment.filesChanged,
+        filesChanged: Array.isArray(deployment.filesChanged) ? deployment.filesChanged : [],
       })),
     };
   }
@@ -668,13 +760,32 @@ export class MemStorage implements IStorage {
   async createMcpServer(insertServer: InsertMCPServer): Promise<MCPServer> {
     const id = randomUUID();
     const server: MCPServer = {
-      ...insertServer,
       id,
+      name: insertServer.name,
+      serverId: insertServer.serverId,
+      status: insertServer.status,
+      host: insertServer.host,
+      port: insertServer.port,
+      protocol: insertServer.protocol,
+      discoveryMethod: insertServer.discoveryMethod,
       discoveredAt: new Date(insertServer.discoveredAt),
       lastSeen: new Date(insertServer.lastSeen),
       metadata: insertServer.metadata || {},
-      logFiles: insertServer.logFiles || [],
+      version: insertServer.version ?? null,
+      logFiles: insertServer.logFiles ?? null,
       capabilities: insertServer.capabilities || [],
+      pid: insertServer.pid ?? null,
+      processName: insertServer.processName ?? null,
+      commandLine: insertServer.commandLine ?? null,
+      workingDirectory: insertServer.workingDirectory ?? null,
+      executablePath: insertServer.executablePath ?? null,
+      sourceDirectory: insertServer.sourceDirectory ?? null,
+      containerId: insertServer.containerId ?? null,
+      containerName: insertServer.containerName ?? null,
+      imageName: insertServer.imageName ?? null,
+      configFile: insertServer.configFile ?? null,
+      healthEndpoint: insertServer.healthEndpoint ?? null,
+      metricsEndpoint: insertServer.metricsEndpoint ?? null,
     };
     this.mcpServers.set(id, server);
     return server;
@@ -722,10 +833,21 @@ export class MemStorage implements IStorage {
       id,
       timestamp: new Date(insertMetrics.timestamp),
       metadata: insertMetrics.metadata || {},
+      uptime: insertMetrics.uptime ?? null,
+      responseTime: insertMetrics.responseTime ?? null,
+      requestCount: insertMetrics.requestCount ?? null,
+      errorCount: insertMetrics.errorCount ?? null,
+      processCpuPercent: insertMetrics.processCpuPercent ?? null,
+      processMemoryMb: insertMetrics.processMemoryMb ?? null,
+      processThreads: insertMetrics.processThreads ?? null,
+      processOpenFiles: insertMetrics.processOpenFiles ?? null,
+      processConnections: insertMetrics.processConnections ?? null,
     };
     this.mcpServerMetrics.set(id, metrics);
     return metrics;
   }
+
+  // Duplicate plugin management functions removed - using the ones above in the class
 
   async getMcpServerDashboardData(): Promise<MCPServerDashboardData> {
     const allServers = Array.from(this.mcpServers.values());
@@ -775,4 +897,4 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Storage initialization is now handled in storage-init.ts to ensure proper env loading

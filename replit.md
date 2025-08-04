@@ -1,6 +1,8 @@
 # Overview
 
-This is an Intelligent Monitoring Framework (IMF) Dashboard - a full-stack web application for monitoring server systems, analyzing logs, and managing problems through an extensible plugin architecture. The application combines a React frontend with an Express.js backend, integrates with a Python monitoring framework, and uses PostgreSQL for data persistence. The system is designed to be a comprehensive monitoring solution with real-time capabilities, automated problem detection, and plugin-based extensibility.
+This is an Intelligent Monitoring Framework (IMF) Dashboard - a full-stack web application for monitoring server systems, analyzing logs, and managing problems through an extensible plugin architecture.
+
+The application combines a React frontend with an Express.js backend, integrates with a Python monitoring framework, and uses PostgreSQL for data persistence. The system is designed to be a comprehensive monitoring solution with real-time capabilities, automated problem detection, and plugin-based extensibility.
 
 # User Preferences
 

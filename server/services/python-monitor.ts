@@ -9,7 +9,8 @@ import {
   type Plugin,
   type FrameworkConfig 
 } from '@shared/schema';
-import { storage } from '../storage';
+import { storage } from '../storage-init';
+import { logAggregator } from './log-aggregator';
 
 export interface PythonFrameworkData {
   problems?: Problem[];
@@ -30,7 +31,8 @@ export class PythonMonitorService extends EventEmitter {
 
   constructor() {
     super();
-    this.pythonPath = path.join(process.cwd(), 'python-framework', 'main.py');
+    this.setMaxListeners(50); // Increase max listeners to handle multiple test scenarios
+    this.pythonPath = path.join(process.cwd(), 'python-framework', 'enhanced_main.py');
     this.configPath = path.join(process.cwd(), 'python-framework', 'config.yaml');
   }
 
@@ -43,26 +45,53 @@ export class PythonMonitorService extends EventEmitter {
       // Ensure config file exists
       await this.updateConfigFile();
 
-      // Start Python process
-      this.process = spawn('python3', [this.pythonPath], {
+      // Start Python process - use enhanced version for continuous monitoring
+      const pythonScript = 'enhanced_main.py';
+      const scriptPath = path.join(path.dirname(this.pythonPath), pythonScript);
+      
+      this.process = spawn('python3', [scriptPath], {
         stdio: ['pipe', 'pipe', 'pipe'],
         cwd: path.dirname(this.pythonPath),
       });
 
       this.isRunning = true;
 
-      // Handle stdout data
+      // Handle stdout data (JSON output from framework)
       this.process.stdout?.on('data', (data) => {
-        this.handlePythonOutput(data.toString());
+        const output = data.toString();
+        console.log('Python Framework Output:', output.trim());
+        logAggregator.logPythonFramework('output', output.trim());
+        this.handlePythonOutput(output);
       });
 
-      // Handle stderr
+      // Handle stderr (Python often outputs INFO logs here)
       this.process.stderr?.on('data', (data) => {
-        const errorMessage = data.toString();
-        console.error('Python Framework Error:', errorMessage);
-        // Don't emit unhandled errors for normal log output
-        if (!errorMessage.includes('INFO -') && !errorMessage.includes('WARNING -')) {
-          this.emit('error', errorMessage);
+        const message = data.toString().trim();
+        
+        // Parse log level from Python logging format
+        let logLevel: 'INFO' | 'WARN' | 'ERROR' | 'DEBUG' = 'INFO';
+        if (message.includes(' - ERROR -')) {
+          logLevel = 'ERROR';
+        } else if (message.includes(' - WARNING -') || message.includes(' - WARN -')) {
+          logLevel = 'WARN';
+        } else if (message.includes(' - DEBUG -')) {
+          logLevel = 'DEBUG';
+        }
+        
+        // Log to our aggregator with proper level
+        logAggregator.logPythonFramework('log', message, { level: logLevel });
+        
+        // Only emit error events for actual ERROR level logs
+        if (logLevel === 'ERROR') {
+          console.error('Python Framework Error:', message);
+          this.emit('error', message);
+        } else {
+          // Log INFO/WARN/DEBUG as regular console output
+          if (logLevel === 'WARN') {
+            console.warn('Python Framework:', message);
+          } else {
+            console.log('Python Framework:', message);
+          }
         }
       });
 
@@ -82,6 +111,7 @@ export class PythonMonitorService extends EventEmitter {
       });
 
       console.log('Python Monitoring Framework started');
+      logAggregator.logPythonFramework('started', 'Python monitoring framework successfully started');
       this.emit('started');
 
     } catch (error) {
@@ -101,6 +131,7 @@ export class PythonMonitorService extends EventEmitter {
         this.isRunning = false;
         this.process = null;
         console.log('Python Monitoring Framework stopped');
+        logAggregator.logPythonFramework('stopped', 'Python monitoring framework stopped');
         this.emit('stopped');
         resolve();
       });
@@ -141,7 +172,10 @@ export class PythonMonitorService extends EventEmitter {
         await this.processFrameworkData(data);
       } catch (error) {
         // Handle non-JSON output (logs, etc.)
-        console.log('Python Framework:', line);
+        if (line.trim()) {
+          console.log('Python Framework Log:', line);
+          logAggregator.logPythonFramework('non-json-output', line);
+        }
       }
     }
   }

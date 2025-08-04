@@ -30,7 +30,9 @@ Tests for the React MCP Dashboard component including:
 ## Running Tests
 
 ### Prerequisites
+
 Ensure all testing dependencies are installed:
+
 ```bash
 # Node.js testing dependencies should already be installed
 # Python testing dependencies should already be installed

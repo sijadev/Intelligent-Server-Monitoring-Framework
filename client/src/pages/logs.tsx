@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Download, Filter } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Search, Download, Filter, Server, Terminal, Globe, Database } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -20,11 +21,22 @@ const logLevelColors = {
   DEBUG: "bg-gray-100 text-gray-800"
 };
 
+const sourceIcons = {
+  server: Server,
+  http: Globe,
+  websocket: Terminal,
+  database: Database,
+  'python-framework': Terminal,
+  plugin: Terminal,
+  system: Server
+};
+
 export default function Logs() {
   const [searchTerm, setSearchTerm] = useState("");
   const [levelFilter, setLevelFilter] = useState<string>("all");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [limit, setLimit] = useState(100);
+  const [activeTab, setActiveTab] = useState("all");
 
   // Build filter options
   const filterOptions: LogFilterOptions = {
@@ -36,18 +48,31 @@ export default function Logs() {
   const { data: logs = [], isLoading, refetch } = useQuery({
     queryKey: ['/api/logs', filterOptions],
     queryFn: () => api.getLogs(filterOptions),
-    refetchInterval: 10000, // Refetch every 10 seconds
+    refetchInterval: 5000, // Refetch every 5 seconds for real-time updates
   });
 
-  // Filter logs by search term
-  const filteredLogs = logs.filter(log =>
-    searchTerm === "" || 
-    log.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    log.source.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter logs by search term and tab
+  const filteredLogs = logs.filter(log => {
+    // Tab filtering
+    if (activeTab === "server" && !['server', 'http', 'websocket', 'database'].includes(log.source)) return false;
+    if (activeTab === "python" && log.source !== 'python-framework') return false;
+    if (activeTab === "plugins" && log.source !== 'plugin') return false;
+    if (activeTab === "system" && !['system', 'plugin', 'python-framework'].includes(log.source)) return false;
+    
+    // Search filtering
+    return searchTerm === "" || 
+      log.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      log.source.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   // Get unique sources for filter dropdown
   const uniqueSources = Array.from(new Set(logs.map(log => log.source)));
+
+  // Separate logs by category
+  const serverLogs = logs.filter(log => ['server', 'http', 'websocket', 'database'].includes(log.source));
+  const pythonLogs = logs.filter(log => log.source === 'python-framework');
+  const pluginLogs = logs.filter(log => log.source === 'plugin');
+  const systemLogs = logs.filter(log => ['system', 'plugin', 'python-framework'].includes(log.source));
 
   const handleExport = () => {
     const csvContent = [
@@ -69,10 +94,51 @@ export default function Logs() {
     URL.revokeObjectURL(url);
   };
 
+  const renderLogEntry = (log: LogEntry) => {
+    const SourceIcon = sourceIcons[log.source as keyof typeof sourceIcons] || Terminal;
+    
+    return (
+      <div key={`${log.timestamp}-${log.source}-${log.message.slice(0, 50)}`} className="border-b border-gray-200 py-4 last:border-b-0">
+        <div className="flex items-start space-x-3">
+          <div className="flex-shrink-0 mt-1">
+            <SourceIcon className="h-4 w-4 text-gray-500" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center space-x-2 mb-1">
+              <Badge
+                variant="outline"
+                className={cn("text-xs", logLevelColors[log.level as keyof typeof logLevelColors])}
+              >
+                {log.level}
+              </Badge>
+              <span className="text-sm text-gray-500">{log.source}</span>
+              <span className="text-xs text-gray-400">
+                {formatDistanceToNow(new Date(log.timestamp), { addSuffix: true })}
+              </span>
+            </div>
+            <p className="text-sm text-gray-900 break-words font-mono">
+              {log.message}
+            </p>
+            {log.metadata && Object.keys(log.metadata).length > 0 && (
+              <details className="mt-2">
+                <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
+                  Show metadata
+                </summary>
+                <pre className="text-xs text-gray-600 mt-1 bg-gray-50 p-2 rounded overflow-auto">
+                  {JSON.stringify(log.metadata, null, 2)}
+                </pre>
+              </details>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       <Header
-        title="Log Analysis"
+        title="System Logs"
         onRefresh={() => refetch()}
         isRefreshing={isLoading}
       />
@@ -82,18 +148,12 @@ export default function Logs() {
           {/* Filters */}
           <Card className="mb-6">
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium">Log Filters</h3>
-                <Button onClick={handleExport} variant="outline" size="sm">
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
-                </Button>
-              </div>
+              <h3 className="text-lg font-medium">Log Filters</h3>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input
                     placeholder="Search logs..."
                     value={searchTerm}
@@ -108,10 +168,10 @@ export default function Logs() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Levels</SelectItem>
-                    <SelectItem value="ERROR">ERROR</SelectItem>
-                    <SelectItem value="WARNING">WARNING</SelectItem>
-                    <SelectItem value="INFO">INFO</SelectItem>
-                    <SelectItem value="DEBUG">DEBUG</SelectItem>
+                    <SelectItem value="ERROR">Error</SelectItem>
+                    <SelectItem value="WARN">Warning</SelectItem>
+                    <SelectItem value="INFO">Info</SelectItem>
+                    <SelectItem value="DEBUG">Debug</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -129,74 +189,158 @@ export default function Logs() {
                   </SelectContent>
                 </Select>
 
-                <Select value={limit.toString()} onValueChange={(value) => setLimit(parseInt(value))}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="50">50 entries</SelectItem>
-                    <SelectItem value="100">100 entries</SelectItem>
-                    <SelectItem value="250">250 entries</SelectItem>
-                    <SelectItem value="500">500 entries</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Button onClick={handleExport} variant="outline">
+                  <Download className="h-4 w-4 mr-2" />
+                  Export CSV
+                </Button>
               </div>
             </CardContent>
           </Card>
 
-          {/* Log Entries */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium">
-                  Log Entries ({filteredLogs.length} of {logs.length})
-                </h3>
-                <Badge variant="outline">
-                  {isLoading ? "Updating..." : "Live"}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="text-center py-8">Loading logs...</div>
-              ) : filteredLogs.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  No log entries found matching your criteria
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {filteredLogs.map((log, index) => (
-                    <div 
-                      key={`${log.id}-${index}`}
-                      className="flex items-start space-x-4 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                    >
-                      <div className="flex-shrink-0 text-sm text-gray-500 w-20">
-                        {new Date(log.timestamp).toLocaleTimeString()}
-                      </div>
-                      <Badge 
-                        variant="secondary"
-                        className={cn(
-                          "flex-shrink-0",
-                          logLevelColors[log.level as keyof typeof logLevelColors] || "bg-gray-100 text-gray-800"
-                        )}
-                      >
-                        {log.level}
-                      </Badge>
-                      <div className="flex-shrink-0 text-sm text-gray-600 w-24">
-                        [{log.source}]
-                      </div>
-                      <div className="flex-1 text-sm text-gray-900 break-words">
-                        {log.message}
-                      </div>
-                      <div className="flex-shrink-0 text-xs text-gray-400">
-                        {formatDistanceToNow(new Date(log.timestamp), { addSuffix: true })}
-                      </div>
+          {/* Log Categories Tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="all" className="flex items-center space-x-2">
+                <Filter className="h-4 w-4" />
+                <span>All ({logs.length})</span>
+              </TabsTrigger>
+              <TabsTrigger value="server" className="flex items-center space-x-2">
+                <Server className="h-4 w-4" />
+                <span>Server ({serverLogs.length})</span>
+              </TabsTrigger>
+              <TabsTrigger value="python" className="flex items-center space-x-2">
+                <Terminal className="h-4 w-4" />
+                <span>Python ({pythonLogs.length})</span>
+              </TabsTrigger>
+              <TabsTrigger value="plugins" className="flex items-center space-x-2">
+                <Terminal className="h-4 w-4" />
+                <span>Plugins ({pluginLogs.length})</span>
+              </TabsTrigger>
+              <TabsTrigger value="system" className="flex items-center space-x-2">
+                <Database className="h-4 w-4" />
+                <span>System ({systemLogs.length})</span>
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="all" className="mt-6">
+              <Card>
+                <CardHeader>
+                  <h3 className="text-lg font-medium">All System Logs</h3>
+                  <p className="text-sm text-gray-500">Real-time logs from all system components</p>
+                </CardHeader>
+                <CardContent>
+                  {filteredLogs.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      No logs found matching your filters.
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                  ) : (
+                    <div className="space-y-2">
+                      {filteredLogs.slice(0, 50).map(renderLogEntry)}
+                      {filteredLogs.length > 50 && (
+                        <div className="text-center py-4 text-gray-500">
+                          Showing 50 of {filteredLogs.length} logs. Use filters to narrow down results.
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="server" className="mt-6">
+              <Card>
+                <CardHeader>
+                  <h3 className="text-lg font-medium">Server Logs</h3>
+                  <p className="text-sm text-gray-500">HTTP requests, WebSocket connections, and database operations</p>
+                </CardHeader>
+                <CardContent>
+                  {serverLogs.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      No server logs found.
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {serverLogs.filter(log => 
+                        searchTerm === "" || 
+                        log.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        log.source.toLowerCase().includes(searchTerm.toLowerCase())
+                      ).slice(0, 50).map(renderLogEntry)}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="python" className="mt-6">
+              <Card>
+                <CardHeader>
+                  <h3 className="text-lg font-medium">Python Framework Logs</h3>
+                  <p className="text-sm text-gray-500">Monitoring framework events and operations</p>
+                </CardHeader>
+                <CardContent>
+                  {pythonLogs.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      No Python framework logs found.
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {pythonLogs.filter(log => 
+                        searchTerm === "" || 
+                        log.message.toLowerCase().includes(searchTerm.toLowerCase())
+                      ).slice(0, 50).map(renderLogEntry)}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="plugins" className="mt-6">
+              <Card>
+                <CardHeader>
+                  <h3 className="text-lg font-medium">Plugin Logs</h3>
+                  <p className="text-sm text-gray-500">Individual plugin operations and events</p>
+                </CardHeader>
+                <CardContent>
+                  {pluginLogs.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      No plugin logs found.
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {pluginLogs.filter(log => 
+                        searchTerm === "" || 
+                        log.message.toLowerCase().includes(searchTerm.toLowerCase())
+                      ).slice(0, 50).map(renderLogEntry)}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="system" className="mt-6">
+              <Card>
+                <CardHeader>
+                  <h3 className="text-lg font-medium">System Logs</h3>
+                  <p className="text-sm text-gray-500">Overall system events and operations</p>
+                </CardHeader>
+                <CardContent>
+                  {systemLogs.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      No system logs found.
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {systemLogs.filter(log => 
+                        searchTerm === "" || 
+                        log.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        log.source.toLowerCase().includes(searchTerm.toLowerCase())
+                      ).slice(0, 50).map(renderLogEntry)}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
     </div>
