@@ -20,6 +20,13 @@ const configSchema = z.object({
   PYTHON_FRAMEWORK_ENABLED: z.coerce.boolean().default(true),
   MONITORING_INTERVAL: z.coerce.number().min(1).max(3600).default(30),
   LOG_LEVEL: z.enum(['DEBUG', 'INFO', 'WARN', 'ERROR']).default('INFO'),
+  
+  // Test Manager Configuration
+  TEST_MANAGER_ENABLED: z.coerce.boolean().default(true),
+  TEST_MANAGER_PATH: z.string().default('/Users/simonjanke/Projects/imf-test-manager'),
+  TEST_MANAGER_WORKSPACE: z.string().default('./test-workspace'),
+  TEST_MANAGER_TIMEOUT: z.coerce.number().min(10000).max(600000).default(60000),
+  TEST_MANAGER_MAX_CONCURRENT: z.coerce.number().min(1).max(10).default(3),
 });
 
 // Parse and validate configuration
@@ -34,6 +41,9 @@ const parseConfig = () => {
     console.log('  - PYTHON_FRAMEWORK_ENABLED:', config.PYTHON_FRAMEWORK_ENABLED);
     console.log('  - MONITORING_INTERVAL:', config.MONITORING_INTERVAL, 'seconds');
     console.log('  - LOG_LEVEL:', config.LOG_LEVEL);
+    console.log('  - TEST_MANAGER_ENABLED:', config.TEST_MANAGER_ENABLED);
+    console.log('  - TEST_MANAGER_PATH:', config.TEST_MANAGER_PATH);
+    console.log('  - TEST_MANAGER_WORKSPACE:', config.TEST_MANAGER_WORKSPACE);
     
     return config;
   } catch (error) {

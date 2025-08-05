@@ -1,0 +1,51 @@
+services:
+  test-mcp-basic:
+    build: .
+    container_name: test-mcp-basic
+    ports:
+      - "3001:3001"
+    environment:
+      - CONFIG_PATH=/app/config/basic-test.json
+      - NODE_ENV=production
+    volumes:
+      - ./config:/app/config:ro
+    healthcheck:
+      test: ["CMD", "node", "dist/health-check.js"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  test-mcp-errors:
+    build: .
+    container_name: test-mcp-errors
+    ports:
+      - "3002:3001"
+    environment:
+      - CONFIG_PATH=/app/config/error-simulation.json
+      - NODE_ENV=production
+    volumes:
+      - ./config:/app/config:ro
+    healthcheck:
+      test: ["CMD", "node", "dist/health-check.js"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  test-mcp-performance:
+    build: .
+    container_name: test-mcp-performance
+    ports:
+      - "3003:3001"
+    environment:
+      - CONFIG_PATH=/app/config/performance-test.json
+      - NODE_ENV=production
+    volumes:
+      - ./config:/app/config:ro
+    healthcheck:
+      test: ["CMD", "node", "dist/health-check.js"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s

@@ -11,7 +11,8 @@ import {
   Home,
   Code,
   Brain,
-  Network
+  Network,
+  TestTube
 } from "lucide-react";
 
 interface SidebarProps {
@@ -29,6 +30,7 @@ export function Sidebar({ uptime = "0h 0m", problemCount = 0, systemStatus = 'ru
     { name: 'Metrics', href: '/metrics', icon: BarChart3 },
     { name: 'AI Dashboard', href: '/ai-dashboard', icon: Brain },
     { name: 'MCP Dashboard', href: '/mcp-dashboard', icon: Network },
+    { name: 'Test Manager', href: '/test-manager', icon: TestTube },
     { name: 'Plugins', href: '/plugins', icon: Puzzle },
     { name: 'Log Analysis', href: '/logs', icon: FileText },
     { name: 'Code Analysis', href: '/code-analysis', icon: Code },

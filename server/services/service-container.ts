@@ -3,6 +3,7 @@ import type { IStorage } from '../storage';
 import type { PythonMonitorService } from './python-monitor';
 import { logAggregator } from './log-aggregator';
 import { serverState } from '../state/server-state';
+import type { TestManagerService } from './test-manager.service';
 
 // Service Interface Definitions
 export interface IStorageService {
@@ -24,11 +25,18 @@ export interface ILogService {
   getRecentLogs(limit?: number): any[];
 }
 
+export interface ITestManagerService {
+  initialize(): Promise<void>;
+  getHealthStatus(): { healthy: boolean; details: any };
+  getStatus(): any;
+}
+
 // Service Dependencies
 export interface ServiceDependencies {
   storage: IStorage;
   pythonMonitor: PythonMonitorService;
   logAggregator: typeof logAggregator;
+  testManager: TestManagerService;
 }
 
 // Service Container with Dependency Injection
@@ -62,10 +70,11 @@ class ServiceContainer extends EventEmitter {
     this.register('storage', dependencies.storage);
     this.register('pythonMonitor', dependencies.pythonMonitor);
     this.register('logAggregator', dependencies.logAggregator);
+    this.register('testManager', dependencies.testManager);
     this.register('serverState', serverState);
 
     // Initialize services in dependency order
-    const initOrder = ['storage', 'logAggregator', 'pythonMonitor'];
+    const initOrder = ['storage', 'logAggregator', 'testManager', 'pythonMonitor'];
     
     for (const serviceName of initOrder) {
       try {
@@ -105,6 +114,12 @@ class ServiceContainer extends EventEmitter {
       case 'logAggregator':
         // Log aggregator is ready immediately
         break;
+
+      case 'testManager':
+        if (typeof service.initialize === 'function') {
+          await service.initialize();
+        }
+        break;
     }
 
     this.initialized.add(name);
@@ -142,7 +157,7 @@ class ServiceContainer extends EventEmitter {
   async shutdown(): Promise<void> {
     console.log('🛑 Shutting down services...');
     
-    const shutdownOrder = ['pythonMonitor', 'storage']; // Reverse dependency order
+    const shutdownOrder = ['pythonMonitor', 'testManager', 'storage']; // Reverse dependency order
     
     for (const serviceName of shutdownOrder) {
       try {

@@ -18,7 +18,10 @@
     "test:db-setup": "./scripts/setup-test-db.sh",
     "test:db-clean": "TEST_DATABASE_URL=postgresql://test:test@localhost:5432/imf_test_db psql -c 'DROP DATABASE IF EXISTS imf_test_db; CREATE DATABASE imf_test_db;'",
     "test:simple": "node test-simple.js",
-    "test:python": "cd python-framework && python -m pytest tests/ -v"
+    "test:python": "cd python-framework && python -m pytest tests/ -v",
+    "test:docker": "vitest run container-integration-real-data.test.ts",
+    "test:docker-setup": "cd docker/test-mcp-server && docker-compose up -d",
+    "test:docker-clean": "cd docker/test-mcp-server && docker-compose down --remove-orphans"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -55,6 +58,7 @@
     "@testing-library/jest-dom": "^6.6.4",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
+    "@types/fs-extra": "^11.0.4",
     "@types/supertest": "^6.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -68,6 +72,7 @@
     "express": "^4.21.2",
     "express-session": "^1.18.1",
     "framer-motion": "^11.13.1",
+    "fs-extra": "^11.3.1",
     "input-otp": "^1.4.2",
     "jsdom": "^26.1.0",
     "lucide-react": "^0.453.0",

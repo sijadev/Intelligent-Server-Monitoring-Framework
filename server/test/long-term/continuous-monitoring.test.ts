@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { setupTestEnvironment, testHelpers } from '../test-setup';
+import { createGitHubReadyRealDataTest, type GeneratedTestData } from '../github-ready-real-data-template';
 
 interface LongTermTestScenario {
   name: string;
@@ -338,17 +338,162 @@ class LongTermTestRunner {
   }
 }
 
-describe('Long-Term Intelligent Code Fixing Tests', () => {
-  const { getStorage } = setupTestEnvironment();
-  let testRunner: LongTermTestRunner;
+// Convert to GitHub-Ready Real Data Test
+createGitHubReadyRealDataTest({
+  testName: 'Long-Term Continuous Monitoring with Real Data',
+  maxDatasets: 3,
+  timeoutMs: 180000, // 3 minutes
+  
+  async testFunction(data: GeneratedTestData[], storage: any): Promise<void> {
+    console.log('\n🔄 Running Long-Term Continuous Monitoring Tests with Real Data');
+    
+    // Test continuous monitoring with real data
+    await testContinuousMonitoringWithRealData(data, storage);
+    
+    // Test AI learning improvement
+    await testAILearningImprovement(data, storage);
+    
+    // Test mixed problem handling
+    await testMixedProblemHandling(data, storage);
+  }
+});
 
-  beforeAll(() => {
-    testRunner = new LongTermTestRunner(getStorage());
+// Implementation functions using real test data
+async function testContinuousMonitoringWithRealData(data: GeneratedTestData[], storage: any): Promise<void> {
+  console.log('\n📊 Testing Continuous Monitoring with Real Data');
+  
+  const testRunner = new LongTermTestRunner(storage);
+  
+  // Use real data complexity to configure test scenarios
+  const scenarios = data.map(dataset => {
+    const complexity = dataset.metadata.profile?.sourceConfig?.complexity || 'medium';
+    const problemTypes = dataset.metadata.profile?.scenarios?.[0]?.problemTypes || ['performance_degradation', 'memory_leak'];
+    
+    return {
+      name: `Performance Monitoring - ${complexity} complexity`,
+      duration: 30000, // 30 seconds
+      problemTypes,
+      expectedInterventions: complexity === 'high' ? 6 : complexity === 'medium' ? 4 : 2,
+      learningMetrics: {
+        expectedAccuracyImprovement: complexity === 'high' ? 15 : 10,
+        expectedResponseTimeReduction: complexity === 'high' ? 20 : 15,
+      },
+    };
   });
+  
+  // Run monitoring for the most complex scenario
+  const primaryScenario = scenarios.find(s => s.name.includes('high')) || scenarios[0];
+  
+  const metrics = await testRunner.runScenario(primaryScenario);
+  
+  expect(metrics.problemsDetected).toBeGreaterThan(3);
+  expect(metrics.interventionsTriggered).toBeGreaterThan(0);
+  expect(metrics.successfulFixes).toBeGreaterThan(0);
+  expect(metrics.learningIterations).toBeGreaterThan(0);
+  expect(metrics.averageDetectionTime).toBeLessThan(10000);
+  expect(metrics.averageFixTime).toBeLessThan(5000);
+  
+  const successRate = metrics.successfulFixes / metrics.interventionsTriggered;
+  expect(successRate).toBeGreaterThan(0.5);
+  
+  console.log('📊 Continuous Monitoring Results:', {
+    duration: metrics.endTime!.getTime() - metrics.startTime.getTime(),
+    problemsDetected: metrics.problemsDetected,
+    interventionsTriggered: metrics.interventionsTriggered,
+    successfulFixes: metrics.successfulFixes,
+    successRate: Math.floor(successRate * 100) + '%',
+    learningIterations: metrics.learningIterations,
+    avgDetectionTime: Math.floor(metrics.averageDetectionTime) + 'ms',
+    avgFixTime: Math.floor(metrics.averageFixTime) + 'ms',
+  });
+  
+  testRunner.stop();
+}
 
-  afterAll(() => {
-    testRunner.stop();
+async function testAILearningImprovement(data: GeneratedTestData[], storage: any): Promise<void> {
+  console.log('\n🧠 Testing AI Learning Improvement with Real Data');
+  
+  const testRunner = new LongTermTestRunner(storage);
+  
+  // Use real data to determine learning complexity
+  const totalProblems = data.reduce((sum, d) => sum + d.statistics.totalCodeProblems, 0);
+  const avgComplexity = data.map(d => {
+    const complexity = d.metadata.profile?.sourceConfig?.complexity;
+    return complexity === 'high' ? 3 : complexity === 'medium' ? 2 : 1;
+  }).reduce((sum, c) => sum + c, 0) / data.length;
+  
+  const scenario = {
+    name: 'AI Learning Validation with Real Patterns',
+    duration: 25000, // 25 seconds
+    problemTypes: data.flatMap(d => d.metadata.profile?.scenarios?.[0]?.problemTypes || []).slice(0, 4),
+    expectedInterventions: Math.max(4, Math.floor(totalProblems / 20)),
+    learningMetrics: {
+      expectedAccuracyImprovement: avgComplexity > 2.5 ? 20 : 15,
+      expectedResponseTimeReduction: avgComplexity > 2.5 ? 25 : 20,
+    },
+  };
+  
+  const metrics = await testRunner.runScenario(scenario);
+  
+  expect(metrics.learningIterations).toBeGreaterThan(1);
+  expect(metrics.interventionsTriggered).toBeGreaterThan(2);
+  
+  const learningEfficiency = metrics.successfulFixes / metrics.learningIterations;
+  expect(learningEfficiency).toBeGreaterThan(0.3);
+  
+  console.log('🧠 AI Learning Results:', {
+    realDataComplexity: avgComplexity.toFixed(1),
+    totalRealProblems: totalProblems,
+    learningIterations: metrics.learningIterations,
+    learningEfficiency: Math.floor(learningEfficiency * 100) + '%',
+    falsePositives: metrics.falsePositives,
+    missedProblems: metrics.missedProblems,
   });
+  
+  testRunner.stop();
+}
+
+async function testMixedProblemHandling(data: GeneratedTestData[], storage: any): Promise<void> {
+  console.log('\n🔄 Testing Mixed Problem Handling with Real Data');
+  
+  const testRunner = new LongTermTestRunner(storage);
+  
+  // Extract all unique problem types from real data
+  const allProblemTypes = new Set<string>();
+  data.forEach(dataset => {
+    dataset.metadata.profile?.scenarios?.forEach((scenario: any) => {
+      scenario.problemTypes?.forEach((type: string) => allProblemTypes.add(type));
+    });
+  });
+  
+  const scenario = {
+    name: 'Mixed Real Problem Type Handling',
+    duration: 20000, // 20 seconds
+    problemTypes: Array.from(allProblemTypes).slice(0, 4), // Use real problem types
+    expectedInterventions: 6,
+    learningMetrics: {
+      expectedAccuracyImprovement: 12,
+      expectedResponseTimeReduction: 18,
+    },
+  };
+  
+  const metrics = await testRunner.runScenario(scenario);
+  
+  expect(metrics.problemsDetected).toBeGreaterThan(2);
+  expect(metrics.interventionsTriggered).toBeGreaterThan(1);
+  
+  const adaptabilityScore = metrics.successfulFixes / metrics.problemsDetected;
+  expect(adaptabilityScore).toBeGreaterThan(0.2);
+  
+  console.log('🔄 Mixed Problem Handling Results:', {
+    realProblemTypes: Array.from(allProblemTypes),
+    problemTypesUsed: scenario.problemTypes.length,
+    adaptabilityScore: Math.floor(adaptabilityScore * 100) + '%',
+    responseTimeConsistency: metrics.averageFixTime < 3000 ? 'Good' : 'Needs improvement',
+  });
+  
+  testRunner.stop();
+}
 
   it('should handle continuous performance degradation over 30 seconds', async () => {
     const scenario: LongTermTestScenario = {

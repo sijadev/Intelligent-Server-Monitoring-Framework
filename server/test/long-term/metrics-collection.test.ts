@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { setupTestEnvironment } from '../test-setup';
+import { createGitHubReadyRealDataTest, type GeneratedTestData } from '../github-ready-real-data-template';
+import { readFile } from 'fs/promises';
+import path from 'path';
 
 interface MetricsSnapshot {
   timestamp: Date;
@@ -399,17 +401,286 @@ class MetricsCollectionEngine {
   }
 }
 
-describe('Long-Term Metrics Collection Tests', () => {
-  const { getStorage } = setupTestEnvironment();
-  let metricsEngine: MetricsCollectionEngine;
+// Convert to GitHub-Ready Real Data Test with AI Progress Integration
+createGitHubReadyRealDataTest({
+  testName: 'Long-Term Metrics Collection with Real Data and AI Progress',
+  maxDatasets: 3,
+  timeoutMs: 300000, // 5 minutes
+  
+  async testFunction(data: GeneratedTestData[], storage: any): Promise<void> {
+    console.log('\n📊 Running Long-Term Metrics Collection with Real Data and AI Progress');
+    
+    // Load AI progress from training metrics
+    const aiProgress = await loadAIProgress();
+    
+    // Test metrics collection and analysis
+    await testMetricsCollectionWithRealData(data, storage, aiProgress);
+    
+    // Test learning progression detection
+    await testLearningProgressionDetection(data, storage, aiProgress);
+    
+    // Test actionable insights generation
+    await testActionableInsightsGeneration(data, storage, aiProgress);
+    
+    // Test business impact measurement
+    await testBusinessImpactMeasurement(data, storage, aiProgress);
+  }
+});
 
-  beforeAll(() => {
-    metricsEngine = new MetricsCollectionEngine(getStorage());
-  });
+// AI Progress Integration Functions
+async function loadAIProgress(): Promise<any> {
+  try {
+    const metricsPath = path.join(process.cwd(), 'python-framework/ai_models/training_metrics.json');
+    const metricsData = await readFile(metricsPath, 'utf-8');
+    const metrics = JSON.parse(metricsData);
+    
+    console.log('🤖 Loaded AI Progress:', {
+      modelsFound: metrics.length,
+      models: metrics.map((m: any) => m.model_name),
+      latestTraining: metrics[metrics.length - 1]?.training_end,
+    });
+    
+    return metrics;
+  } catch (error) {
+    console.log('⚠️ AI Progress not available, using simulation');
+    return [];
+  }
+}
 
-  afterAll(async () => {
-    await metricsEngine.stopCollection();
+// Implementation functions using real test data and AI progress
+async function testMetricsCollectionWithRealData(data: GeneratedTestData[], storage: any, aiProgress: any[]): Promise<void> {
+  console.log('\n📊 Testing Metrics Collection with Real Data');
+  
+  const metricsEngine = new MetricsCollectionEngine(storage);
+  
+  // Initialize with AI progress data
+  if (aiProgress.length > 0) {
+    const latestAI = aiProgress[aiProgress.length - 1];
+    console.log(`🤖 Incorporating AI Model: ${latestAI.model_name} (Accuracy: ${((1 - latestAI.mse) * 100).toFixed(1)}%)`);
+  }
+  
+  await metricsEngine.startCollection(1000); // Collect every second
+  await new Promise(resolve => setTimeout(resolve, 15000));
+  const insights = await metricsEngine.stopCollection();
+  const summary = metricsEngine.getMetricsSummary();
+  
+  expect(summary).toBeDefined();
+  expect(summary.collectionPeriod.dataPoints).toBeGreaterThan(10);
+  expect(insights.overallHealthTrend).toMatch(/improving|stable|concerning/);
+  expect(insights.aiLearningEffectiveness).toBeGreaterThanOrEqual(0);
+  expect(insights.systemReliabilityImprovement).toBeGreaterThanOrEqual(0);
+  
+  // Integrate real data statistics
+  const totalRealProblems = data.reduce((sum, d) => sum + d.statistics.totalCodeProblems, 0);
+  const avgRealSuccessRate = data.reduce((sum, d) => 
+    sum + (d.data.scenarios[0]?.statistics?.successRate || 0.8), 0
+  ) / data.length;
+  
+  console.log('📊 Metrics Collection Results:', {
+    dataPoints: summary.collectionPeriod.dataPoints,
+    duration: `${Math.floor(summary.collectionPeriod.duration / 1000)}s`,
+    healthTrend: insights.overallHealthTrend,
+    aiEffectiveness: `${insights.aiLearningEffectiveness}%`,
+    reliabilityImprovement: `${insights.systemReliabilityImprovement}%`,
+    criticalMetrics: insights.criticalMetrics.length,
+    recommendations: insights.recommendations.length,
+    realDataIntegration: {
+      totalProblems: totalRealProblems,
+      avgSuccessRate: `${(avgRealSuccessRate * 100).toFixed(1)}%`,
+      aiModelsLoaded: aiProgress.length,
+    },
   });
+}
+
+async function testLearningProgressionDetection(data: GeneratedTestData[], storage: any, aiProgress: any[]): Promise<void> {
+  console.log('\n🧠 Testing Learning Progression Detection with AI Models');
+  
+  const metricsEngine = new MetricsCollectionEngine(storage);
+  
+  // Use AI progress to enhance learning detection
+  let aiLearningBaseline = 50; // Default
+  if (aiProgress.length > 0) {
+    const avgAccuracy = aiProgress.reduce((sum: number, model: any) => 
+      sum + ((1 - model.mse) * 100), 0
+    ) / aiProgress.length;
+    aiLearningBaseline = Math.max(50, avgAccuracy);
+    console.log(`🤖 AI Learning Baseline from real models: ${aiLearningBaseline.toFixed(1)}%`);
+  }
+  
+  await metricsEngine.startCollection(800); // Collect every 0.8 seconds
+  await new Promise(resolve => setTimeout(resolve, 20000));
+  const insights = await metricsEngine.stopCollection();
+  const history = metricsEngine.getMetricsHistory();
+  
+  expect(history.length).toBeGreaterThan(20);
+  
+  // Enhanced learning progression analysis with real AI data
+  const firstQuarter = history.slice(0, Math.floor(history.length / 4));
+  const lastQuarter = history.slice(-Math.floor(history.length / 4));
+  
+  const avgEarlyAccuracy = firstQuarter.reduce((sum, s) => sum + s.aiPerformance.accuracy, 0) / firstQuarter.length;
+  const avgLateAccuracy = lastQuarter.reduce((sum, s) => sum + s.aiPerformance.accuracy, 0) / lastQuarter.length;
+  
+  const avgEarlyEffectiveness = firstQuarter.reduce((sum, s) => sum + s.aiPerformance.interventionEffectiveness, 0) / firstQuarter.length;
+  const avgLateEffectiveness = lastQuarter.reduce((sum, s) => sum + s.aiPerformance.interventionEffectiveness, 0) / lastQuarter.length;
+  
+  expect(avgLateAccuracy).toBeGreaterThanOrEqual(avgEarlyAccuracy * 0.95);
+  expect(avgLateEffectiveness).toBeGreaterThanOrEqual(avgEarlyEffectiveness * 0.95);
+  
+  // Compare with real AI model performance
+  const realVsSimulated = aiProgress.length > 0 ? 
+    avgLateAccuracy / aiLearningBaseline : 1;
+  
+  console.log('🧠 Learning Progression Results:', {
+    totalDataPoints: history.length,
+    accuracyProgression: `${avgEarlyAccuracy.toFixed(1)}% → ${avgLateAccuracy.toFixed(1)}%`,
+    effectivenessProgression: `${avgEarlyEffectiveness.toFixed(1)}% → ${avgLateEffectiveness.toFixed(1)}%`,
+    aiLearningEffectiveness: `${insights.aiLearningEffectiveness}%`,
+    learningTrend: avgLateAccuracy > avgEarlyAccuracy ? '📈 Improving' : avgLateAccuracy === avgEarlyAccuracy ? '➡️ Stable' : '📉 Needs attention',
+    realAIComparison: {
+      baseline: `${aiLearningBaseline.toFixed(1)}%`,
+      simulatedVsReal: `${(realVsSimulated * 100).toFixed(1)}%`,
+      alignment: realVsSimulated > 0.8 ? 'Good' : 'Needs calibration',
+    },
+  });
+}
+
+async function testActionableInsightsGeneration(data: GeneratedTestData[], storage: any, aiProgress: any[]): Promise<void> {
+  console.log('\n🔮 Testing Actionable Insights Generation with AI Integration');
+  
+  const metricsEngine = new MetricsCollectionEngine(storage);
+  
+  await metricsEngine.startCollection(1500); // Collect every 1.5 seconds
+  await new Promise(resolve => setTimeout(resolve, 12000));
+  const insights = await metricsEngine.stopCollection();
+  
+  expect(insights.recommendations).toBeDefined();
+  expect(Array.isArray(insights.recommendations)).toBe(true);
+  expect(insights.predictedIssues).toBeDefined();
+  expect(Array.isArray(insights.predictedIssues)).toBe(true);
+  
+  if (insights.criticalMetrics.length > 0) {
+    expect(insights.recommendations.length).toBeGreaterThan(0);
+  }
+  
+  const highProbabilityPredictions = insights.predictedIssues.filter(issue => issue.probability > 50);
+  
+  // Enhanced insights with real data context
+  const realDataContext = {
+    totalDatasets: data.length,
+    complexityDistribution: data.reduce((dist: any, d) => {
+      const complexity = d.metadata.profile?.sourceConfig?.complexity || 'unknown';
+      dist[complexity] = (dist[complexity] || 0) + 1;
+      return dist;
+    }, {}),
+    avgProblemsPerDataset: data.reduce((sum, d) => sum + d.statistics.totalCodeProblems, 0) / data.length,
+    aiModelsAvailable: aiProgress.length,
+  };
+  
+  console.log('🔮 Actionable Insights Results:', {
+    overallTrend: insights.overallHealthTrend,
+    criticalMetrics: insights.criticalMetrics,
+    totalRecommendations: insights.recommendations.length,
+    highProbabilityPredictions: highProbabilityPredictions.length,
+    systemReliabilityImprovement: `${insights.systemReliabilityImprovement}%`,
+    topRecommendations: insights.recommendations.slice(0, 3),
+    urgentPredictions: highProbabilityPredictions.map(p => ({
+      issue: p.issue,
+      probability: `${p.probability}%`,
+      timeframe: p.timeframe,
+    })),
+    realDataContext,
+    aiEnhancedInsights: aiProgress.length > 0 ? 'Enabled' : 'Simulated',
+  });
+  
+  // Validate prediction structure
+  insights.predictedIssues.forEach(prediction => {
+    expect(prediction.issue).toBeDefined();
+    expect(prediction.probability).toBeGreaterThanOrEqual(0);
+    expect(prediction.probability).toBeLessThanOrEqual(100);
+    expect(prediction.timeframe).toBeDefined();
+    expect(Array.isArray(prediction.suggestedPrevention)).toBe(true);
+  });
+}
+
+async function testBusinessImpactMeasurement(data: GeneratedTestData[], storage: any, aiProgress: any[]): Promise<void> {
+  console.log('\n💼 Testing Business Impact Measurement with AI ROI');
+  
+  const metricsEngine = new MetricsCollectionEngine(storage);
+  
+  await metricsEngine.startCollection(1200); // Collect every 1.2 seconds
+  await new Promise(resolve => setTimeout(resolve, 18000));
+  const insights = await metricsEngine.stopCollection();
+  const summary = metricsEngine.getMetricsSummary();
+  
+  expect(summary.improvements).toBeDefined();
+  
+  // Calculate AI ROI based on real model performance
+  let aiROI = {
+    trainingTime: 0,
+    modelAccuracy: 0,
+    estimatedSavings: 0,
+  };
+  
+  if (aiProgress.length > 0) {
+    aiROI.trainingTime = aiProgress.reduce((sum: number, model: any) => sum + model.training_time_seconds, 0);
+    aiROI.modelAccuracy = aiProgress.reduce((sum: number, model: any) => sum + ((1 - model.mse) * 100), 0) / aiProgress.length;
+    aiROI.estimatedSavings = aiROI.modelAccuracy * 10; // Simplified ROI calculation
+  }
+  
+  const businessImpact = {
+    availabilityImprovement: summary.improvements.systemAvailability,
+    performanceImprovement: summary.improvements.responseTimeImprovement,
+    reliabilityImprovement: insights.systemReliabilityImprovement,
+    aiContribution: insights.aiLearningEffectiveness,
+    realAIMetrics: aiROI,
+  };
+  
+  expect(businessImpact.reliabilityImprovement).toBeGreaterThanOrEqual(0);
+  expect(businessImpact.aiContribution).toBeGreaterThanOrEqual(0);
+  
+  // Calculate combined real data and AI impact
+  const totalRealProblems = data.reduce((sum, d) => sum + d.statistics.totalCodeProblems, 0);
+  const avgDataSize = data.reduce((sum, d) => sum + d.statistics.dataSize, 0) / data.length;
+  const potentialImpact = {
+    problemsAddressed: totalRealProblems,
+    dataProcessed: avgDataSize * data.length,
+    aiAcceleration: aiProgress.length > 0 ? aiROI.modelAccuracy / 100 : 0.5,
+  };
+  
+  console.log('💼 Business Impact Results:', {
+    systemReliability: `${businessImpact.reliabilityImprovement}% improvement`,
+    aiContribution: `${businessImpact.aiContribution}% effectiveness`,
+    availabilityChange: businessImpact.availabilityImprovement > 0 ? 
+      `+${businessImpact.availabilityImprovement.toFixed(2)}%` : 
+      `${businessImpact.availabilityImprovement.toFixed(2)}%`,
+    performanceChange: summary.improvements.responseTimeImprovement > 0 ? 
+      `${summary.improvements.responseTimeImprovement.toFixed(0)}ms faster` : 
+      `${Math.abs(summary.improvements.responseTimeImprovement).toFixed(0)}ms slower`,
+    overallValue: businessImpact.reliabilityImprovement > 20 ? 'High Value' : 
+                 businessImpact.reliabilityImprovement > 10 ? 'Medium Value' : 
+                 'Building Value',
+    realDataIntegration: {
+      problemsAddressed: potentialImpact.problemsAddressed,
+      dataProcessedMB: `${(potentialImpact.dataProcessed / 1024 / 1024).toFixed(1)}MB`,
+      aiAcceleration: `${(potentialImpact.aiAcceleration * 100).toFixed(1)}%`,
+    },
+    aiROI: aiProgress.length > 0 ? {
+      modelsDeployed: aiProgress.length,
+      avgAccuracy: `${aiROI.modelAccuracy.toFixed(1)}%`,
+      totalTrainingTime: `${aiROI.trainingTime.toFixed(1)}s`,
+      estimatedSavings: `${aiROI.estimatedSavings.toFixed(0)}%`,
+    } : 'No real AI models available',
+  });
+  
+  const hasPositiveImpact = 
+    businessImpact.reliabilityImprovement > 5 ||
+    businessImpact.aiContribution > 30 ||
+    businessImpact.availabilityImprovement > 0.5 ||
+    (aiProgress.length > 0 && aiROI.modelAccuracy > 70);
+  
+  expect(hasPositiveImpact).toBe(true);
+}
 
   it('should collect and analyze metrics over time', async () => {
     await metricsEngine.startCollection(1000); // Collect every second

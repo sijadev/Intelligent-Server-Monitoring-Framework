@@ -1,0 +1,18 @@
+{
+  "version": "1.0.0",
+  "workspace": {
+    "profilesDir": "./profiles",
+    "outputDir": "./output", 
+    "logsDir": "./logs"
+  },
+  "generation": {
+    "defaultSampleCount": 500,
+    "defaultDuration": "30m",
+    "parallelGeneration": false
+  },
+  "ci": {
+    "mode": true,
+    "fastGeneration": true,
+    "limitedOutput": true
+  }
+}

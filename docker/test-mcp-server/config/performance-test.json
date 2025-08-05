@@ -1,0 +1,173 @@
+{
+  "server": {
+    "name": "Performance Test MCP Server",
+    "version": "1.0.0",
+    "port": 3001,
+    "protocol": "http",
+    "host": "0.0.0.0"
+  },
+  "scenarios": [
+    {
+      "name": "performance",
+      "description": "Test performance under various load conditions",
+      "enabled": true
+    }
+  ],
+  "tools": [
+    {
+      "name": "fast_tool",
+      "description": "A tool that responds instantly",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "string" }
+        }
+      },
+      "behavior": "success",
+      "delayMs": 0
+    },
+    {
+      "name": "medium_tool",
+      "description": "A tool with moderate response time",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "string" }
+        }
+      },
+      "behavior": "success",
+      "delayMs": 500
+    },
+    {
+      "name": "slow_tool",
+      "description": "A tool with slow response time",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "string" }
+        }
+      },
+      "behavior": "slow",
+      "delayMs": 2000
+    },
+    {
+      "name": "variable_speed_tool",
+      "description": "A tool with variable response times",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "speed": {
+            "type": "string",
+            "enum": ["fast", "medium", "slow"]
+          },
+          "data": { "type": "string" }
+        }
+      },
+      "behavior": "success",
+      "delayMs": 100
+    },
+    {
+      "name": "cpu_intensive_tool",
+      "description": "A tool that simulates CPU-intensive work",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "iterations": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 1000000
+          }
+        }
+      },
+      "behavior": "success",
+      "delayMs": 0
+    }
+  ],
+  "resources": [
+    {
+      "uri": "test://small-data",
+      "name": "Small Data Resource",
+      "description": "Small amount of test data",
+      "mimeType": "application/json",
+      "behavior": "success",
+      "content": "{\"size\": \"small\", \"data\": \"quick\"}",
+      "delayMs": 0
+    },
+    {
+      "uri": "test://medium-data",
+      "name": "Medium Data Resource",
+      "description": "Medium amount of test data",
+      "mimeType": "application/json",
+      "behavior": "success",
+      "content": "{\"size\": \"medium\", \"data\": \"" + "x".repeat(1000) + "\"}",
+      "delayMs": 100
+    },
+    {
+      "uri": "test://large-data",
+      "name": "Large Data Resource", 
+      "description": "Large amount of test data",
+      "mimeType": "application/json",
+      "behavior": "slow",
+      "content": "{\"size\": \"large\", \"data\": \"" + "x".repeat(10000) + "\"}",
+      "delayMs": 1000
+    },
+    {
+      "uri": "test://streaming-data",
+      "name": "Streaming Data Resource",
+      "description": "Simulated streaming data",
+      "mimeType": "text/plain",
+      "behavior": "success",
+      "content": "Chunk 1\nChunk 2\nChunk 3\nChunk 4\nChunk 5",
+      "delayMs": 200
+    }
+  ],
+  "prompts": [
+    {
+      "name": "quick_prompt",
+      "description": "A prompt that responds quickly",
+      "arguments": [],
+      "behavior": "success",
+      "responseTemplate": "Quick response from performance test prompt.",
+      "delayMs": 0
+    },
+    {
+      "name": "complex_prompt",
+      "description": "A prompt that simulates complex processing",
+      "arguments": [
+        {
+          "name": "complexity",
+          "description": "Complexity level (low, medium, high)",
+          "required": false
+        }
+      ],
+      "behavior": "success",
+      "responseTemplate": "Complex prompt processing complete. Complexity: {{complexity}}",
+      "delayMs": 800
+    },
+    {
+      "name": "batch_prompt",
+      "description": "A prompt for batch processing simulation",
+      "arguments": [
+        {
+          "name": "batch_size",
+          "description": "Number of items to process",
+          "required": true
+        }
+      ],
+      "behavior": "slow",
+      "responseTemplate": "Batch processing complete. Processed {{batch_size}} items.",
+      "delayMs": 1500
+    }
+  ],
+  "errorSimulation": {
+    "connectionDropRate": 0,
+    "responseErrorRate": 0.01,
+    "slowResponseRate": 0.15,
+    "timeoutDuration": 10000
+  },  
+  "logging": {
+    "level": "warn",
+    "requests": false,
+    "responses": false
+  }
+}

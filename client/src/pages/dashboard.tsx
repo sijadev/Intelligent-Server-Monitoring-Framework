@@ -6,6 +6,7 @@ import { ProblemsList } from "@/components/dashboard/problems-list";
 import { SystemInfo } from "@/components/dashboard/system-info";
 import { PluginStatus } from "@/components/dashboard/plugin-status";
 import { LogViewer } from "@/components/dashboard/log-viewer";
+import { TestManagerWidget } from "@/components/dashboard/test-manager-widget";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
@@ -120,11 +121,13 @@ export default function Dashboard() {
         <div className="py-6 px-6">
           <StatusCards status={dashboardData?.status} />
           
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <ProblemsList 
-              problems={dashboardData?.recentProblems || []}
-              onResolveProblem={handleResolveProblem}
-            />
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div className="lg:col-span-2">
+              <ProblemsList 
+                problems={dashboardData?.recentProblems || []}
+                onResolveProblem={handleResolveProblem}
+              />
+            </div>
             
             <div>
               <SystemInfo 
@@ -132,6 +135,10 @@ export default function Dashboard() {
                 uptime={dashboardData?.status?.uptime}
               />
               <PluginStatus plugins={dashboardData?.pluginStatus || []} />
+            </div>
+
+            <div>
+              <TestManagerWidget />
             </div>
           </div>
           

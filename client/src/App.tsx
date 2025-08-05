@@ -18,6 +18,7 @@ import Configuration from "@/pages/configuration";
 import CodeAnalysis from "@/pages/code-analysis";
 import AiDashboard from "@/pages/ai-dashboard";
 import MCPDashboard from "@/pages/mcp-dashboard";
+import TestManager from "@/pages/test-manager";
 import Plugins from "@/pages/plugins";
 import NotFound from "@/pages/not-found";
 
@@ -80,6 +81,7 @@ function Router() {
       <Route path="/metrics" component={Metrics} />
       <Route path="/ai-dashboard" component={AiDashboard} />
       <Route path="/mcp-dashboard" component={MCPDashboard} />
+      <Route path="/test-manager" component={TestManager} />
       <Route path="/plugins" component={Plugins} />
       <Route path="/logs" component={Logs} />
       <Route path="/configuration" component={Configuration} />

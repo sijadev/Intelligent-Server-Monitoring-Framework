@@ -49,9 +49,19 @@ export class PythonMonitorService extends EventEmitter {
       const pythonScript = 'enhanced_main.py';
       const scriptPath = path.join(path.dirname(this.pythonPath), pythonScript);
       
-      this.process = spawn('python3', [scriptPath], {
+      // Use the virtual environment Python if available
+      const venvPython = path.join(process.cwd(), '.venv', 'bin', 'python3');
+      const pythonCmd = await fs.access(venvPython).then(() => venvPython).catch(() => 'python3');
+      
+      console.log(`Starting Python Framework with: ${pythonCmd}`);
+      
+      this.process = spawn(pythonCmd, [scriptPath], {
         stdio: ['pipe', 'pipe', 'pipe'],
         cwd: path.dirname(this.pythonPath),
+        env: { 
+          ...process.env,
+          PYTHONPATH: path.join(process.cwd(), '.venv', 'lib', 'python3.12', 'site-packages')
+        }
       });
 
       this.isRunning = true;

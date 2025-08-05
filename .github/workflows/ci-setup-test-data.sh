@@ -194,10 +194,14 @@ for profile in ci-profile-low ci-profile-medium ci-profile-high; do
     echo "🔄 Generating data for $profile..."
     
     # Create mock test data file  
+    # Generate random success rate as proper decimal
+    SUCCESS_RATE=$(echo "scale=3; ($((RANDOM % 200 + 700)))/1000" | bc -l)
+    TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%S.000Z)
+    
     cat > "$TEST_WORKSPACE_DIR/output/testdata-$profile-$(date +%s)-ci.json" << EOF
 {
   "profileId": "$profile",
-  "generatedAt": "$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)",
+  "generatedAt": "$TIMESTAMP",
   "generationDuration": $((RANDOM % 5000 + 1000)),
   "data": {
     "logFiles": [],
@@ -207,13 +211,13 @@ for profile in ci-profile-low ci-profile-medium ci-profile-high; do
       {
         "scenarioId": "main-scenario",
         "name": "Main Test Scenario",
-        "executedAt": "$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)",
+        "executedAt": "$TIMESTAMP",
         "duration": 300000,
         "statistics": {
           "problemsInjected": $((RANDOM % 30 + 10)),
           "metricsGenerated": $((RANDOM % 500 + 200)),
           "logsGenerated": $((RANDOM % 2000 + 1000)),
-          "successRate": $(echo "scale=3; $(shuf -i 700-900 -n 1)/1000" | bc -l)
+          "successRate": $SUCCESS_RATE
         }
       }
     ]

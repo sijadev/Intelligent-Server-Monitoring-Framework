@@ -1,0 +1,145 @@
+{
+  "server": {
+    "name": "Error Simulation MCP Server",
+    "version": "1.0.0",
+    "port": 3001,
+    "protocol": "http",
+    "host": "0.0.0.0"
+  },
+  "scenarios": [
+    {
+      "name": "error-handling",
+      "description": "Test error handling and recovery mechanisms",
+      "enabled": true
+    }
+  ],
+  "tools": [
+    {
+      "name": "reliable_tool",
+      "description": "A tool that always works",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "string" }
+        }
+      },
+      "behavior": "success",
+      "delayMs": 0
+    },
+    {
+      "name": "unreliable_tool",
+      "description": "A tool that randomly fails",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "string" }
+        }
+      },
+      "behavior": "error",
+      "errorMessage": "Random tool failure for testing error handling",
+      "delayMs": 0
+    },
+    {
+      "name": "timeout_tool",
+      "description": "A tool that times out",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "duration": { "type": "number", "minimum": 0 }
+        }
+      },
+      "behavior": "timeout",
+      "delayMs": 0
+    },
+    {
+      "name": "slow_tool",
+      "description": "A tool that responds very slowly",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "string" }
+        }
+      },
+      "behavior": "slow",
+      "delayMs": 5000
+    }
+  ],
+  "resources": [
+    {
+      "uri": "test://working-resource",
+      "name": "Working Resource",
+      "description": "A resource that always works",
+      "mimeType": "text/plain",
+      "behavior": "success",
+      "content": "This resource always works fine.",
+      "delayMs": 0
+    },
+    {
+      "uri": "test://broken-resource",
+      "name": "Broken Resource",
+      "description": "A resource that always fails",
+      "behavior": "error",
+      "errorMessage": "Simulated resource failure for error testing",
+      "delayMs": 0
+    },
+    {
+      "uri": "test://missing-resource",
+      "name": "Missing Resource",
+      "description": "A resource that doesn't exist",
+      "behavior": "not_found",
+      "delayMs": 0
+    },
+    {
+      "uri": "test://slow-resource",
+      "name": "Slow Resource",
+      "description": "A resource that loads very slowly",
+      "mimeType": "application/json",
+      "behavior": "slow",
+      "content": "{\"message\": \"This resource loaded slowly\", \"delay\": 3000}",
+      "delayMs": 3000
+    }
+  ],
+  "prompts": [
+    {
+      "name": "working_prompt",
+      "description": "A prompt that always works",
+      "arguments": [],
+      "behavior": "success",
+      "responseTemplate": "This prompt always works correctly.",
+      "delayMs": 0
+    },
+    {
+      "name": "broken_prompt", 
+      "description": "A prompt that always fails",
+      "arguments": [],
+      "behavior": "error",
+      "errorMessage": "Simulated prompt failure for error testing",
+      "delayMs": 0
+    },
+    {
+      "name": "slow_prompt",
+      "description": "A prompt that responds very slowly",
+      "arguments": [
+        {
+          "name": "context",
+          "description": "Context for the slow prompt",
+          "required": false
+        }
+      ],
+      "behavior": "slow",
+      "responseTemplate": "This prompt took a long time to respond. Context: {{context}}",
+      "delayMs": 4000
+    }
+  ],
+  "errorSimulation": {
+    "connectionDropRate": 0.05,
+    "responseErrorRate": 0.1,
+    "slowResponseRate": 0.2,
+    "timeoutDuration": 3000
+  },
+  "logging": {
+    "level": "debug",
+    "requests": true,
+    "responses": true
+  }
+}

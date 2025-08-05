@@ -1,0 +1,50 @@
+{
+  "id": "ci-profile-low",
+  "name": "CI Low Complexity",
+  "version": "1.0.0",
+  "description": "CI test profile for low complexity scenarios",
+  "createdAt": "2025-08-05T20:00:00.000Z",
+  "updatedAt": "2025-08-05T20:00:00.000Z",
+  "sourceConfig": {
+    "directories": ["./src", "./server"],
+    "languages": ["typescript", "javascript"],
+    "complexity": "low",
+    "excludePatterns": ["node_modules", "dist", "*.log"]
+  },
+  "scenarios": [
+    {
+      "id": "main-scenario",
+      "name": "Main Test Scenario",
+      "type": "integration",
+      "duration": 300,
+      "enabled": true,
+      "problemTypes": ["null_pointer", "memory_leak", "api_timeout"],
+      "codeInjection": {
+        "errorTypes": ["null_pointer", "memory_leak", "api_timeout"],
+        "frequency": 0.1,
+        "complexity": "low"
+      },
+      "metrics": {
+        "cpuPattern": "stable",
+        "memoryPattern": "stable", 
+        "logPattern": "normal"
+      }
+    }
+  ],
+  "expectations": {
+    "detectionRate": 85,
+    "fixSuccessRate": 70,
+    "falsePositiveRate": 15,
+    "mlAccuracy": 80
+  },
+  "generationRules": {
+    "sampleCount": 500,
+    "varianceLevel": "low",
+    "timespan": "30m",
+    "errorDistribution": {
+      "null_pointer": 0.4,
+      "memory_leak": 0.3,
+      "api_timeout": 0.3
+    }
+  }
+}

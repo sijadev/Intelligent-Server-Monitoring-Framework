@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { setupTestEnvironment } from '../test-setup';
+import { createGitHubReadyRealDataTest, type GeneratedTestData } from '../github-ready-real-data-template';
 
 interface InterventionScenario {
   name: string;
@@ -419,17 +419,246 @@ class AutomatedInterventionEngine {
   }
 }
 
-describe('Automated Intervention Tests', () => {
-  const { getStorage } = setupTestEnvironment();
-  let interventionEngine: AutomatedInterventionEngine;
+// Convert to GitHub-Ready Real Data Test
+createGitHubReadyRealDataTest({
+  testName: 'Automated Intervention Tests with Real Data',
+  maxDatasets: 3,
+  timeoutMs: 240000, // 4 minutes
+  
+  async testFunction(data: GeneratedTestData[], storage: any): Promise<void> {
+    console.log('\n🚨 Running Automated Intervention Tests with Real Data');
+    
+    // Test high error rate interventions
+    await testHighErrorRateInterventions(data, storage);
+    
+    // Test complex problem escalation
+    await testComplexProblemEscalation(data, storage);
+    
+    // Test false positive minimization
+    await testFalsePositiveMinimization(data, storage);
+    
+    // Test learning from intervention outcomes
+    await testLearningFromInterventions(data, storage);
+  }
+});
 
-  beforeAll(() => {
-    interventionEngine = new AutomatedInterventionEngine(getStorage());
+// Implementation functions using real test data
+async function testHighErrorRateInterventions(data: GeneratedTestData[], storage: any): Promise<void> {
+  console.log('\n🔥 Testing High Error Rate Interventions with Real Data');
+  
+  const interventionEngine = new AutomatedInterventionEngine(storage);
+  
+  // Use real data to determine error rate thresholds
+  const avgErrorRate = data.map(dataset => {
+    const successRate = dataset.data.scenarios[0]?.statistics?.successRate || 0.8;
+    return (1 - successRate) * 100; // Convert to error rate percentage
+  }).reduce((sum, rate) => sum + rate, 0) / data.length;
+  
+  const scenario: InterventionScenario = {
+    name: 'High Error Rate Response (Real Data Based)',
+    triggerConditions: {
+      errorRate: Math.max(15, avgErrorRate * 1.5), // 50% higher than average
+    },
+    expectedActions: ['restart_service', 'clear_cache', 'enable_circuit_breaker'],
+    escalationLevels: 3,
+    maxInterventionTime: 10000,
+    successCriteria: {
+      problemResolutionRate: 0.7,
+      falsePositiveRate: 0.2,
+      averageResolutionTime: 5000,
+    },
+  };
+  
+  await interventionEngine.startMonitoring([scenario]);
+  await new Promise(resolve => setTimeout(resolve, 15000));
+  const metrics = await interventionEngine.stopMonitoring();
+  
+  expect(metrics.totalInterventions).toBeGreaterThan(0);
+  expect(metrics.successfulInterventions / metrics.totalInterventions).toBeGreaterThan(0.5);
+  expect(metrics.averageResolutionTime).toBeLessThan(scenario.maxInterventionTime);
+  expect(metrics.falsePositiveRate).toBeLessThan(0.3);
+  
+  console.log('🚨 High Error Rate Intervention Results:', {
+    realDataAvgErrorRate: `${avgErrorRate.toFixed(1)}%`,
+    triggerThreshold: `${scenario.triggerConditions.errorRate}%`,
+    totalInterventions: metrics.totalInterventions,
+    successRate: `${Math.floor((metrics.successfulInterventions / metrics.totalInterventions) * 100)}%`,
+    avgResolutionTime: `${metrics.averageResolutionTime}ms`,
+    escalationRate: `${Math.floor(metrics.escalationRate * 100)}%`,
+    efficiencyScore: `${Math.floor(metrics.interventionEfficiencyScore * 100)}%`,
   });
+}
 
-  afterAll(async () => {
-    await interventionEngine.stopMonitoring();
+async function testComplexProblemEscalation(data: GeneratedTestData[], storage: any): Promise<void> {
+  console.log('\n📈 Testing Complex Problem Escalation with Real Data');
+  
+  const interventionEngine = new AutomatedInterventionEngine(storage);
+  
+  // Analyze real data complexity
+  const complexDatasets = data.filter(d => d.metadata.profile?.sourceConfig?.complexity === 'high');
+  const hasComplexData = complexDatasets.length > 0;
+  
+  const scenario: InterventionScenario = {
+    name: 'Complex Multi-Factor Problems (Real Data Informed)',
+    triggerConditions: {
+      errorRate: hasComplexData ? 12 : 10,
+      responseTime: hasComplexData ? 1000 : 800,
+      resourceUsage: hasComplexData ? 90 : 85,
+    },
+    expectedActions: ['scale_horizontally', 'reroute_traffic', 'emergency_fallback', 'full_system_restart'],
+    escalationLevels: 4,
+    maxInterventionTime: 15000,
+    successCriteria: {
+      problemResolutionRate: 0.8,
+      falsePositiveRate: 0.15,
+      averageResolutionTime: 8000,
+    },
+  };
+  
+  await interventionEngine.startMonitoring([scenario]);
+  await new Promise(resolve => setTimeout(resolve, 18000));
+  const metrics = await interventionEngine.stopMonitoring();
+  const history = interventionEngine.getInterventionHistory();
+  
+  expect(metrics.totalInterventions).toBeGreaterThan(0);
+  
+  const escalatedInterventions = history.filter(i => i.escalationLevel > 1);
+  expect(escalatedInterventions.length).toBeGreaterThan(0);
+  
+  console.log('📈 Complex Problem Escalation Results:', {
+    realComplexDatasets: complexDatasets.length,
+    hasComplexData: hasComplexData ? '✅' : '❌',
+    totalInterventions: metrics.totalInterventions,
+    escalationRate: `${Math.floor(metrics.escalationRate * 100)}%`,
+    systemStabilization: `${Math.floor(metrics.systemAvailabilityImprovement * 100)}%`,
+    highLevelInterventions: escalatedInterventions.length,
   });
+}
+
+async function testFalsePositiveMinimization(data: GeneratedTestData[], storage: any): Promise<void> {
+  console.log('\n🎯 Testing False Positive Minimization with Real Data');
+  
+  const interventionEngine = new AutomatedInterventionEngine(storage);
+  
+  // Use real data success rates to calibrate thresholds
+  const avgSuccessRate = data.reduce((sum, d) => 
+    sum + (d.data.scenarios[0]?.statistics?.successRate || 0.8), 0
+  ) / data.length;
+  
+  const scenario: InterventionScenario = {
+    name: 'False Positive Minimization (Real Data Calibrated)',
+    triggerConditions: {
+      consecutiveFailures: avgSuccessRate < 0.7 ? 2 : 3, // Lower threshold for problematic data
+      responseTime: 600,
+    },
+    expectedActions: ['increase_timeout', 'clear_cache', 'restart_service'],
+    escalationLevels: 2,
+    maxInterventionTime: 5000,
+    successCriteria: {
+      problemResolutionRate: 0.6,
+      falsePositiveRate: 0.1,
+      averageResolutionTime: 3000,
+    },
+  };
+  
+  await interventionEngine.startMonitoring([scenario]);
+  await new Promise(resolve => setTimeout(resolve, 12000));
+  const metrics = await interventionEngine.stopMonitoring();
+  
+  expect(metrics.totalInterventions).toBeGreaterThan(0);
+  expect(metrics.falsePositiveRate).toBeLessThan(scenario.successCriteria.falsePositiveRate * 2);
+  expect(metrics.interventionEfficiencyScore).toBeGreaterThan(0.5);
+  expect(metrics.averageResolutionTime).toBeLessThan(scenario.maxInterventionTime);
+  
+  console.log('🎯 False Positive Minimization Results:', {
+    realDataAvgSuccess: `${(avgSuccessRate * 100).toFixed(1)}%`,
+    calibratedThreshold: scenario.triggerConditions.consecutiveFailures,
+    totalInterventions: metrics.totalInterventions,
+    falsePositiveRate: `${Math.floor(metrics.falsePositiveRate * 100)}%`,
+    efficiencyScore: `${Math.floor(metrics.interventionEfficiencyScore * 100)}%`,
+    avgResolutionTime: `${metrics.averageResolutionTime}ms`,
+    responsiveness: metrics.averageResolutionTime < 3000 ? 'Excellent' : 'Good',
+  });
+}
+
+async function testLearningFromInterventions(data: GeneratedTestData[], storage: any): Promise<void> {
+  console.log('\n🧠 Testing Learning from Intervention Outcomes with Real Data');
+  
+  const interventionEngine = new AutomatedInterventionEngine(storage);
+  
+  // Create learning phases based on real data characteristics
+  const simpleData = data.filter(d => d.metadata.profile?.sourceConfig?.complexity === 'low');
+  const complexData = data.filter(d => d.metadata.profile?.sourceConfig?.complexity === 'high');
+  
+  const scenarios: InterventionScenario[] = [
+    {
+      name: `Learning Phase 1 - Basic Interventions (${simpleData.length} simple datasets)`,
+      triggerConditions: { errorRate: 12 },
+      expectedActions: ['restart_service', 'clear_cache'],
+      escalationLevels: 2,
+      maxInterventionTime: 5000,
+      successCriteria: { problemResolutionRate: 0.5, falsePositiveRate: 0.3, averageResolutionTime: 4000 },
+    },
+    {
+      name: `Learning Phase 2 - Advanced Interventions (${complexData.length} complex datasets)`,
+      triggerConditions: { errorRate: 12 },
+      expectedActions: ['enable_circuit_breaker', 'scale_horizontally'],
+      escalationLevels: 2,
+      maxInterventionTime: 5000,
+      successCriteria: { problemResolutionRate: 0.7, falsePositiveRate: 0.2, averageResolutionTime: 3000 },
+    },
+  ];
+  
+  // Phase 1: Basic learning
+  await interventionEngine.startMonitoring([scenarios[0]]);
+  await new Promise(resolve => setTimeout(resolve, 8000));
+  const phase1Metrics = await interventionEngine.stopMonitoring();
+  
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  // Phase 2: Advanced learning
+  await interventionEngine.startMonitoring([scenarios[1]]);
+  await new Promise(resolve => setTimeout(resolve, 8000));
+  const phase2Metrics = await interventionEngine.stopMonitoring();
+  
+  expect(phase1Metrics.totalInterventions).toBeGreaterThan(0);
+  expect(phase2Metrics.totalInterventions).toBeGreaterThan(0);
+  
+  const phase1SuccessRate = phase1Metrics.successfulInterventions / phase1Metrics.totalInterventions;
+  const phase2SuccessRate = phase2Metrics.successfulInterventions / phase2Metrics.totalInterventions;
+  
+  const learningImprovement = 
+    phase2SuccessRate > phase1SuccessRate * 0.9 ||
+    phase2Metrics.averageResolutionTime < phase1Metrics.averageResolutionTime * 1.1 ||
+    phase2Metrics.interventionEfficiencyScore > phase1Metrics.interventionEfficiencyScore * 0.9;
+  
+  expect(learningImprovement).toBe(true);
+  
+  console.log('🧠 Learning Progression Results:', {
+    realDataDistribution: {
+      simple: simpleData.length,
+      complex: complexData.length,
+      total: data.length
+    },
+    phase1: {
+      interventions: phase1Metrics.totalInterventions,
+      successRate: `${Math.floor(phase1SuccessRate * 100)}%`,
+      avgTime: `${phase1Metrics.averageResolutionTime}ms`,
+      efficiency: `${Math.floor(phase1Metrics.interventionEfficiencyScore * 100)}%`,
+    },
+    phase2: {
+      interventions: phase2Metrics.totalInterventions,
+      successRate: `${Math.floor(phase2SuccessRate * 100)}%`,
+      avgTime: `${phase2Metrics.averageResolutionTime}ms`,
+      efficiency: `${Math.floor(phase2Metrics.interventionEfficiencyScore * 100)}%`,
+    },
+    improvement: {
+      successRate: phase2SuccessRate > phase1SuccessRate ? '📈' : '📉',
+      responseTime: phase2Metrics.averageResolutionTime < phase1Metrics.averageResolutionTime ? '📈' : '📉',
+      efficiency: phase2Metrics.interventionEfficiencyScore > phase1Metrics.interventionEfficiencyScore ? '📈' : '📉',
+    },
+  });
+}
 
   it('should handle high error rate interventions', async () => {
     const scenario: InterventionScenario = {
