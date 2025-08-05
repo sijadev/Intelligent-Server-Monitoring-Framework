@@ -11,6 +11,7 @@ import { frameworkRoutes } from './framework.routes';
 import { aiRoutes } from './ai.routes';
 import { deploymentsRoutes } from './deployments.routes';
 import { codeAnalysisRoutes } from './code-analysis.routes';
+import { debugRoutes } from './debug.routes';
 
 const apiRouter = Router();
 
@@ -27,5 +28,6 @@ apiRouter.use('/framework', frameworkRoutes);
 apiRouter.use('/ai', aiRoutes);
 apiRouter.use('/deployments', deploymentsRoutes);
 apiRouter.use('/code-analysis', codeAnalysisRoutes);
+apiRouter.use('/debug', debugRoutes);
 
 export { apiRouter };

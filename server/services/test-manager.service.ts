@@ -2,78 +2,9 @@ import { EventEmitter } from 'events';
 import fs from 'fs-extra';
 import * as path from 'path';
 import { spawn } from 'child_process';
+import { TestProfile, TestScenario, TestDataGenerationResult } from '@imf/test-manager';
 
-// Import test manager types and classes
-interface TestProfile {
-  id: string;
-  name: string;
-  version: string;
-  description: string;
-  createdAt: string;
-  updatedAt: string;
-  sourceConfig: {
-    directories: string[];
-    languages: string[];
-    complexity: 'low' | 'medium' | 'high';
-    excludePatterns: string[];
-  };
-  scenarios: TestScenario[];
-  expectations: {
-    detectionRate: number;
-    fixSuccessRate: number;
-    falsePositiveRate: number;
-    mlAccuracy: number;
-  };
-  generationRules: {
-    sampleCount: number;
-    varianceLevel: string;
-    timespan: string;
-    errorDistribution: Record<string, number>;
-  };
-}
-
-interface TestScenario {
-  id: string;
-  name: string;
-  type: string;
-  duration: number;
-  enabled: boolean;
-  problemTypes: string[];
-  codeInjection: {
-    errorTypes: string[];
-    frequency: number;
-    complexity: string;
-  };
-  metrics: {
-    cpuPattern: string;
-    memoryPattern: string;
-    logPattern: string;
-  };
-}
-
-interface TestDataGenerationResult {
-  profileId: string;
-  generatedAt: string;
-  generationDuration: number;
-  data: {
-    logFiles: any[];
-    metricStreams: any[];
-    codeProblems: any[];
-    scenarios: any[];
-  };
-  statistics: {
-    totalLogEntries: number;
-    totalMetricPoints: number;
-    totalCodeProblems: number;
-    dataSize: number;
-  };
-  metadata: {
-    generatorVersion: string;
-    profile: TestProfile;
-    outputPath: string;
-    totalSamples: number;
-  };
-}
+// Types are now imported from @imf/test-manager package
 
 interface TestManagerConfig {
   testManagerPath: string;
@@ -93,9 +24,12 @@ export class TestManagerService extends EventEmitter {
   constructor(config?: Partial<TestManagerConfig>) {
     super();
     
+    // Test Manager is now an npm package - no separate path needed
+    const defaultTestManagerPath = process.env.WORKSPACE_PATH || process.cwd();
+    
     this.config = {
-      testManagerPath: '/Users/simonjanke/Projects/imf-test-manager',
-      workspacePath: path.join(process.cwd(), 'test-workspace'),
+      testManagerPath: defaultTestManagerPath,
+      workspacePath: process.env.WORKSPACE_PATH || path.join(process.cwd(), 'test-workspace'),
       profilesDir: 'profiles',
       outputDir: 'output',
       logsDir: 'logs',
@@ -111,19 +45,14 @@ export class TestManagerService extends EventEmitter {
     console.log('🔧 Initializing Test Manager Service...');
 
     try {
-      // Ensure test manager exists
-      if (!await fs.pathExists(this.config.testManagerPath)) {
-        throw new Error(`Test manager not found at: ${this.config.testManagerPath}`);
-      }
-
       // Create workspace structure
       await this.createWorkspaceStructure();
 
-      // Test connection to test manager
+      // Test connection to npm package
       await this.testConnection();
 
       this.isInitialized = true;
-      console.log('✅ Test Manager Service initialized successfully');
+      console.log('✅ Test Manager Service initialized successfully (npm package)');
       this.emit('initialized');
 
     } catch (error) {
@@ -160,8 +89,11 @@ export class TestManagerService extends EventEmitter {
         reject(new Error('Test manager connection timeout'));
       }, 10000);
 
-      const testProcess = spawn('node', ['-e', 'console.log("Test manager available")'], {
-        cwd: this.config.testManagerPath,
+      const testProcess = spawn('node', [
+        path.join(process.cwd(), 'node_modules/@imf/test-manager/dist/cli/simple-cli.js'),
+        '--version'
+      ], {
+        cwd: this.config.workspacePath,
         stdio: 'pipe'
       });
 
@@ -376,15 +308,17 @@ export class TestManagerService extends EventEmitter {
       const profilesPath = path.resolve(this.config.workspacePath, this.config.profilesDir);
       const outputPath = path.resolve(this.config.workspacePath, this.config.outputDir);
       
-      console.log(`🚀 Starting test data generation for ${profileId}`);
+      console.log(`🚀 Starting test data generation for ${profileId} using npm package`);
       console.log(`📁 Profiles path: ${profilesPath}`);
       console.log(`📤 Output path: ${outputPath}`);
       
-      const generateProcess = spawn('npx', ['tsx', 'src/cli/simple-cli.ts', 'generate', profileId,
+      const generateProcess = spawn('node', [
+        path.join(process.cwd(), 'node_modules/@imf/test-manager/dist/cli/simple-cli.js'),
+        'generate', profileId,
         '--profiles', profilesPath,
         '--output', outputPath
       ], {
-        cwd: this.config.testManagerPath,
+        cwd: this.config.workspacePath,
         stdio: 'pipe'
       });
 

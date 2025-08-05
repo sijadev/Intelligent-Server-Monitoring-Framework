@@ -185,6 +185,18 @@ jobs:
           echo "Running Updated ML Continuous Learning Test..."
           npx vitest run server/test/long-term/mcp-monitoring-continuous-learning.test.ts \
             --reporter=json --outputFile=test-results/real-data-reports/ml-continuous-learning-results.json
+            
+          echo "Running AI-Enhanced Continuous Monitoring Test..."
+          npx vitest run server/test/long-term/ai-enhanced-continuous-monitoring.test.ts \
+            --reporter=json --outputFile=test-results/real-data-reports/ai-enhanced-monitoring-results.json
+            
+          echo "Running AI-Enhanced Learning Validation Test..."
+          npx vitest run server/test/long-term/ai-enhanced-learning-validation.test.ts \
+            --reporter=json --outputFile=test-results/real-data-reports/ai-enhanced-learning-results.json
+            
+          echo "Running Tenant-Aware AI Storage Test..."
+          npx vitest run server/test/long-term/ai-enhanced-continuous-monitoring-tenant-aware.test.ts \
+            --reporter=json --outputFile=test-results/real-data-reports/tenant-aware-ai-results.json
         env:
           DATABASE_URL: ${{ env.DATABASE_URL }}
           PYTHON_PATH: python3

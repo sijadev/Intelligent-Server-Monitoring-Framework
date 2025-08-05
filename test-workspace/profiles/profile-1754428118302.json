@@ -1,14 +1,13 @@
 {
-  "id": "ci-profile-medium",
-  "name": "CI Medium Complexity",
+  "id": "profile-1754428118302",
+  "name": "Docker Test Profile",
   "version": "1.0.0",
-  "description": "CI test profile for medium complexity scenarios",
-  "createdAt": "2025-08-05T20:07:33.083Z",
-  "updatedAt": "2025-08-05T20:07:33.083Z",
+  "description": "Test profile created in Docker environment",
+  "createdAt": "2025-08-05T21:08:38.302Z",
+  "updatedAt": "2025-08-05T21:08:38.303Z",
   "sourceConfig": {
     "directories": [
-      "./src",
-      "./server"
+      "./src"
     ],
     "languages": [
       "typescript",
@@ -29,40 +28,41 @@
       "duration": 300,
       "enabled": true,
       "problemTypes": [
-        "type_mismatch",
-        "syntax_error",
-        "null_pointer"
+        "null_pointer",
+        "memory_leak",
+        "api_timeout"
       ],
       "codeInjection": {
         "errorTypes": [
-          "type_mismatch",
-          "syntax_error",
-          "null_pointer"
+          "null_pointer",
+          "memory_leak",
+          "api_timeout"
         ],
-        "frequency": 0.15,
+        "frequency": 0.1,
         "complexity": "medium"
       },
       "metrics": {
-        "cpuPattern": "variable",
+        "cpuPattern": "stable",
         "memoryPattern": "stable",
-        "logPattern": "verbose"
+        "logPattern": "normal"
       }
     }
   ],
   "expectations": {
-    "detectionRate": 80,
-    "fixSuccessRate": 65,
-    "falsePositiveRate": 20,
-    "mlAccuracy": 75
+    "detectionRate": 85,
+    "fixSuccessRate": 70,
+    "falsePositiveRate": 15,
+    "mlAccuracy": 80
   },
   "generationRules": {
-    "sampleCount": 750,
+    "sampleCount": 1000,
     "varianceLevel": "medium",
-    "timespan": "45m",
+    "timespan": "1h",
     "errorDistribution": {
-      "type_mismatch": 0.333,
-      "syntax_error": 0.333,
-      "null_pointer": 0.333
+      "null_pointer": 0.25,
+      "memory_leak": 0.2,
+      "api_timeout": 0.15,
+      "logic_error": 0.4
     }
   }
 }

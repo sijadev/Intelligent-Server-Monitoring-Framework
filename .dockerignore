@@ -1,0 +1,86 @@
+# Docker ignore file für IMF
+
+# Node modules und Build-Outputs
+node_modules/
+dist/
+build/
+.next/
+
+# Environment und Config
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+*.log
+logs/
+server.log
+server2.log
+
+# OS generierte Dateien
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE/Editor Dateien
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+
+# Test Files und Outputs
+test-results/
+coverage/
+*.test.js
+*.spec.js
+
+# Backup Files
+*.backup
+*.bak
+code_fix_backups/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.venv/
+
+# Docker Files (nicht in Container kopieren)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Dokumentation und README (optional)
+*.md
+docs/
+attached_assets/
+
+# Lock Files (werden vom Package Manager neu generiert)
+package-lock.json
+yarn.lock
+uv.lock
+
+# Temporary Files
+tmp/
+temp/
+.tmp/

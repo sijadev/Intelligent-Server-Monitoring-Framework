@@ -21,10 +21,19 @@
     "test:python": "cd python-framework && python -m pytest tests/ -v",
     "test:docker": "vitest run container-integration-real-data.test.ts",
     "test:docker-setup": "cd docker/test-mcp-server && docker-compose up -d",
-    "test:docker-clean": "cd docker/test-mcp-server && docker-compose down --remove-orphans"
+    "test:docker-clean": "cd docker/test-mcp-server && docker-compose down --remove-orphans",
+    "docker:setup": "./docker/setup.sh",
+    "docker:dev": "docker-compose up -d",
+    "docker:dev-build": "docker-compose up -d --build",
+    "docker:prod": "docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "docker:clean": "docker-compose down --volumes --remove-orphans",
+    "test:ai-storage": "vitest run server/test/enhanced-cross-tenant-sharing.test.ts server/test/long-term/ai-enhanced-continuous-monitoring-tenant-aware.test.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
+    "@imf/test-manager": "file:imf-test-manager-1.0.0.tgz",
     "@jridgewell/trace-mapping": "^0.3.25",
     "@neondatabase/serverless": "^0.10.4",
     "@radix-ui/react-accordion": "^1.2.4",

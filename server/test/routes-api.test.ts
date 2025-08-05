@@ -224,12 +224,11 @@ describe('API Routes', () => {
     });
 
     it('POST /api/problems should create a new problem', async () => {
-      const newProblem: InsertProblem = {
+      const newProblem = {
         type: 'performance',
         description: 'High CPU usage detected',
         severity: 'HIGH',
-        timestamp: new Date(),
-        resolved: false,
+        timestamp: new Date().toISOString(),
         metadata: { cpuUsage: 95 }
       };
 

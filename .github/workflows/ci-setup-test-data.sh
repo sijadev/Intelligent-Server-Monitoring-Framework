@@ -19,249 +19,159 @@ mkdir -p "$TEST_WORKSPACE_DIR"/{profiles,output,logs}
 
 echo "📁 Created test workspace: $TEST_WORKSPACE_DIR"
 
-# Generate CI test profiles
-echo "🔧 Generating CI test profiles..."
+# Use robust Node.js JSON generator instead of shell scripting
+echo "🔧 Using robust Node.js JSON generator for guaranteed valid JSON..."
 
-# Profile 1: Low complexity TypeScript/JavaScript
-cat > "$TEST_WORKSPACE_DIR/profiles/ci-profile-low.json" << 'EOF'
-{
-  "id": "ci-profile-low",
-  "name": "CI Low Complexity",
-  "version": "1.0.0",
-  "description": "CI test profile for low complexity scenarios",
-  "createdAt": "2025-08-05T20:00:00.000Z",
-  "updatedAt": "2025-08-05T20:00:00.000Z",
-  "sourceConfig": {
-    "directories": ["./src", "./server"],
-    "languages": ["typescript", "javascript"],
-    "complexity": "low",
-    "excludePatterns": ["node_modules", "dist", "*.log"]
-  },
-  "scenarios": [
-    {
-      "id": "main-scenario",
-      "name": "Main Test Scenario",
-      "type": "integration",
-      "duration": 300,
-      "enabled": true,
-      "problemTypes": ["null_pointer", "memory_leak", "api_timeout"],
-      "codeInjection": {
-        "errorTypes": ["null_pointer", "memory_leak", "api_timeout"],
-        "frequency": 0.1,
-        "complexity": "low"
-      },
-      "metrics": {
-        "cpuPattern": "stable",
-        "memoryPattern": "stable", 
-        "logPattern": "normal"
-      }
-    }
-  ],
-  "expectations": {
-    "detectionRate": 85,
-    "fixSuccessRate": 70,
-    "falsePositiveRate": 15,
-    "mlAccuracy": 80
-  },
-  "generationRules": {
-    "sampleCount": 500,
-    "varianceLevel": "low",
-    "timespan": "30m",
-    "errorDistribution": {
-      "null_pointer": 0.4,
-      "memory_leak": 0.3,
-      "api_timeout": 0.3
-    }
-  }
-}
-EOF
-
-# Profile 2: Medium complexity
-cat > "$TEST_WORKSPACE_DIR/profiles/ci-profile-medium.json" << 'EOF'
-{
-  "id": "ci-profile-medium",
-  "name": "CI Medium Complexity",
-  "version": "1.0.0", 
-  "description": "CI test profile for medium complexity scenarios",
-  "createdAt": "2025-08-05T20:00:00.000Z",
-  "updatedAt": "2025-08-05T20:00:00.000Z",
-  "sourceConfig": {
-    "directories": ["./src", "./server"],
-    "languages": ["typescript", "javascript"],
-    "complexity": "medium",
-    "excludePatterns": ["node_modules", "dist", "*.log"]
-  },
-  "scenarios": [
-    {
-      "id": "main-scenario", 
-      "name": "Main Test Scenario",
-      "type": "performance",
-      "duration": 300,
-      "enabled": true,
-      "problemTypes": ["type_mismatch", "syntax_error", "null_pointer"],
-      "codeInjection": {
-        "errorTypes": ["type_mismatch", "syntax_error", "null_pointer"],
-        "frequency": 0.15,
-        "complexity": "medium"
-      },
-      "metrics": {
-        "cpuPattern": "variable",
-        "memoryPattern": "stable",
-        "logPattern": "verbose"
-      }
-    }
-  ],
-  "expectations": {
-    "detectionRate": 80,
-    "fixSuccessRate": 65,
-    "falsePositiveRate": 20,
-    "mlAccuracy": 75
-  },
-  "generationRules": {
-    "sampleCount": 750,
-    "varianceLevel": "medium",
-    "timespan": "45m",
-    "errorDistribution": {
-      "type_mismatch": 0.4,
-      "syntax_error": 0.3,
-      "null_pointer": 0.3
-    }
-  }
-}
-EOF
-
-# Profile 3: High complexity
-cat > "$TEST_WORKSPACE_DIR/profiles/ci-profile-high.json" << 'EOF'
-{
-  "id": "ci-profile-high",
-  "name": "CI High Complexity",
-  "version": "1.0.0",
-  "description": "CI test profile for high complexity scenarios", 
-  "createdAt": "2025-08-05T20:00:00.000Z",
-  "updatedAt": "2025-08-05T20:00:00.000Z",
-  "sourceConfig": {
-    "directories": ["./src", "./server"],
-    "languages": ["typescript", "javascript"],
-    "complexity": "high",
-    "excludePatterns": ["node_modules", "dist", "*.log"]
-  },
-  "scenarios": [
-    {
-      "id": "main-scenario",
-      "name": "Main Test Scenario", 
-      "type": "stress",
-      "duration": 300,
-      "enabled": true,
-      "problemTypes": ["type_mismatch", "syntax_error", "memory_leak", "api_timeout"],
-      "codeInjection": {
-        "errorTypes": ["type_mismatch", "syntax_error", "memory_leak", "api_timeout"],
-        "frequency": 0.2,
-        "complexity": "high"
-      },
-      "metrics": {
-        "cpuPattern": "spike",
-        "memoryPattern": "growing",
-        "logPattern": "verbose"
-      }
-    }
-  ],
-  "expectations": {
-    "detectionRate": 75,
-    "fixSuccessRate": 60,
-    "falsePositiveRate": 25,
-    "mlAccuracy": 70
-  },
-  "generationRules": {
-    "sampleCount": 1000,
-    "varianceLevel": "high",
-    "timespan": "1h",
-    "errorDistribution": {
-      "type_mismatch": 0.3,
-      "syntax_error": 0.3,
-      "memory_leak": 0.2,
-      "api_timeout": 0.2
-    }
-  }
-}
-EOF
-
-echo "✅ Generated 3 CI test profiles"
-
-# Generate test data for each profile
-echo "📊 Generating test data for CI profiles..."
-
-for profile in ci-profile-low ci-profile-medium ci-profile-high; do
-    echo "🔄 Generating data for $profile..."
+if command -v node &> /dev/null; then
+    echo "✅ Node.js found - using robust JSON generator"
+    node .github/workflows/generate-test-data.js
+else
+    echo "⚠️  Node.js not found - falling back to manual JSON generation"
     
-    # Create mock test data file  
-    # Generate random success rate as proper decimal
-    SUCCESS_RATE=$(echo "scale=3; ($((RANDOM % 200 + 700)))/1000" | bc -l)
-    TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%S.000Z)
+    # Fallback: Generate with explicit JSON validation
+    echo "📊 Generating profiles and test data with validation..."
     
-    cat > "$TEST_WORKSPACE_DIR/output/testdata-$profile-$(date +%s)-ci.json" << EOF
-{
-  "profileId": "$profile",
-  "generatedAt": "$TIMESTAMP",
-  "generationDuration": $((RANDOM % 5000 + 1000)),
-  "data": {
-    "logFiles": [],
-    "metricStreams": [],
-    "codeProblems": [],
-    "scenarios": [
-      {
-        "scenarioId": "main-scenario",
-        "name": "Main Test Scenario",
-        "executedAt": "$TIMESTAMP",
-        "duration": 300000,
-        "statistics": {
-          "problemsInjected": $((RANDOM % 30 + 10)),
-          "metricsGenerated": $((RANDOM % 500 + 200)),
-          "logsGenerated": $((RANDOM % 2000 + 1000)),
-          "successRate": $SUCCESS_RATE
+    # Use Python for guaranteed JSON formatting as fallback
+    python3 << 'PYTHON_SCRIPT'
+import json
+import os
+import random
+from datetime import datetime
+
+TEST_WORKSPACE_DIR = "./test-workspace"
+os.makedirs(f"{TEST_WORKSPACE_DIR}/profiles", exist_ok=True)
+os.makedirs(f"{TEST_WORKSPACE_DIR}/output", exist_ok=True)
+os.makedirs(f"{TEST_WORKSPACE_DIR}/logs", exist_ok=True)
+
+profiles = [
+    {"id": "ci-profile-low", "complexity": "low", "problemTypes": ["null_pointer", "memory_leak", "api_timeout"]},
+    {"id": "ci-profile-medium", "complexity": "medium", "problemTypes": ["type_mismatch", "syntax_error", "null_pointer"]},
+    {"id": "ci-profile-high", "complexity": "high", "problemTypes": ["type_mismatch", "syntax_error", "memory_leak", "api_timeout"]}
+]
+
+for profile_config in profiles:
+    timestamp = datetime.utcnow().isoformat() + "Z"
+    
+    # Create profile
+    profile = {
+        "id": profile_config["id"],
+        "name": f"CI {profile_config['complexity'].title()} Complexity",
+        "version": "1.0.0",
+        "description": f"CI test profile for {profile_config['complexity']} complexity scenarios",
+        "createdAt": timestamp,
+        "updatedAt": timestamp,
+        "sourceConfig": {
+            "directories": ["./src", "./server"],
+            "languages": ["typescript", "javascript"],
+            "complexity": profile_config["complexity"],
+            "excludePatterns": ["node_modules", "dist", "*.log"]
+        },
+        "scenarios": [{
+            "id": "main-scenario",
+            "name": "Main Test Scenario",
+            "type": "stress" if profile_config["complexity"] == "high" else "performance" if profile_config["complexity"] == "medium" else "integration",
+            "duration": 300,
+            "enabled": True,
+            "problemTypes": profile_config["problemTypes"],
+            "codeInjection": {
+                "errorTypes": profile_config["problemTypes"],
+                "frequency": 0.2 if profile_config["complexity"] == "high" else 0.15 if profile_config["complexity"] == "medium" else 0.1,
+                "complexity": profile_config["complexity"]
+            },
+            "metrics": {
+                "cpuPattern": "spike" if profile_config["complexity"] == "high" else "variable" if profile_config["complexity"] == "medium" else "stable",
+                "memoryPattern": "growing" if profile_config["complexity"] == "high" else "stable",
+                "logPattern": "normal" if profile_config["complexity"] == "low" else "verbose"
+            }
+        }],
+        "expectations": {
+            "detectionRate": 75 if profile_config["complexity"] == "high" else 80 if profile_config["complexity"] == "medium" else 85,
+            "fixSuccessRate": 60 if profile_config["complexity"] == "high" else 65 if profile_config["complexity"] == "medium" else 70,
+            "falsePositiveRate": 25 if profile_config["complexity"] == "high" else 20 if profile_config["complexity"] == "medium" else 15,
+            "mlAccuracy": 70 if profile_config["complexity"] == "high" else 75 if profile_config["complexity"] == "medium" else 80
+        },
+        "generationRules": {
+            "sampleCount": 1000 if profile_config["complexity"] == "high" else 750 if profile_config["complexity"] == "medium" else 500,
+            "varianceLevel": profile_config["complexity"],
+            "timespan": "1h" if profile_config["complexity"] == "high" else "45m" if profile_config["complexity"] == "medium" else "30m",
+            "errorDistribution": {ptype: round(1.0/len(profile_config["problemTypes"]), 3) for ptype in profile_config["problemTypes"]}
         }
-      }
-    ]
-  },
-  "statistics": {
-    "totalLogEntries": $((RANDOM % 5000 + 2000)),
-    "totalMetricPoints": $((RANDOM % 3000 + 1500)),
-    "totalCodeProblems": $((RANDOM % 80 + 20)),
-    "dataSize": $((RANDOM % 200000 + 100000))
-  },
-  "metadata": {
-    "generatorVersion": "1.0.0-ci",
-    "profile": $(cat "$TEST_WORKSPACE_DIR/profiles/$profile.json")
-  }
+    }
+    
+    # Write profile with guaranteed valid JSON
+    with open(f"{TEST_WORKSPACE_DIR}/profiles/{profile_config['id']}.json", 'w') as f:
+        json.dump(profile, f, indent=2)
+    
+    # Create test data with proper float formatting
+    success_rate = round(random.uniform(0.65 if profile_config["complexity"] == "high" else 0.7 if profile_config["complexity"] == "medium" else 0.8, 0.9), 3)
+    
+    test_data = {
+        "profileId": profile_config["id"],
+        "generatedAt": timestamp,
+        "generationDuration": random.randint(1000, 5000),
+        "data": {
+            "logFiles": [],
+            "metricStreams": [],
+            "codeProblems": [],
+            "scenarios": [{
+                "scenarioId": "main-scenario",
+                "name": "Main Test Scenario",
+                "executedAt": timestamp,
+                "duration": 300000,
+                "statistics": {
+                    "problemsInjected": random.randint(10, 50),
+                    "metricsGenerated": random.randint(200, 500),
+                    "logsGenerated": random.randint(1000, 2000),
+                    "successRate": success_rate
+                }
+            }]
+        },
+        "statistics": {
+            "totalLogEntries": random.randint(2000, 6000),
+            "totalMetricPoints": random.randint(1500, 3000),
+            "totalCodeProblems": random.randint(20, 100),
+            "dataSize": random.randint(100000, 250000)
+        },
+        "metadata": {
+            "generatorVersion": "1.0.0-ci",
+            "profile": profile
+        }
+    }
+    
+    # Write test data with guaranteed valid JSON
+    import time
+    timestamp_suffix = int(time.time())
+    with open(f"{TEST_WORKSPACE_DIR}/output/testdata-{profile_config['id']}-{timestamp_suffix}-ci.json", 'w') as f:
+        json.dump(test_data, f, indent=2)
+    
+    print(f"✅ Generated {profile_config['id']} (success rate: {success_rate})")
+
+# Create config
+config = {
+    "version": "1.0.0",
+    "workspace": {
+        "profilesDir": "./profiles",
+        "outputDir": "./output",
+        "logsDir": "./logs"
+    },
+    "generation": {
+        "defaultSampleCount": 500,
+        "defaultDuration": "30m",
+        "parallelGeneration": False
+    },
+    "ci": {
+        "mode": True,
+        "fastGeneration": True,
+        "limitedOutput": True
+    }
 }
-EOF
-    echo "  ✅ Generated test data for $profile"
-done
 
-echo "📊 Test data generation completed"
+with open(f"{TEST_WORKSPACE_DIR}/imf-config.json", 'w') as f:
+    json.dump(config, f, indent=2)
 
-# Create configuration file for CI
-cat > "$TEST_WORKSPACE_DIR/imf-config.json" << 'EOF'
-{
-  "version": "1.0.0",
-  "workspace": {
-    "profilesDir": "./profiles",
-    "outputDir": "./output", 
-    "logsDir": "./logs"
-  },
-  "generation": {
-    "defaultSampleCount": 500,
-    "defaultDuration": "30m",
-    "parallelGeneration": false
-  },
-  "ci": {
-    "mode": true,
-    "fastGeneration": true,
-    "limitedOutput": true
-  }
-}
-EOF
-
-echo "⚙️ Created CI configuration"
+print("⚙️ Generated CI configuration")
+PYTHON_SCRIPT
+fi
 
 # Summary
 echo ""

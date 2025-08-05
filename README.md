@@ -36,9 +36,33 @@ A comprehensive full-stack monitoring solution for server systems, log analysis,
 
 ## 📋 Prerequisites
 
+### Local Development
 - **Node.js 18+** (for backend and frontend)
 - **Python 3.11+** (for monitoring plugins)
 - **PostgreSQL** (built-in Replit database or external)
+
+### Docker Development (Empfohlen)
+- **Docker** (latest version)
+- **Docker Compose** (v2.0+)
+
+## 🐳 Docker Quick Start
+
+```bash
+# Komplette Umgebung mit einem Befehl
+npm run docker:setup
+
+# Oder manuell:
+chmod +x ./docker/setup.sh
+./docker/setup.sh
+```
+
+**Verfügbare Services:**
+- **IMF App**: http://localhost:3000
+- **Vite Dev**: http://localhost:5173  
+- **pgAdmin**: http://localhost:8080
+- **Redis Commander**: http://localhost:8081
+
+Siehe [Docker Documentation](./docker/README.md) für Details.
 
 ## 🛠️ Complete Installation Guide
 

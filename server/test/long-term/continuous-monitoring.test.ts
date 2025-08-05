@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createGitHubReadyRealDataTest, type GeneratedTestData } from '../github-ready-real-data-template';
+import { readFile, writeFile } from 'fs/promises';
+import path from 'path';
 
 interface LongTermTestScenario {
   name: string;

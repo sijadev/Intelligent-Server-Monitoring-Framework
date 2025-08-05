@@ -33,9 +33,50 @@ router.post('/restart', async (req, res) => {
 router.get('/status', async (req, res) => {
   try {
     const status = pythonMonitorService.getStatus();
-    res.json(status);
+    const frameworkData = await pythonMonitorService.getFrameworkData();
+    res.json({
+      ...status,
+      running: frameworkData.status?.running || false,
+      data: frameworkData
+    });
   } catch (error) {
     res.status(500).json({ message: "Failed to get framework status" });
+  }
+});
+
+router.get('/data', async (req, res) => {
+  try {
+    const data = await pythonMonitorService.getFrameworkData();
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to get framework data", error: error.message });
+  }
+});
+
+router.get('/metrics', async (req, res) => {
+  try {
+    const data = await pythonMonitorService.getFrameworkData();
+    res.json(data.metrics || {});
+  } catch (error) {
+    res.status(500).json({ message: "Failed to get metrics", error: error.message });
+  }
+});
+
+router.get('/problems', async (req, res) => {
+  try {
+    const data = await pythonMonitorService.getFrameworkData();
+    res.json(data.problems || []);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to get problems", error: error.message });
+  }
+});
+
+router.get('/plugins', async (req, res) => {
+  try {
+    const data = await pythonMonitorService.getFrameworkData();
+    res.json(data.plugins || []);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to get plugins", error: error.message });
   }
 });
 

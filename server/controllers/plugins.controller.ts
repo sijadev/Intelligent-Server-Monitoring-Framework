@@ -50,8 +50,9 @@ export class PluginsController extends BaseController {
 
   async updatePlugin(req: Request, res: Response): Promise<void> {
     try {
-      const plugin = insertPluginSchema.parse(req.body);
-      const updated = await this.storage.updatePlugin(req.params.pluginId, plugin);
+      // For updates, we allow partial data, so don't use the full schema validation
+      const updates = req.body;
+      const updated = await this.storage.updatePlugin(req.params.pluginId, updates);
       
       if (!updated) {
         this.handleNotFound(res, 'Plugin');

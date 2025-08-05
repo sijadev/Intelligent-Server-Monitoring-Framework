@@ -3,13 +3,23 @@
   "name": "CI Low Complexity",
   "version": "1.0.0",
   "description": "CI test profile for low complexity scenarios",
-  "createdAt": "2025-08-05T20:00:00.000Z",
-  "updatedAt": "2025-08-05T20:00:00.000Z",
+  "createdAt": "2025-08-05T20:07:33.082Z",
+  "updatedAt": "2025-08-05T20:07:33.082Z",
   "sourceConfig": {
-    "directories": ["./src", "./server"],
-    "languages": ["typescript", "javascript"],
+    "directories": [
+      "./src",
+      "./server"
+    ],
+    "languages": [
+      "typescript",
+      "javascript"
+    ],
     "complexity": "low",
-    "excludePatterns": ["node_modules", "dist", "*.log"]
+    "excludePatterns": [
+      "node_modules",
+      "dist",
+      "*.log"
+    ]
   },
   "scenarios": [
     {
@@ -18,15 +28,23 @@
       "type": "integration",
       "duration": 300,
       "enabled": true,
-      "problemTypes": ["null_pointer", "memory_leak", "api_timeout"],
+      "problemTypes": [
+        "null_pointer",
+        "memory_leak",
+        "api_timeout"
+      ],
       "codeInjection": {
-        "errorTypes": ["null_pointer", "memory_leak", "api_timeout"],
+        "errorTypes": [
+          "null_pointer",
+          "memory_leak",
+          "api_timeout"
+        ],
         "frequency": 0.1,
         "complexity": "low"
       },
       "metrics": {
         "cpuPattern": "stable",
-        "memoryPattern": "stable", 
+        "memoryPattern": "stable",
         "logPattern": "normal"
       }
     }
@@ -42,9 +60,9 @@
     "varianceLevel": "low",
     "timespan": "30m",
     "errorDistribution": {
-      "null_pointer": 0.4,
-      "memory_leak": 0.3,
-      "api_timeout": 0.3
+      "null_pointer": 0.333,
+      "memory_leak": 0.333,
+      "api_timeout": 0.333
     }
   }
 }

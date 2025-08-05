@@ -1,0 +1,106 @@
+{
+  "profileId": "ci-profile-high",
+  "generatedAt": "2025-08-05T21:24:37.117Z",
+  "generationDuration": 2758,
+  "data": {
+    "logFiles": [],
+    "metricStreams": [],
+    "codeProblems": [],
+    "scenarios": [
+      {
+        "scenarioId": "main-scenario",
+        "name": "Main Test Scenario",
+        "executedAt": "2025-08-05T21:24:37.118Z",
+        "duration": 300000,
+        "statistics": {
+          "problemsInjected": 45,
+          "metricsGenerated": 780,
+          "logsGenerated": 4876,
+          "successRate": 0.7441588671344359
+        }
+      }
+    ]
+  },
+  "statistics": {
+    "totalLogEntries": 8636,
+    "totalMetricPoints": 4495,
+    "totalCodeProblems": 87,
+    "dataSize": 241446
+  },
+  "metadata": {
+    "generatorVersion": "1.0.0",
+    "profile": {
+      "id": "ci-profile-high",
+      "name": "CI High Complexity",
+      "version": "1.0.0",
+      "description": "CI test profile for high complexity scenarios",
+      "createdAt": "2025-08-05T20:07:33.084Z",
+      "updatedAt": "2025-08-05T20:07:33.084Z",
+      "sourceConfig": {
+        "directories": [
+          "./src",
+          "./server"
+        ],
+        "languages": [
+          "typescript",
+          "javascript"
+        ],
+        "complexity": "high",
+        "excludePatterns": [
+          "node_modules",
+          "dist",
+          "*.log"
+        ]
+      },
+      "scenarios": [
+        {
+          "id": "main-scenario",
+          "name": "Main Test Scenario",
+          "type": "stress",
+          "duration": 300,
+          "enabled": true,
+          "problemTypes": [
+            "type_mismatch",
+            "syntax_error",
+            "memory_leak",
+            "api_timeout"
+          ],
+          "codeInjection": {
+            "errorTypes": [
+              "type_mismatch",
+              "syntax_error",
+              "memory_leak",
+              "api_timeout"
+            ],
+            "frequency": 0.2,
+            "complexity": "high"
+          },
+          "metrics": {
+            "cpuPattern": "spike",
+            "memoryPattern": "growing",
+            "logPattern": "verbose"
+          }
+        }
+      ],
+      "expectations": {
+        "detectionRate": 75,
+        "fixSuccessRate": 60,
+        "falsePositiveRate": 25,
+        "mlAccuracy": 70
+      },
+      "generationRules": {
+        "sampleCount": 1000,
+        "varianceLevel": "high",
+        "timespan": "1h",
+        "errorDistribution": {
+          "type_mismatch": 0.25,
+          "syntax_error": 0.25,
+          "memory_leak": 0.25,
+          "api_timeout": 0.25
+        }
+      }
+    },
+    "outputPath": "/app/test-workspace/output",
+    "totalSamples": 1000
+  }
+}

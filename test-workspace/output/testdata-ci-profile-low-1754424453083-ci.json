@@ -1,0 +1,101 @@
+{
+  "profileId": "ci-profile-low",
+  "generatedAt": "2025-08-05T20:07:33.083Z",
+  "generationDuration": 2485,
+  "data": {
+    "logFiles": [],
+    "metricStreams": [],
+    "codeProblems": [],
+    "scenarios": [
+      {
+        "scenarioId": "main-scenario",
+        "name": "Main Test Scenario",
+        "executedAt": "2025-08-05T20:07:33.083Z",
+        "duration": 300000,
+        "statistics": {
+          "problemsInjected": 35,
+          "metricsGenerated": 410,
+          "logsGenerated": 1061,
+          "successRate": 0.92
+        }
+      }
+    ]
+  },
+  "statistics": {
+    "totalLogEntries": 2093,
+    "totalMetricPoints": 1516,
+    "totalCodeProblems": 84,
+    "dataSize": 168540
+  },
+  "metadata": {
+    "generatorVersion": "1.0.0-ci",
+    "profile": {
+      "id": "ci-profile-low",
+      "name": "CI Low Complexity",
+      "version": "1.0.0",
+      "description": "CI test profile for low complexity scenarios",
+      "createdAt": "2025-08-05T20:07:33.083Z",
+      "updatedAt": "2025-08-05T20:07:33.083Z",
+      "sourceConfig": {
+        "directories": [
+          "./src",
+          "./server"
+        ],
+        "languages": [
+          "typescript",
+          "javascript"
+        ],
+        "complexity": "low",
+        "excludePatterns": [
+          "node_modules",
+          "dist",
+          "*.log"
+        ]
+      },
+      "scenarios": [
+        {
+          "id": "main-scenario",
+          "name": "Main Test Scenario",
+          "type": "integration",
+          "duration": 300,
+          "enabled": true,
+          "problemTypes": [
+            "null_pointer",
+            "memory_leak",
+            "api_timeout"
+          ],
+          "codeInjection": {
+            "errorTypes": [
+              "null_pointer",
+              "memory_leak",
+              "api_timeout"
+            ],
+            "frequency": 0.1,
+            "complexity": "low"
+          },
+          "metrics": {
+            "cpuPattern": "stable",
+            "memoryPattern": "stable",
+            "logPattern": "normal"
+          }
+        }
+      ],
+      "expectations": {
+        "detectionRate": 85,
+        "fixSuccessRate": 70,
+        "falsePositiveRate": 15,
+        "mlAccuracy": 80
+      },
+      "generationRules": {
+        "sampleCount": 500,
+        "varianceLevel": "low",
+        "timespan": "30m",
+        "errorDistribution": {
+          "null_pointer": 0.333,
+          "memory_leak": 0.333,
+          "api_timeout": 0.333
+        }
+      }
+    }
+  }
+}

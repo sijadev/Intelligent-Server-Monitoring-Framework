@@ -1,0 +1,65 @@
+# Docker Compose Override für Development
+# Wird automatisch mit docker-compose.yml zusammengeführt
+
+services:
+  imf-app:
+    build:
+      target: development
+    volumes:
+      # Live reload für Development
+      - .:/app
+      - /app/node_modules
+      - ./test-workspace:/app/test-workspace
+    environment:
+      - NODE_ENV=development
+      - VITE_HMR_PORT=5173
+      - VITE_HOST=0.0.0.0
+    stdin_open: true
+    tty: true
+
+  postgres:
+    ports:
+      - "5432:5432"
+    environment:
+      # Debug Logging für Development
+      - POSTGRES_LOG_STATEMENT=all
+      - POSTGRES_LOG_MIN_DURATION_STATEMENT=0
+
+  redis:
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --appendfsync everysec
+
+  # pgAdmin für Database Management (Development only)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: imf-pgadmin
+    ports:
+      - "8080:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@imf.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - imf-network
+
+  # Redis Commander für Redis Management (Development only)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: imf-redis-commander
+    ports:
+      - "8081:8081"
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    depends_on:
+      - redis
+    networks:
+      - imf-network
+
+volumes:
+  pgadmin_data:
+    driver: local

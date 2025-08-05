@@ -2,6 +2,7 @@ import { spawn, ChildProcess } from 'child_process';
 import { EventEmitter } from 'events';
 import path from 'path';
 import fs from 'fs/promises';
+import axios from 'axios';
 import { 
   type Problem, 
   type Metrics, 
@@ -28,12 +29,15 @@ export class PythonMonitorService extends EventEmitter {
   private isRunning = false;
   private pythonPath: string;
   private configPath: string;
+  private pythonApiUrl: string;
 
   constructor() {
     super();
     this.setMaxListeners(50); // Increase max listeners to handle multiple test scenarios
     this.pythonPath = path.join(process.cwd(), 'python-framework', 'enhanced_main.py');
     this.configPath = path.join(process.cwd(), 'python-framework', 'config.yaml');
+    // Use container name for inter-container communication
+    this.pythonApiUrl = process.env.PYTHON_API_URL || 'http://imf-python-ai:8000';
   }
 
   async start(): Promise<void> {
@@ -42,9 +46,51 @@ export class PythonMonitorService extends EventEmitter {
     }
 
     try {
-      // Ensure config file exists
-      await this.updateConfigFile();
+      // Check if Python container is already running
+      const status = await this.checkPythonApiStatus();
+      if (status.running) {
+        this.isRunning = true;
+        console.log('✅ Python framework already running in container');
+        return;
+      }
 
+      // Try to start via API
+      await this.startViaApi();
+      
+      // Fallback to local process if container not available
+      if (!this.isRunning) {
+        await this.startLocalProcess();
+      }
+    } catch (error) {
+      console.warn('⚠️ Failed to start via API, trying local process:', error.message);
+      await this.startLocalProcess();
+    }
+  }
+
+  private async checkPythonApiStatus(): Promise<{running: boolean, error?: string}> {
+    try {
+      const response = await axios.get(`${this.pythonApiUrl}/status`, { timeout: 5000 });
+      return response.data;
+    } catch (error) {
+      return { running: false, error: error.message };
+    }
+  }
+
+  private async startViaApi(): Promise<void> {
+    try {
+      const response = await axios.post(`${this.pythonApiUrl}/restart`, {}, { timeout: 10000 });
+      console.log('🚀 Started Python framework via API:', response.data.message);
+      this.isRunning = true;
+    } catch (error) {
+      throw new Error(`Failed to start via API: ${error.message}`);
+    }
+  }
+
+  private async startLocalProcess(): Promise<void> {
+    // Ensure config file exists
+    await this.updateConfigFile();
+
+    try {
       // Start Python process - use enhanced version for continuous monitoring
       const pythonScript = 'enhanced_main.py';
       const scriptPath = path.join(path.dirname(this.pythonPath), pythonScript);
@@ -159,8 +205,47 @@ export class PythonMonitorService extends EventEmitter {
   }
 
   async restart(): Promise<void> {
-    await this.stop();
-    await this.start();
+    try {
+      // Try API restart first
+      await axios.post(`${this.pythonApiUrl}/restart`, {}, { timeout: 10000 });
+      console.log('🔄 Restarted Python framework via API');
+    } catch (error) {
+      // Fallback to local restart
+      console.warn('⚠️ API restart failed, falling back to local restart:', error.message);
+      await this.stop();
+      await this.start();
+    }
+  }
+
+  async getFrameworkData(): Promise<PythonFrameworkData> {
+    try {
+      // Try to get data from API first
+      const response = await axios.get(`${this.pythonApiUrl}/data`, { timeout: 5000 });
+      return {
+        problems: response.data.problems || [],
+        metrics: response.data.metrics || {},
+        logEntries: [], // Will be handled separately
+        plugins: response.data.plugins || [],
+        status: response.data.status || { running: false }
+      };
+    } catch (error) {
+      // Return empty data if API not available
+      return {
+        problems: [],
+        metrics: {},
+        logEntries: [],
+        plugins: [],
+        status: { running: false, error: error.message }
+      };
+    }
+  }
+
+  getStatus(): { running: boolean; hasProcess: boolean; apiAvailable?: boolean } {
+    return {
+      running: this.isRunning,
+      hasProcess: this.process !== null,
+      apiAvailable: true // Will be updated by health checks
+    };
   }
 
   async sendCommand(command: string, data?: any): Promise<void> {
@@ -313,13 +398,6 @@ thresholds:
     warning: 85
     critical: 95
 `.trim();
-  }
-
-  getStatus(): { running: boolean; processId?: number } {
-    return {
-      running: this.isRunning,
-      processId: this.process?.pid,
-    };
   }
 }
 

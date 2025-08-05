@@ -1,0 +1,141 @@
+# Docker Compose für IMF mit AI Storage Support
+
+services:
+  # Hauptanwendung - IMF Server & Client
+  imf-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: imf-app
+    ports:
+      - "5173:5173"  # Vite Dev Server
+      - "3000:3000"  # Express Server
+    environment:
+      - NODE_ENV=development
+      - AI_STORAGE_TYPE=hybrid
+      - DATABASE_URL=postgresql://imf_user:imf_password@postgres:5432/imf_ai_storage
+      - REDIS_URL=redis://redis:6379
+      - MCP_SERVER_ID=imf-main-server
+      - PROJECT_ID=imf-monitoring
+      - ORGANIZATION_ID=imf-org
+      - PYTHON_API_URL=http://imf-python-ai:8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - ./python-framework:/app/python-framework
+    command: npm run dev
+    networks:
+      - imf-network
+
+  # PostgreSQL für AI Progress Storage
+  postgres:
+    image: postgres:15-alpine
+    container_name: imf-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: imf_ai_storage
+      POSTGRES_USER: imf_user
+      POSTGRES_PASSWORD: imf_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U imf_user -d imf_ai_storage"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - imf-network
+
+  # Redis für Caching und Session Management
+  redis:
+    image: redis:7-alpine
+    container_name: imf-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - imf-network
+
+  # Test MCP Server für Integration Tests
+  test-mcp-server:
+    build:
+      context: ./docker/test-mcp-server
+      dockerfile: Dockerfile
+    container_name: test-mcp-server
+    ports:
+      - "3001:3001"
+    environment:
+      - CONFIG_PATH=/app/config/basic-test.json
+      - NODE_ENV=production
+      - MCP_SERVER_ID=test-mcp-server
+      - AI_STORAGE_TYPE=memory
+    volumes:
+      - ./docker/test-mcp-server/config:/app/config:ro
+    healthcheck:
+      test: ["CMD", "node", "dist/health-check.js"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - imf-network
+
+  # Python Framework für AI Learning
+  python-ai:
+    build:
+      context: ./python-framework
+      dockerfile: Dockerfile
+    container_name: imf-python-ai
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONPATH=/app
+      - AI_STORAGE_TYPE=hybrid
+      - DATABASE_URL=postgresql://imf_user:imf_password@postgres:5432/imf_ai_storage
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./python-framework:/app
+      - ./python-framework/ai_models:/app/ai_models
+    working_dir: /app
+    command: python api_server.py
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - imf-network
+
+# Test Manager Service is now integrated as npm package
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  imf-network:
+    driver: bridge

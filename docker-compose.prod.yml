@@ -1,0 +1,117 @@
+# Docker Compose für Production
+
+services:
+  imf-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: imf-app-prod
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - AI_STORAGE_TYPE=hybrid
+      - DATABASE_URL=postgresql://imf_user:${DB_PASSWORD}@postgres:5432/imf_ai_storage
+      - REDIS_URL=redis://redis:6379
+      - MCP_SERVER_ID=imf-prod-server
+      - PROJECT_ID=imf-monitoring
+      - ORGANIZATION_ID=imf-org
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - imf-network
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: imf-postgres-prod
+    environment:
+      POSTGRES_DB: imf_ai_storage
+      POSTGRES_USER: imf_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+      - ./backups:/backups
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U imf_user -d imf_ai_storage"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - imf-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: imf-redis-prod
+    volumes:
+      - redis_prod_data:/data
+    command: redis-server --appendonly yes --appendfsync everysec --maxmemory 512mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - imf-network
+
+  # Nginx Reverse Proxy für Production
+  nginx:
+    image: nginx:alpine
+    container_name: imf-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - imf-app
+    restart: unless-stopped
+    networks:
+      - imf-network
+
+  # Backup Service
+  backup:
+    image: postgres:15-alpine
+    container_name: imf-backup
+    volumes:
+      - ./backups:/backups
+      - ./docker/backup.sh:/backup.sh:ro
+    environment:
+      - PGPASSWORD=${DB_PASSWORD}
+    depends_on:
+      - postgres
+    command: >
+      sh -c "
+      while true; do
+        sleep 86400  # 24 hours
+        /backup.sh
+      done"
+    restart: unless-stopped
+    networks:
+      - imf-network
+
+volumes:
+  postgres_prod_data:
+    driver: local
+  redis_prod_data:
+    driver: local
+
+networks:
+  imf-network:
+    driver: bridge
