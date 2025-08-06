@@ -7,9 +7,11 @@ Demonstrates real AI model training and prediction capabilities
 import asyncio
 import sys
 import json
+import pytest
 from pathlib import Path
 from real_ai_learning_system import initialize_real_ai_system, ML_AVAILABLE
 
+@pytest.mark.asyncio
 async def test_ml_integration():
     """Test real ML system integration"""
     print("🧪 Testing ML Integration with IMF")

@@ -96,27 +96,28 @@ services:
     networks:
       - imf-network
 
-  # Python Framework für AI Learning
+  # Python Framework über npm package
   python-ai:
     build:
-      context: ./python-framework
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: docker/python-framework/Dockerfile
     container_name: imf-python-ai
     ports:
       - "8000:8000"
     environment:
-      - PYTHONPATH=/app
       - AI_STORAGE_TYPE=hybrid
       - DATABASE_URL=postgresql://imf_user:imf_password@postgres:5432/imf_ai_storage
       - REDIS_URL=redis://redis:6379
+      - IMF_FRAMEWORK_MODE=api
+      - IMF_FRAMEWORK_PORT=8000
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     volumes:
-      - ./python-framework:/app
       - ./python-framework/ai_models:/app/ai_models
+      - ./python-framework/data:/app/data
     working_dir: /app
     command: python api_server.py
     healthcheck:

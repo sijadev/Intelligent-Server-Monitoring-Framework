@@ -1,0 +1,21 @@
+# Override für lokale Python Framework Entwicklung via npm
+version: '3.8'
+
+services:
+  python-ai:
+    build:
+      context: ../..
+      dockerfile: docker/python-framework/Dockerfile
+      args:
+        - BUILD_MODE=development
+    environment:
+      - NODE_ENV=development
+      - IMF_FRAMEWORK_MODE=api
+      - IMF_FRAMEWORK_PORT=8000
+      - IMF_FRAMEWORK_VERBOSE=true
+    volumes:
+      # Lokale ai_models und data für Entwicklung
+      - ../../python-framework/ai_models:/app/ai_models
+      - ../../python-framework/data:/app/data
+      - ../../python-framework/config.yaml:/app/config.yaml
+    command: npx imf-python-framework start --mode api --port 8000 --verbose

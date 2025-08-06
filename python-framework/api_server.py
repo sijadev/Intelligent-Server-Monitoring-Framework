@@ -6,6 +6,7 @@ Provides REST API endpoints for container communication
 
 import asyncio
 import json
+import logging
 import threading
 import time
 from datetime import datetime
@@ -19,17 +20,14 @@ import uvicorn
 # Import the existing framework
 from enhanced_main import EnhancedMonitoringFramework, DateTimeEncoder
 
+# Setup logging
+logger = logging.getLogger(__name__)
+
 class FrameworkAPIServer:
     def __init__(self):
         self.framework = EnhancedMonitoringFramework()
         self.framework_task = None
         self.is_running = False
-        self.last_data = {
-            "metrics": {},
-            "problems": [],
-            "plugins": [],
-            "status": {"running": False}
-        }
         
     async def start_framework(self):
         """Start the monitoring framework in background"""
@@ -48,32 +46,15 @@ class FrameworkAPIServer:
         self.is_running = False
         
     async def _run_framework(self):
-        """Run the framework and capture its output"""
+        """Run the framework and capture its data"""
         try:
-            # Override framework's output method to capture data
-            original_output = self.framework.output_results
-            
-            def capture_output(data):
-                self.last_data = {
-                    "metrics": data.get("metrics", {}),
-                    "problems": data.get("problems", []),
-                    "plugins": data.get("plugins", []),
-                    "status": {"running": True, "timestamp": datetime.now().isoformat()}
-                }
-                # Still call original output for logging
-                original_output(data)
-                
-            self.framework.output_results = capture_output
+            # Start the framework monitoring
             await self.framework.start_monitoring()
             
         except asyncio.CancelledError:
             raise
         except Exception as e:
-            self.last_data["status"] = {
-                "running": False, 
-                "error": str(e),
-                "timestamp": datetime.now().isoformat()
-            }
+            logger.error(f"Framework error: {e}")
             self.is_running = False
 
 # Global framework instance
@@ -123,9 +104,9 @@ async def get_status():
     """Get framework status"""
     return {
         "running": framework_server.is_running,
-        "last_update": framework_server.last_data.get("status", {}).get("timestamp"),
-        "plugins_count": len(framework_server.last_data.get("plugins", [])),
-        "problems_count": len(framework_server.last_data.get("problems", []))
+        "last_update": datetime.now().isoformat(),
+        "plugins_count": len(framework_server.framework.plugins),
+        "problems_count": len(framework_server.framework.problems)
     }
 
 @app.get("/metrics")
@@ -134,7 +115,10 @@ async def get_metrics():
     if not framework_server.is_running:
         raise HTTPException(status_code=503, detail="Framework not running")
     
-    return framework_server.last_data.get("metrics", {})
+    # Get latest metrics from framework
+    if framework_server.framework.metrics_history:
+        return framework_server.framework.metrics_history[-1]
+    return {}
 
 @app.get("/problems")
 async def get_problems():
@@ -142,7 +126,12 @@ async def get_problems():
     if not framework_server.is_running:
         raise HTTPException(status_code=503, detail="Framework not running")
     
-    return framework_server.last_data.get("problems", [])
+    return [{
+        "type": p.type,
+        "severity": p.severity,
+        "description": p.description,
+        "timestamp": p.timestamp.isoformat() if hasattr(p.timestamp, 'isoformat') else str(p.timestamp)
+    } for p in framework_server.framework.problems]
 
 @app.get("/plugins")
 async def get_plugins():
@@ -150,7 +139,7 @@ async def get_plugins():
     if not framework_server.is_running:
         raise HTTPException(status_code=503, detail="Framework not running")
     
-    return framework_server.last_data.get("plugins", [])
+    return framework_server.framework.plugins
 
 @app.get("/data")
 async def get_all_data():
@@ -163,7 +152,24 @@ async def get_all_data():
             "status": {"running": False}
         }
     
-    return framework_server.last_data
+    # Get current data from framework
+    problems = [{
+        "type": p.type,
+        "severity": p.severity,
+        "description": p.description,
+        "timestamp": p.timestamp.isoformat() if hasattr(p.timestamp, 'isoformat') else str(p.timestamp)
+    } for p in framework_server.framework.problems]
+    
+    metrics = {}
+    if framework_server.framework.metrics_history:
+        metrics = framework_server.framework.metrics_history[-1]
+    
+    return {
+        "problems": problems,
+        "metrics": metrics,
+        "plugins": framework_server.framework.plugins,
+        "status": {"running": framework_server.is_running}
+    }
 
 @app.post("/start")
 async def start_framework():

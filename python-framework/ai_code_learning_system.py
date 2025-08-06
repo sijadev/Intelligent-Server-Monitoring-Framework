@@ -100,8 +100,14 @@ class AILearningEngine:
         self.pattern_success_rates: Dict[str, float] = defaultdict(float)
         self.pattern_confidence_scores: Dict[str, List[float]] = defaultdict(list)
         
-        # Load existing models and data
-        asyncio.create_task(self._load_existing_data())
+        # Load existing models and data - defer to when event loop is available
+        self._data_loaded = False
+    
+    async def _ensure_data_loaded(self):
+        """Ensure data is loaded when needed"""
+        if not self._data_loaded:
+            await self._load_existing_data()
+            self._data_loaded = True
     
     async def _load_existing_data(self):
         """Load existing learning data and models"""
@@ -161,6 +167,7 @@ class AILearningEngine:
     
     async def record_intervention(self, intervention: AiIntervention):
         """Record a new AI intervention for learning"""
+        await self._ensure_data_loaded()
         self.interventions.append(intervention)
         await self._update_learning_patterns()
         await self._save_data()
@@ -271,6 +278,7 @@ class AILearningEngine:
     
     async def predict_intervention_success(self, problem_type: str, confidence: float, risk_score: float) -> float:
         """Predict success probability for an intervention"""
+        await self._ensure_data_loaded()
         try:
             # Use learned patterns
             if problem_type in self.pattern_success_rates:

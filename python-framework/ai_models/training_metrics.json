@@ -229,5 +229,124 @@
       "enhanced_accuracy": 80.92105457523368,
       "improvement": -5.832454516470065
     }
+  },
+  {
+    "model_name": "continuous_monitoring_enhanced",
+    "training_start": "2025-08-05T23:02:24.427Z",
+    "training_end": "2025-08-05T23:02:24.427Z",
+    "accuracy": null,
+    "precision": null,
+    "recall": null,
+    "f1_score": null,
+    "mse": 0.2474857585638942,
+    "training_samples": 173,
+    "validation_samples": 34,
+    "feature_count": 12,
+    "training_time_seconds": 180,
+    "cross_validation_score": 0.7525142414361058,
+    "model_size_mb": 0.8,
+    "learning_curve_data": [],
+    "enhanced_features": {
+      "real_data_integration": true,
+      "ai_model_enhancement": 7,
+      "adaptive_learning": true,
+      "problem_detection_boost": true,
+      "intervention_guidance": true
+    },
+    "performance_metrics": {
+      "datasets_processed": 3,
+      "total_problems": 173,
+      "avg_success_rate": 0.7525142414361058,
+      "complexity_distribution": {
+        "high": 2,
+        "low": 1
+      }
+    },
+    "previous_models_integrated": 7,
+    "knowledge_evolution": {
+      "base_accuracy": 85.9203013036366,
+      "enhanced_accuracy": 75.25142414361058,
+      "improvement": -10.668877160026028
+    }
+  },
+  {
+    "model_name": "continuous_monitoring_enhanced",
+    "training_start": "2025-08-06T15:03:49.981Z",
+    "training_end": "2025-08-06T15:03:49.981Z",
+    "accuracy": null,
+    "precision": null,
+    "recall": null,
+    "f1_score": null,
+    "mse": 0.21366666666666667,
+    "training_samples": 194,
+    "validation_samples": 38,
+    "feature_count": 12,
+    "training_time_seconds": 180,
+    "cross_validation_score": 0.7863333333333333,
+    "model_size_mb": 0.8,
+    "learning_curve_data": [],
+    "enhanced_features": {
+      "real_data_integration": true,
+      "ai_model_enhancement": 8,
+      "adaptive_learning": true,
+      "problem_detection_boost": true,
+      "intervention_guidance": true
+    },
+    "performance_metrics": {
+      "datasets_processed": 3,
+      "total_problems": 194,
+      "avg_success_rate": 0.7863333333333333,
+      "complexity_distribution": {
+        "high": 1,
+        "low": 1,
+        "medium": 1
+      }
+    },
+    "previous_models_integrated": 8,
+    "knowledge_evolution": {
+      "base_accuracy": 84.58669165863336,
+      "enhanced_accuracy": 78.63333333333333,
+      "improvement": -5.95335832530003
+    }
+  },
+  {
+    "model_name": "continuous_monitoring_enhanced",
+    "training_start": "2025-08-06T15:09:27.388Z",
+    "training_end": "2025-08-06T15:09:27.388Z",
+    "accuracy": null,
+    "precision": null,
+    "recall": null,
+    "f1_score": null,
+    "mse": 0.21366666666666667,
+    "training_samples": 194,
+    "validation_samples": 38,
+    "feature_count": 12,
+    "training_time_seconds": 180,
+    "cross_validation_score": 0.7863333333333333,
+    "model_size_mb": 0.8,
+    "learning_curve_data": [],
+    "enhanced_features": {
+      "real_data_integration": true,
+      "ai_model_enhancement": 9,
+      "adaptive_learning": true,
+      "problem_detection_boost": true,
+      "intervention_guidance": true
+    },
+    "performance_metrics": {
+      "datasets_processed": 3,
+      "total_problems": 194,
+      "avg_success_rate": 0.7863333333333333,
+      "complexity_distribution": {
+        "high": 1,
+        "low": 1,
+        "medium": 1
+      }
+    },
+    "previous_models_integrated": 9,
+    "knowledge_evolution": {
+      "base_accuracy": 83.92520740026669,
+      "enhanced_accuracy": 78.63333333333333,
+      "improvement": -5.29187406693336
+    }
   }
 ]

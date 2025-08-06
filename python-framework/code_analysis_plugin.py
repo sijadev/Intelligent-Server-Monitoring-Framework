@@ -272,6 +272,9 @@ class CodeAnalysisPlugin(ProblemDetectorPlugin):
     
     async def _analyze_error_message(self, message: str) -> List[CodeIssue]:
         """Analyze an error message for code issues"""
+        if not message or not isinstance(message, str):
+            return []
+            
         issues = []
         
         for pattern_info in self.error_patterns:
