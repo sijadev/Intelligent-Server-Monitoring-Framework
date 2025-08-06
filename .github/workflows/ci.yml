@@ -63,9 +63,52 @@ jobs:
         run: |
           npx vitest run server/test/mcp-api.test.ts
 
+      - name: 🐳 Setup Docker Services for Integration Tests
+        run: |
+          echo "🔧 Starting Docker services for integration tests..."
+          
+          # Use CI-specific docker compose configuration
+          export COMPOSE_FILE="docker-compose.yml:docker-compose.ci.yml"
+          
+          # Start only Redis (PostgreSQL is already running via GitHub Actions)
+          docker-compose -f docker-compose.ci.yml up -d redis
+          
+          # Wait for Redis
+          echo "⏳ Waiting for Redis..."
+          timeout 30 bash -c 'until docker-compose -f docker-compose.ci.yml exec -T redis redis-cli ping; do sleep 2; done'
+          
+          # Start test MCP services
+          echo "🧪 Starting Test MCP Services..."
+          cd docker/test-mcp-server
+          docker-compose up -d --build
+          cd ../..
+          
+          # Wait for MCP services
+          echo "⏳ Waiting for MCP services to be ready..."
+          sleep 15
+          
+          # Verify services are running
+          echo "🔍 Checking service status..."
+          docker ps --filter "name=test-mcp" --format "table {{.Names}}\t{{.Status}}"
+
       - name: 🔗 Run integration tests
         run: |
+          echo "🔗 Running integration tests with Docker services..."
           npx vitest run server/test/integration.test.ts server/test/end-to-end-integration.test.ts
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+          REDIS_URL: redis://localhost:6380
+          NODE_ENV: test
+          CI: true
+          GITHUB_ACTIONS: true
+          TEST_MCP_SERVER_URL: http://localhost:3001
+          
+      - name: 🧹 Cleanup Docker Services
+        if: always()
+        run: |
+          echo "🧹 Cleaning up Docker services..."
+          docker-compose -f docker-compose.ci.yml down --remove-orphans || true
+          cd docker/test-mcp-server && docker-compose down --remove-orphans || true
 
   # Generate Test Data for Real Data Tests
   generate-test-data:

@@ -29,10 +29,12 @@
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f",
     "docker:clean": "docker-compose down --volumes --remove-orphans",
-    "test:ai-storage": "vitest run server/test/enhanced-cross-tenant-sharing.test.ts server/test/long-term/ai-enhanced-continuous-monitoring-tenant-aware.test.ts"
+    "test:ai-storage": "vitest run server/test/enhanced-cross-tenant-sharing.test.ts server/test/long-term/ai-enhanced-continuous-monitoring-tenant-aware.test.ts",
+    "test:all-with-docker": "./scripts/run-all-tests-with-docker.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
+    "@imf/python-monitoring-framework": "file:python-framework/imf-python-monitoring-framework-1.0.0.tgz",
     "@imf/test-manager": "file:imf-test-manager-1.0.0.tgz",
     "@jridgewell/trace-mapping": "^0.3.25",
     "@neondatabase/serverless": "^0.10.4",
