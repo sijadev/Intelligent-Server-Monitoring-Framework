@@ -1,0 +1,12 @@
+{
+  "scripts": {
+    "test:e2e": "cd e2e && npm test",
+    "test:e2e:headed": "cd e2e && npm run test:headed",
+    "test:e2e:ui": "cd e2e && npm run test:ui", 
+    "test:e2e:debug": "cd e2e && npm run test:debug",
+    "test:e2e:docker": "cd e2e && npm run test:docker",
+    "test:e2e:install": "cd e2e && npm ci && npx playwright install",
+    "test:e2e:setup": "cd e2e && cp .env.example .env && npm ci && npx playwright install",
+    "test:e2e:report": "cd e2e && npm run test:report"
+  }
+}

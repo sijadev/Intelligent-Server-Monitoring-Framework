@@ -53,7 +53,7 @@ export function LogViewer({ logs, onClear, className }: LogViewerProps) {
   };
 
   return (
-    <div className={className}>
+    <div data-testid="log-viewer" className={className}>
       <Card className="border border-gray-200">
         <CardHeader className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">

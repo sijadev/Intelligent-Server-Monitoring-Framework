@@ -1,8 +1,8 @@
 # Multi-stage Dockerfile für IMF (Node.js only, Python runs in separate container)
 FROM node:20-alpine AS base
 
-# Installiere nur PostgreSQL Client für DB Zugriff
-RUN apk add --no-cache postgresql-client
+# Installiere PostgreSQL Client und Python für das Framework
+RUN apk add --no-cache postgresql-client python3 py3-pip curl
 
 # Arbeitsverzeichnis
 WORKDIR /app

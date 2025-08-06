@@ -19,7 +19,7 @@ const configSchema = z.object({
   
   // Python Framework Configuration
   PYTHON_FRAMEWORK_ENABLED: z.coerce.boolean().default(true),
-  PYTHON_API_URL: z.string().url().default('http://localhost:8000'),
+  PYTHON_API_URL: z.string().optional().transform(val => val && val !== '' ? val : 'http://localhost:8000').pipe(z.string().url()),
   MONITORING_INTERVAL: z.coerce.number().min(1).max(3600).default(30),
   LOG_LEVEL: z.enum(['DEBUG', 'INFO', 'WARN', 'ERROR']).default('INFO'),
   

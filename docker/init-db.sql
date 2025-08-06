@@ -107,6 +107,7 @@ CREATE TABLE IF NOT EXISTS code_issues (
     issue_type TEXT NOT NULL,
     severity TEXT NOT NULL,
     description TEXT NOT NULL,
+    function_name TEXT,
     suggested_fix TEXT,
     timestamp TIMESTAMP NOT NULL,
     fix_applied BOOLEAN DEFAULT false,
@@ -118,11 +119,12 @@ CREATE TABLE IF NOT EXISTS code_issues (
 CREATE TABLE IF NOT EXISTS code_analysis_runs (
     id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
     timestamp TIMESTAMP NOT NULL,
-    total_files_analyzed INTEGER DEFAULT 0,
+    source_directories TEXT[],
+    files_analyzed INTEGER DEFAULT 0,
     issues_found INTEGER DEFAULT 0,
     fixes_applied INTEGER DEFAULT 0,
-    analysis_duration INTEGER DEFAULT 0,
-    triggered_by TEXT,
+    status TEXT DEFAULT 'pending',
+    duration_ms INTEGER DEFAULT 0,
     metadata JSONB DEFAULT '{}'
 );
 
@@ -356,6 +358,14 @@ VALUES
     ('mcp-server-dashboard', 'Dashboard Server', 'imf-org', 'imf-monitoring', 'development'),
     ('mcp-server-analytics', 'Analytics Server', 'imf-org', 'imf-monitoring', 'development')
 ON CONFLICT (server_id) DO NOTHING;
+
+-- Create user if not exists
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT FROM pg_catalog.pg_user WHERE usename = 'imf_user') THEN
+        CREATE USER imf_user WITH PASSWORD 'imf_password';
+    END IF;
+END $$;
 
 -- Grant Permissions
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO imf_user;

@@ -50,6 +50,7 @@ export function Header({
           
           {/* Refresh Button */}
           <Button
+            data-testid="refresh-button"
             variant="ghost"
             size="sm"
             onClick={onRefresh}

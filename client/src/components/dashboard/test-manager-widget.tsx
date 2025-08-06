@@ -13,7 +13,7 @@ export function TestManagerWidget() {
     queryFn: async () => {
       try {
         console.log('🔍 Fetching test manager status...');
-        const response = await api.get('/test-manager/status');
+        const response = await api.testManagerGet('/test-manager/status');
         console.log('📊 Status response:', response);
         // Return the nested status object directly
         return response.status || response;
@@ -25,7 +25,7 @@ export function TestManagerWidget() {
           active: false,
           activeGenerations: [],
           generationCapacity: 0,
-          error: error.message
+          error: error instanceof Error ? error.message : String(error)
         };
       }
     },
@@ -40,7 +40,7 @@ export function TestManagerWidget() {
     queryFn: async () => {
       try {
         console.log('🔍 Fetching test manager profiles...');
-        const response = await api.get('/test-manager/profiles');
+        const response = await api.testManagerGet('/test-manager/profiles');
         console.log('📋 Profiles response:', response);
         const profilesData = response.profiles || response;
         return Array.isArray(profilesData) ? profilesData.slice(0, 3) : [];
@@ -57,7 +57,7 @@ export function TestManagerWidget() {
     queryFn: async () => {
       try {
         console.log('🔍 Fetching test manager generated data...');
-        const response = await api.get('/test-manager/generated-data');
+        const response = await api.testManagerGet('/test-manager/generated-data');
         console.log('📊 Generated data response:', response);
         const dataArray = response.data || response;
         return Array.isArray(dataArray) ? dataArray.slice(0, 3) : [];
@@ -77,7 +77,7 @@ export function TestManagerWidget() {
   };
 
   return (
-    <div className="space-y-4">
+    <div data-testid="test-manager-widget" className="space-y-4">
       {/* Status Card */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

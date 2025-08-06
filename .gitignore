@@ -110,3 +110,72 @@ package.json.backup
 # Local development
 migrations/
 drizzle/
+
+# Playwright Test Results
+test-results/
+playwright-report/
+playwright/.cache/
+
+# E2E Test Artifacts
+e2e/test-results/
+e2e/playwright-report/
+*.png
+*.webm
+*.trace
+*.har
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+.docker/
+
+# TypeScript
+*.tsbuildinfo
+
+# Tailwind CSS
+.tailwindcss-cache
+
+# Next.js (if applicable)
+.next/
+out/
+
+# Vercel (if applicable)
+.vercel
+
+# Turbo (if applicable)
+.turbo
+
+# Storybook (if applicable)
+storybook-static
+
+# Bundle analyzer
+.bundle-analyzer
+
+# Local test files
+**/test-logs/
+**/logs/
+*.test.local.*
+
+# Temporary development files
+temp/
+tmp/
+.tmp/
+
+# Configuration overrides
+config.local.*
+*.local.config.*
+
+# API keys and secrets (additional patterns)
+.secrets
+.api-keys
+.credentials
+**/secrets/
+**/keys/
+
+# Lock files (keep package-lock.json but ignore others)
+yarn.lock
+pnpm-lock.yaml
+
+# Development tools
+.eslintcache
+.stylelintcache

@@ -28,7 +28,7 @@ const severityStatus = {
 export function ProblemsList({ problems, onResolveProblem }: ProblemsListProps) {
   return (
     <div className="lg:col-span-2">
-      <Card className="border border-gray-200">
+      <Card data-testid="problems-list" className="border border-gray-200">
         <CardHeader className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-medium text-gray-900">Recent Problems</h3>

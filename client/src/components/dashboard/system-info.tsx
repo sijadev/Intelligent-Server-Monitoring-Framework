@@ -34,7 +34,7 @@ export function SystemInfo({ metrics, uptime }: SystemInfoProps) {
   ];
 
   return (
-    <div>
+    <div data-testid="system-info">
       <Card className="border border-gray-200 mb-6">
         <CardHeader className="px-6 py-4 border-b border-gray-200">
           <h3 className="text-lg font-medium text-gray-900">System Information</h3>
@@ -50,8 +50,11 @@ export function SystemInfo({ metrics, uptime }: SystemInfoProps) {
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div 
-                  className={cn("h-2 rounded-full transition-all", getProgressColor(metric.value))}
-                  style={{ width: `${Math.min(metric.value, 100)}%` }}
+                  className={cn(
+                    "progress-bar", 
+                    `progress-${Math.round(Math.min(metric.value, 100))}`,
+                    getProgressColor(metric.value)
+                  )}
                 />
               </div>
             </div>

@@ -1,0 +1,24 @@
+{
+  "name": "imf-e2e-tests",
+  "version": "1.0.0",
+  "description": "IMF End-to-End UI Tests with Playwright",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "test:debug": "playwright test --debug",
+    "test:docker": "docker-compose up --build --abort-on-container-exit",
+    "test:report": "playwright show-report",
+    "test:codegen": "playwright codegen http://localhost:3000",
+    "install:browsers": "playwright install",
+    "install:deps": "playwright install-deps"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "dotenv": "^16.3.1"
+  }
+}
