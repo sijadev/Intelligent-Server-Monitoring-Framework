@@ -56,7 +56,11 @@ export class TestManagerService extends EventEmitter {
       this.emit('initialized');
 
     } catch (error) {
-      console.error('❌ Failed to initialize Test Manager Service:', error);
+      if (process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true') {
+        console.log('ℹ️  Test Manager Service not available in CI environment (expected)');
+      } else {
+        console.error('❌ Failed to initialize Test Manager Service:', error);
+      }
       throw error;
     }
   }
@@ -102,7 +106,10 @@ export class TestManagerService extends EventEmitter {
         if (code === 0) {
           resolve();
         } else {
-          reject(new Error(`Test manager CLI returned code: ${code}`));
+          const errorMessage = process.env.CI === 'true' ? 
+            `Test manager CLI not available in CI (code: ${code})` :
+            `Test manager CLI returned code: ${code}`;
+          reject(new Error(errorMessage));
         }
       });
 
