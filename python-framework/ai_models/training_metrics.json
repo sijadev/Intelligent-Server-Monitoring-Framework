@@ -388,5 +388,85 @@
       "enhanced_accuracy": 78.63333333333333,
       "improvement": -4.762686660240021
     }
+  },
+  {
+    "model_name": "continuous_monitoring_enhanced",
+    "training_start": "2025-08-06T18:50:05.616Z",
+    "training_end": "2025-08-06T18:50:05.616Z",
+    "accuracy": null,
+    "precision": null,
+    "recall": null,
+    "f1_score": null,
+    "mse": 0.21366666666666667,
+    "training_samples": 194,
+    "validation_samples": 38,
+    "feature_count": 12,
+    "training_time_seconds": 180,
+    "cross_validation_score": 0.7863333333333333,
+    "model_size_mb": 0.8,
+    "learning_curve_data": [],
+    "enhanced_features": {
+      "real_data_integration": true,
+      "ai_model_enhancement": 11,
+      "adaptive_learning": true,
+      "problem_detection_boost": true,
+      "intervention_guidance": true
+    },
+    "performance_metrics": {
+      "datasets_processed": 3,
+      "total_problems": 194,
+      "avg_success_rate": 0.7863333333333333,
+      "complexity_distribution": {
+        "high": 1,
+        "low": 1,
+        "medium": 1
+      }
+    },
+    "previous_models_integrated": 11,
+    "knowledge_evolution": {
+      "base_accuracy": 82.96304847900608,
+      "enhanced_accuracy": 78.63333333333333,
+      "improvement": -4.3297151456727505
+    }
+  },
+  {
+    "model_name": "continuous_monitoring_enhanced",
+    "training_start": "2025-08-06T18:52:36.638Z",
+    "training_end": "2025-08-06T18:52:36.638Z",
+    "accuracy": null,
+    "precision": null,
+    "recall": null,
+    "f1_score": null,
+    "mse": 0.21366666666666667,
+    "training_samples": 194,
+    "validation_samples": 38,
+    "feature_count": 12,
+    "training_time_seconds": 180,
+    "cross_validation_score": 0.7863333333333333,
+    "model_size_mb": 0.8,
+    "learning_curve_data": [],
+    "enhanced_features": {
+      "real_data_integration": true,
+      "ai_model_enhancement": 12,
+      "adaptive_learning": true,
+      "problem_detection_boost": true,
+      "intervention_guidance": true
+    },
+    "performance_metrics": {
+      "datasets_processed": 3,
+      "total_problems": 194,
+      "avg_success_rate": 0.7863333333333333,
+      "complexity_distribution": {
+        "high": 1,
+        "low": 1,
+        "medium": 1
+      }
+    },
+    "previous_models_integrated": 12,
+    "knowledge_evolution": {
+      "base_accuracy": 82.60223888353335,
+      "enhanced_accuracy": 78.63333333333333,
+      "improvement": -3.96890555020002
+    }
   }
 ]
