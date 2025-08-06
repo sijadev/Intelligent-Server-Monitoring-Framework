@@ -61,7 +61,11 @@ jobs:
 
       - name: 📡 Run API tests
         run: |
-          npx vitest run server/test/mcp-api.test.ts
+          echo "🧪 Running CI-optimized API tests..."
+          npx vitest run server/test/mcp-api-ci.test.ts
+        env:
+          CI: true
+          NODE_ENV: test
 
       - name: 🐳 Setup Docker Services for Integration Tests
         run: |
@@ -93,8 +97,8 @@ jobs:
 
       - name: 🔗 Run integration tests
         run: |
-          echo "🔗 Running integration tests with Docker services..."
-          npx vitest run server/test/integration.test.ts server/test/end-to-end-integration.test.ts
+          echo "🔗 Running CI-optimized integration tests with Docker services..."
+          npx vitest run server/test/integration-ci.test.ts
         env:
           DATABASE_URL: ${{ env.DATABASE_URL }}
           REDIS_URL: redis://localhost:6380
