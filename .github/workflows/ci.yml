@@ -95,10 +95,10 @@ jobs:
           echo "🔍 Checking service status..."
           docker ps --filter "name=test-mcp" --format "table {{.Names}}\t{{.Status}}"
 
-      - name: 🔗 Run integration tests
+      - name: 🔗 Run smoke tests
         run: |
-          echo "🔗 Running CI-optimized integration tests with Docker services..."
-          npx vitest run server/test/integration-ci.test.ts
+          echo "💨 Running CI smoke tests..."
+          npx vitest run server/test/smoke-ci.test.ts
         env:
           DATABASE_URL: ${{ env.DATABASE_URL }}
           REDIS_URL: redis://localhost:6380
