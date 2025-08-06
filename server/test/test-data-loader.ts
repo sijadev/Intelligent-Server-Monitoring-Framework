@@ -77,8 +77,12 @@ export class TestDataLoader {
   private testWorkspacePath: string;
   private cachedData: Map<string, GeneratedTestData> = new Map();
 
-  constructor(testWorkspacePath: string = '/Users/simonjanke/Projects/IMF/test-workspace') {
-    this.testWorkspacePath = testWorkspacePath;
+  constructor(testWorkspacePath?: string) {
+    // Use environment variable for CI, fallback to default for local development
+    this.testWorkspacePath = testWorkspacePath || 
+                             process.env.IMF_TEST_WORKSPACE || 
+                             process.env.TEST_MANAGER_WORKSPACE || 
+                             './test-workspace';
   }
 
   async loadAllGeneratedData(): Promise<GeneratedTestData[]> {
