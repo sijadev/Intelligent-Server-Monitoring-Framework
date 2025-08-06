@@ -1,6 +1,6 @@
 import { createRealDataTest, type GeneratedTestData } from './real-data-test-template';
 import { spawn, ChildProcess } from 'child_process';
-import fetch from 'node-fetch';
+// Using native fetch (Node.js 18+)
 import { promises as fs } from 'fs';
 import path from 'path';
 

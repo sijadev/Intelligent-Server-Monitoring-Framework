@@ -1,5 +1,5 @@
 import { spawn, ChildProcess } from 'child_process';
-import fetch from 'node-fetch';
+// Using native fetch (Node.js 18+)
 
 export interface DockerService {
   name: string;

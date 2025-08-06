@@ -348,5 +348,45 @@
       "enhanced_accuracy": 78.63333333333333,
       "improvement": -5.29187406693336
     }
+  },
+  {
+    "model_name": "continuous_monitoring_enhanced",
+    "training_start": "2025-08-06T18:33:43.745Z",
+    "training_end": "2025-08-06T18:33:43.745Z",
+    "accuracy": null,
+    "precision": null,
+    "recall": null,
+    "f1_score": null,
+    "mse": 0.21366666666666667,
+    "training_samples": 194,
+    "validation_samples": 38,
+    "feature_count": 12,
+    "training_time_seconds": 180,
+    "cross_validation_score": 0.7863333333333333,
+    "model_size_mb": 0.8,
+    "learning_curve_data": [],
+    "enhanced_features": {
+      "real_data_integration": true,
+      "ai_model_enhancement": 10,
+      "adaptive_learning": true,
+      "problem_detection_boost": true,
+      "intervention_guidance": true
+    },
+    "performance_metrics": {
+      "datasets_processed": 3,
+      "total_problems": 194,
+      "avg_success_rate": 0.7863333333333333,
+      "complexity_distribution": {
+        "high": 1,
+        "low": 1,
+        "medium": 1
+      }
+    },
+    "previous_models_integrated": 10,
+    "knowledge_evolution": {
+      "base_accuracy": 83.39601999357335,
+      "enhanced_accuracy": 78.63333333333333,
+      "improvement": -4.762686660240021
+    }
   }
 ]

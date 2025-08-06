@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { setupTestEnvironment } from './test-setup';
 import { spawn, ChildProcess } from 'child_process';
-import fetch from 'node-fetch';
+// Using native fetch (Node.js 18+)
 
 interface MCPServerInfo {
   server_id: string;

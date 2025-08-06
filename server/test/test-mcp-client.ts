@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import fetch from 'node-fetch';
+// Using native fetch (Node.js 18+)
 import { WebSocket } from 'ws';
 
 const execAsync = promisify(exec);
