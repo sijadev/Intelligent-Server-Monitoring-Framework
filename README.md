@@ -1,3 +1,7 @@
+
+
+![Preview](https://github.com/user-attachments/assets/3ff7c8bd-cf0b-4f8b-b633-27c83a6c0f3d)
+
 # Intelligent Server Monitoring Framework (ISMF)
 
 A comprehensive full-stack monitoring solution for server systems, log analysis, and MCP (Model Context Protocol) server management. Built with React, Express.js, TypeScript, and Python plugins with an extensive plugin ecosystem.
