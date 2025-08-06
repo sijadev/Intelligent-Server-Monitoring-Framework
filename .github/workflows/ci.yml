@@ -75,16 +75,16 @@ jobs:
           export COMPOSE_FILE="docker-compose.yml:docker-compose.ci.yml"
           
           # Start only Redis (PostgreSQL is already running via GitHub Actions)
-          docker-compose -f docker-compose.ci.yml up -d redis
+          docker compose -f docker-compose.ci.yml up -d redis
           
           # Wait for Redis
           echo "⏳ Waiting for Redis..."
-          timeout 30 bash -c 'until docker-compose -f docker-compose.ci.yml exec -T redis redis-cli ping; do sleep 2; done'
+          timeout 30 bash -c 'until docker compose -f docker-compose.ci.yml exec -T redis redis-cli ping; do sleep 2; done'
           
           # Start test MCP services
           echo "🧪 Starting Test MCP Services..."
           cd docker/test-mcp-server
-          docker-compose up -d --build
+          docker compose up -d --build
           cd ../..
           
           # Wait for MCP services
@@ -111,8 +111,8 @@ jobs:
         if: always()
         run: |
           echo "🧹 Cleaning up Docker services..."
-          docker-compose -f docker-compose.ci.yml down --remove-orphans || true
-          cd docker/test-mcp-server && docker-compose down --remove-orphans || true
+          docker compose -f docker-compose.ci.yml down --remove-orphans || true
+          cd docker/test-mcp-server && docker compose down --remove-orphans || true
 
   # Generate Test Data for Real Data Tests
   generate-test-data:
