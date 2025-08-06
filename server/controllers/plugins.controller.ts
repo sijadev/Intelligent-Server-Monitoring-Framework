@@ -15,8 +15,8 @@ export class PluginsController extends BaseController {
 
   async getPlugin(req: Request, res: Response): Promise<void> {
     try {
-      const { name } = req.params;
-      const plugin = await this.storage.getPlugin(name);
+      const { id } = req.params;
+      const plugin = await this.storage.getPluginById(id);
       
       if (!plugin) {
         this.handleNotFound(res, 'Plugin');
@@ -52,7 +52,7 @@ export class PluginsController extends BaseController {
     try {
       // For updates, we allow partial data, so don't use the full schema validation
       const updates = req.body;
-      const updated = await this.storage.updatePlugin(req.params.pluginId, updates);
+      const updated = await this.storage.updatePlugin(req.params.id, updates);
       
       if (!updated) {
         this.handleNotFound(res, 'Plugin');
@@ -74,7 +74,7 @@ export class PluginsController extends BaseController {
 
   async deletePlugin(req: Request, res: Response): Promise<void> {
     try {
-      const deleted = await this.storage.deletePlugin(req.params.pluginId);
+      const deleted = await this.storage.deletePlugin(req.params.id);
       
       if (!deleted) {
         this.handleNotFound(res, 'Plugin');
@@ -88,7 +88,7 @@ export class PluginsController extends BaseController {
         this.logger.log('WARN', 'plugins', 'Failed to notify Python framework about plugin deletion', { error });
       }
       
-      res.json(deleted);
+      res.status(204).send();
     } catch (error) {
       this.handleError(res, error, 'Failed to delete plugin');
     }

@@ -15,6 +15,15 @@ import { debugRoutes } from './debug.routes';
 
 const apiRouter = Router();
 
+// Health check endpoint
+apiRouter.get('/health', (_req, res) => {
+  res.json({ 
+    status: 'healthy', 
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
 // Mount all route modules
 apiRouter.use('/dashboard', dashboardRoutes);
 apiRouter.use('/plugins', pluginsRoutes);

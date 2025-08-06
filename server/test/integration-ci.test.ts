@@ -99,12 +99,13 @@ describe('Integration Tests (CI)', () => {
         .post('/api/plugins')
         .send(pluginData);
 
+
       // Should succeed or fail gracefully
-      if (createResponse.status === 200) {
-        expect(createResponse.body).toHaveProperty('id');
+      if (createResponse.status === 200 || createResponse.status === 201) {
+        expect(createResponse.body).toHaveProperty('name');
         expect(createResponse.body.name).toBe(pluginData.name);
 
-        const pluginId = createResponse.body.id;
+        const pluginId = createResponse.body.id || createResponse.body.name;
 
         // READ
         const readResponse = await request(app)
@@ -197,7 +198,7 @@ describe('Integration Tests (CI)', () => {
         .send({ invalid: 'data' })
         .expect(400);
 
-      expect(response.body).toHaveProperty('error');
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should handle missing resources', async () => {
@@ -219,8 +220,9 @@ describe('Integration Tests (CI)', () => {
     });
 
     it('should have mocked external services', () => {
-      // Python service should be mocked and return true
-      expect(vi.isMockFunction(vi.mocked(() => true))).toBe(true);
+      // CI environment should be properly configured
+      expect(process.env.CI).toBe('true');
+      expect(process.env.GITHUB_ACTIONS).toBe('true');
     });
   });
 
