@@ -3,6 +3,7 @@ import fs from 'fs-extra';
 import * as path from 'path';
 import { spawn } from 'child_process';
 import { TestProfile, TestScenario, TestDataGenerationResult } from '@imf/test-manager';
+import { getWorkspacePath, isCI, config } from '../config';
 
 // Types are now imported from @imf/test-manager package
 
@@ -25,11 +26,11 @@ export class TestManagerService extends EventEmitter {
     super();
     
     // Test Manager is now an npm package - no separate path needed
-    const defaultTestManagerPath = process.env.WORKSPACE_PATH || process.cwd();
+    const workspacePath = getWorkspacePath();
     
     this.config = {
-      testManagerPath: defaultTestManagerPath,
-      workspacePath: process.env.WORKSPACE_PATH || path.join(process.cwd(), 'test-workspace'),
+      testManagerPath: workspacePath,
+      workspacePath: workspacePath,
       profilesDir: 'profiles',
       outputDir: 'output',
       logsDir: 'logs',
@@ -56,7 +57,7 @@ export class TestManagerService extends EventEmitter {
       this.emit('initialized');
 
     } catch (error) {
-      if (process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true') {
+      if (isCI()) {
         console.log('ℹ️  Test Manager Service not available in CI environment (expected)');
       } else {
         console.error('❌ Failed to initialize Test Manager Service:', error);
@@ -106,7 +107,7 @@ export class TestManagerService extends EventEmitter {
         if (code === 0) {
           resolve();
         } else {
-          const errorMessage = process.env.CI === 'true' ? 
+          const errorMessage = isCI() ? 
             `Test manager CLI not available in CI (code: ${code})` :
             `Test manager CLI returned code: ${code}`;
           reject(new Error(errorMessage));

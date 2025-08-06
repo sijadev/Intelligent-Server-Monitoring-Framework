@@ -3,6 +3,7 @@ import { EventEmitter } from 'events';
 import path from 'path';
 import fs from 'fs/promises';
 import axios from 'axios';
+import { getPythonApiUrl, isCI, isDevelopment } from '../config';
 import { 
   type Problem, 
   type Metrics, 
@@ -36,8 +37,8 @@ export class PythonMonitorService extends EventEmitter {
     this.setMaxListeners(50); // Increase max listeners to handle multiple test scenarios
     this.pythonPath = path.join(process.cwd(), 'python-framework', 'enhanced_main.py');
     this.configPath = path.join(process.cwd(), 'python-framework', 'config.yaml');
-    // Use container name for inter-container communication
-    this.pythonApiUrl = process.env.PYTHON_API_URL || 'http://imf-python-ai:8000';
+    // Use centralized configuration for Python API URL
+    this.pythonApiUrl = getPythonApiUrl();
   }
 
   async start(): Promise<void> {

@@ -1,26 +1,42 @@
 import type { Request, Response } from 'express';
 import { storage } from '../storage-init';
 import { logAggregator } from '../services/log-aggregator';
+import { 
+  ErrorHandler, 
+  createValidationError, 
+  createNotFoundError,
+  createDatabaseError,
+  createServiceError,
+  ErrorType,
+  isIMFError
+} from '../utils/error-handler';
 
 export abstract class BaseController {
   protected storage = storage;
   protected logger = logAggregator;
 
-  protected handleError(res: Response, error: unknown, message: string = 'Internal server error'): void {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    this.logger.log('ERROR', 'controller', `${message}: ${errorMessage}`);
-    res.status(500).json({ message, error: errorMessage });
+  protected handleError(res: Response, error: unknown, context: string = 'controller'): void {
+    ErrorHandler.handle(error, context, res);
   }
 
-  protected handleValidationError(res: Response, message: string = 'Invalid request data'): void {
-    this.logger.log('WARN', 'controller', `Validation error: ${message}`);
-    res.status(400).json({ message });
+  protected handleValidationError(res: Response, message: string = 'Invalid request data', details?: any): void {
+    const error = createValidationError(message, details);
+    ErrorHandler.handle(error, 'controller-validation', res);
   }
 
   protected handleNotFound(res: Response, resource: string): void {
-    const message = `${resource} not found`;
-    this.logger.log('WARN', 'controller', message);
-    res.status(404).json({ message });
+    const error = createNotFoundError(resource);
+    ErrorHandler.handle(error, 'controller-not-found', res);
+  }
+
+  protected handleDatabaseError(res: Response, error: unknown, operation: string): void {
+    const dbError = createDatabaseError(`Database ${operation} failed`, { originalError: error });
+    ErrorHandler.handle(dbError, 'controller-database', res);
+  }
+
+  protected handleServiceError(res: Response, error: unknown, service: string): void {
+    const serviceError = createServiceError(`${service} service error`, { originalError: error });
+    ErrorHandler.handle(serviceError, 'controller-service', res);
   }
 
   protected logRequest(req: Request): void {
