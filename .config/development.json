@@ -1,0 +1,57 @@
+{
+  "environment": "development",
+  "services": {
+    "testManager": {
+      "enabled": false,
+      "mockMode": true,
+      "cliRequired": false,
+      "reason": "CLI dependency not available in local development"
+    },
+    "pythonFramework": {
+      "enabled": true,
+      "autoStart": false,
+      "healthCheckInterval": 60000,
+      "maxRetries": 3
+    },
+    "storage": {
+      "type": "database",
+      "migrations": {
+        "autoRun": true
+      }
+    },
+    "monitoring": {
+      "enabled": true,
+      "interval": 30000,
+      "healthChecks": true
+    }
+  },
+  "logging": {
+    "level": "INFO",
+    "console": true,
+    "file": false
+  },
+  "development": {
+    "hotReload": true,
+    "debugMode": true,
+    "mockExternalServices": true,
+    "bypassAuthentication": false,
+    "enableTestRoutes": true
+  },
+  "workspace": {
+    "path": "./test-workspace",
+    "createIfMissing": true,
+    "cleanOnStart": false
+  },
+  "ports": {
+    "main": 3000,
+    "python": 8000,
+    "redis": 6379,
+    "database": 5432
+  },
+  "external": {
+    "requirePythonAPI": false,
+    "requireRedis": false,
+    "requireTestManager": false,
+    "gracefulFallback": true
+  }
+}

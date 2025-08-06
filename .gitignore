@@ -14,6 +14,10 @@ build/
 .env.test.local
 .env.production.local
 
+# Local development configuration (keep development.json for sharing)
+.config/local.json
+.config/personal.json
+
 # Logs
 *.log
 npm-debug.log*

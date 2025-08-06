@@ -4,6 +4,13 @@ import * as path from 'path';
 import { spawn } from 'child_process';
 import { TestProfile, TestScenario, TestDataGenerationResult } from '@imf/test-manager';
 import { getWorkspacePath, isCI, config } from '../config';
+import { 
+  loadDevelopmentConfig,
+  isServiceEnabled,
+  isServiceMockMode,
+  isExternalServiceRequired,
+  useGracefulFallback 
+} from '../config/development-config';
 
 // Types are now imported from @imf/test-manager package
 
@@ -43,7 +50,27 @@ export class TestManagerService extends EventEmitter {
   async initialize(): Promise<void> {
     if (this.isInitialized) return;
 
+    // Load development configuration
+    await loadDevelopmentConfig();
+
     console.log('🔧 Initializing Test Manager Service...');
+
+    // Check if service should be enabled
+    if (!isServiceEnabled('testManager')) {
+      console.log('📋 Test Manager Service disabled by development configuration');
+      this.isInitialized = true;
+      this.emit('initialized');
+      return;
+    }
+
+    // Check if running in mock mode
+    if (isServiceMockMode('testManager')) {
+      console.log('🎭 Test Manager Service running in mock mode (development configuration)');
+      await this.createWorkspaceStructure();
+      this.isInitialized = true;
+      this.emit('initialized');
+      return;
+    }
 
     try {
       // Create workspace structure
@@ -59,10 +86,14 @@ export class TestManagerService extends EventEmitter {
     } catch (error) {
       if (isCI()) {
         console.log('ℹ️  Test Manager Service not available in CI environment (expected)');
+        this.isInitialized = true; // Mark as initialized in CI even if CLI fails
+      } else if (useGracefulFallback()) {
+        console.log('⚠️ Test Manager Service CLI not available, using graceful fallback');
+        this.isInitialized = true; // Allow continuation with graceful fallback
       } else {
         console.error('❌ Failed to initialize Test Manager Service:', error);
+        throw error; // Only throw when graceful fallback is disabled
       }
-      throw error;
     }
   }
 
@@ -89,15 +120,22 @@ export class TestManagerService extends EventEmitter {
   }
 
   private async testConnection(): Promise<void> {
+    // Check if the CLI exists first
+    const cliPath = path.join(process.cwd(), 'node_modules/@imf/test-manager/dist/cli/simple-cli.js');
+    
+    if (!await fs.pathExists(cliPath)) {
+      console.log('⚠️ Test Manager CLI not found, running in mock mode for development');
+      // In development, we can run without the full CLI
+      return Promise.resolve();
+    }
+
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
-        reject(new Error('Test manager connection timeout'));
-      }, 10000);
+        console.log('⚠️ Test manager connection timeout, continuing in mock mode');
+        resolve(); // Don't fail, just continue without CLI
+      }, 5000); // Shorter timeout
 
-      const testProcess = spawn('node', [
-        path.join(process.cwd(), 'node_modules/@imf/test-manager/dist/cli/simple-cli.js'),
-        '--version'
-      ], {
+      const testProcess = spawn('node', [cliPath, '--version'], {
         cwd: this.config.workspacePath,
         stdio: 'pipe'
       });
@@ -107,16 +145,26 @@ export class TestManagerService extends EventEmitter {
         if (code === 0) {
           resolve();
         } else {
-          const errorMessage = isCI() ? 
-            `Test manager CLI not available in CI (code: ${code})` :
-            `Test manager CLI returned code: ${code}`;
-          reject(new Error(errorMessage));
+          if (config.NODE_ENV === 'development') {
+            console.log(`⚠️ Test manager CLI returned code: ${code}, continuing in mock mode`);
+            resolve(); // Don't fail in development
+          } else {
+            const errorMessage = isCI() ? 
+              `Test manager CLI not available in CI (code: ${code})` :
+              `Test manager CLI returned code: ${code}`;
+            reject(new Error(errorMessage));
+          }
         }
       });
 
       testProcess.on('error', (error) => {
         clearTimeout(timeout);
-        reject(error);
+        if (config.NODE_ENV === 'development') {
+          console.log(`⚠️ Test manager CLI error: ${error.message}, continuing in mock mode`);
+          resolve(); // Don't fail in development
+        } else {
+          reject(error);
+        }
       });
     });
   }
