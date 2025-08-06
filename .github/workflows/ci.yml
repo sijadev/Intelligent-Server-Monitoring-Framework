@@ -84,7 +84,7 @@ jobs:
           # Start test MCP services
           echo "🧪 Starting Test MCP Services..."
           cd docker/test-mcp-server
-          docker compose up -d --build
+          docker compose -f docker-compose.yml up -d --build
           cd ../..
           
           # Wait for MCP services
@@ -112,7 +112,7 @@ jobs:
         run: |
           echo "🧹 Cleaning up Docker services..."
           docker compose -f docker-compose.ci.yml down --remove-orphans || true
-          cd docker/test-mcp-server && docker compose down --remove-orphans || true
+          cd docker/test-mcp-server && docker compose -f docker-compose.yml down --remove-orphans || true
 
   # Generate Test Data for Real Data Tests
   generate-test-data:
