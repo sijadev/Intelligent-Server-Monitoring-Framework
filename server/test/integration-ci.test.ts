@@ -7,35 +7,41 @@ import { serverState } from '../state/server-state';
 // Mock the python-monitor service for CI
 vi.mock('../services/python-monitor', () => ({
   pythonMonitorService: {
-    sendCommand: vi.fn().mockResolvedValue({ success: true }),
-    isRunning: vi.fn().mockReturnValue(true),
-    start: vi.fn().mockResolvedValue({ success: true }),
-    stop: vi.fn().mockResolvedValue({ success: true }),
-    restart: vi.fn().mockResolvedValue({ success: true }),
-    on: vi.fn(),
-    off: vi.fn(),
-    emit: vi.fn(),
-    removeAllListeners: vi.fn(),
-    getStatus: vi.fn().mockReturnValue({ running: true, healthy: true })
+    sendCommand: () => Promise.resolve({ success: true }),
+    isRunning: () => true,
+    start: () => Promise.resolve({ success: true }),
+    stop: () => Promise.resolve({ success: true }),
+    restart: () => Promise.resolve({ success: true }),
+    on: () => {},
+    off: () => {},
+    emit: () => {},
+    removeAllListeners: () => {},
+    getStatus: () => ({ running: true, healthy: true })
   }
 }));
 
 // Mock Test Manager service for CI
 vi.mock('../services/test-manager.service', () => ({
-  createTestManagerService: vi.fn().mockReturnValue({
+  createTestManagerService: () => ({
     isAvailable: () => false,
     getStatus: () => ({ available: false, reason: 'CI environment' }),
-    generateTestData: vi.fn().mockResolvedValue({ success: false }),
-    loadTestProfiles: vi.fn().mockResolvedValue([]),
-    initialize: vi.fn().mockResolvedValue(false),
+    generateTestData: () => Promise.resolve({ success: false }),
+    loadTestProfiles: () => Promise.resolve([]),
+    initialize: () => Promise.resolve(false),
     isInitialized: false
+  }),
+  getTestManagerService: () => ({
+    isAvailable: () => false,
+    getStatus: () => ({ available: false, reason: 'CI environment' }),
+    generateTestData: () => Promise.resolve({ success: false }),
+    loadTestProfiles: () => Promise.resolve([])
   }),
   TestManagerService: {
     getInstance: () => ({
       isAvailable: () => false,
       getStatus: () => ({ available: false, reason: 'CI environment' }),
-      generateTestData: vi.fn().mockResolvedValue({ success: false }),
-      loadTestProfiles: vi.fn().mockResolvedValue([])
+      generateTestData: () => Promise.resolve({ success: false }),
+      loadTestProfiles: () => Promise.resolve([])
     })
   }
 }));
