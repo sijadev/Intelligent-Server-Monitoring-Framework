@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { Header } from "@/components/layout/header";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -434,6 +435,7 @@ if __name__ == "__main__":
 };
 
 export default function Plugins() {
+  usePageTitle("Plugins");
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [typeFilter, setTypeFilter] = useState<string>("all");
@@ -519,7 +521,7 @@ export default function Plugins() {
   });
 
   const startPluginMutation = useMutation({
-    mutationFn: (pluginId: string) => api.post(`/api/plugins/${pluginId}/start`),
+    mutationFn: (pluginId: string) => api.startPlugin(pluginId),
     onSuccess: (_, pluginId) => {
       toast({
         title: "Plugin Started",
@@ -537,7 +539,7 @@ export default function Plugins() {
   });
 
   const stopPluginMutation = useMutation({
-    mutationFn: (pluginId: string) => api.post(`/api/plugins/${pluginId}/stop`),
+    mutationFn: (pluginId: string) => api.stopPlugin(pluginId),
     onSuccess: (_, pluginId) => {
       toast({
         title: "Plugin Stopped",
@@ -591,9 +593,9 @@ export default function Plugins() {
     setEditorMode('edit');
     setSelectedPlugin(plugin);
     setPluginName(plugin.name);
-    setPluginDescription(plugin.metadata?.description || '');
+    setPluginDescription((plugin.config as any)?.description || '');
     setPluginType(plugin.type as 'collector' | 'detector' | 'remediator');
-    setPluginCode(plugin.metadata?.code || '# Plugin code here');
+    setPluginCode((plugin.config as any)?.code || '# Plugin code here');
     setShowEditor(true);
   };
 

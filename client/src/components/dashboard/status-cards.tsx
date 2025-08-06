@@ -51,13 +51,16 @@ export function StatusCards({ status }: StatusCardsProps) {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div data-testid="status-cards" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       {cards.map((card, index) => {
         const Icon = card.icon;
         const ChangeIcon = card.change?.icon;
         
+        // Create specific test IDs for each card
+        const testId = card.title.toLowerCase().replace(/\s+/g, '-') + '-card';
+        
         return (
-          <Card key={index} className="border border-gray-200">
+          <Card key={index} data-testid={testId} className="border border-gray-200 card">
             <CardContent className="p-5">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
@@ -70,7 +73,7 @@ export function StatusCards({ status }: StatusCardsProps) {
                     </dt>
                     <dd className="flex items-baseline">
                       <div className="text-2xl font-semibold text-gray-900 flex items-center">
-                        {card.value}
+                        <span className="status-text">{card.value}</span>
                         {card.indicator && (
                           <StatusIndicator 
                             status={card.indicator as 'running' | 'stopped' | 'error' | 'warning'} 

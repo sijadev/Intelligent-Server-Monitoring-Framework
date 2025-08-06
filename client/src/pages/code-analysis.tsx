@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { Header } from "@/components/layout/header";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,7 +24,6 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
 import type { CodeIssue, CodeAnalysisRun } from "@shared/schema";
 
 const severityColors = {
@@ -58,6 +58,7 @@ const statusColors = {
 };
 
 export default function CodeAnalysis() {
+  usePageTitle("Code Analysis");
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [severityFilter, setSeverityFilter] = useState<string>("all");
@@ -66,33 +67,33 @@ export default function CodeAnalysis() {
   // Query for code analysis configuration
   const { data: config } = useQuery({
     queryKey: ['/api/code-analysis/config'],
-    queryFn: () => api.get('/api/code-analysis/config'),
+    queryFn: () => api.httpGet('/api/code-analysis/config'),
   });
 
   // Query for active code issues
   const { data: codeIssues = [], isLoading: issuesLoading, refetch: refetchIssues } = useQuery({
     queryKey: ['/api/code-issues/active'],
-    queryFn: () => api.get('/api/code-issues/active'),
+    queryFn: () => api.httpGet('/api/code-issues/active'),
     refetchInterval: 10000, // Refetch every 10 seconds
   });
 
   // Query for code analysis runs
   const { data: analysisRuns = [], isLoading: runsLoading, refetch: refetchRuns } = useQuery({
     queryKey: ['/api/code-analysis/runs'],
-    queryFn: () => api.get('/api/code-analysis/runs'),
+    queryFn: () => api.httpGet('/api/code-analysis/runs'),
     refetchInterval: 15000, // Refetch every 15 seconds
   });
 
   // Query for latest analysis run
   const { data: latestRun } = useQuery({
     queryKey: ['/api/code-analysis/runs/latest'],
-    queryFn: () => api.get('/api/code-analysis/runs/latest'),
+    queryFn: () => api.httpGet('/api/code-analysis/runs/latest'),
     refetchInterval: 10000,
   });
 
   // Mutation to start code analysis
   const startAnalysisMutation = useMutation({
-    mutationFn: () => api.post('/api/code-analysis/start', {}),
+    mutationFn: () => api.httpPost('/api/code-analysis/start', {}),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/code-analysis/runs'] });
       queryClient.invalidateQueries({ queryKey: ['/api/code-analysis/runs/latest'] });
@@ -112,7 +113,7 @@ export default function CodeAnalysis() {
 
   // Mutation to resolve code issue
   const resolveIssueMutation = useMutation({
-    mutationFn: (issueId: string) => api.put(`/api/code-issues/${issueId}/resolve`, {}),
+    mutationFn: (issueId: string) => api.httpPut(`/api/code-issues/${issueId}/resolve`, {}),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/code-issues/active'] });
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
@@ -132,7 +133,7 @@ export default function CodeAnalysis() {
 
   // Mutation to apply code fix
   const applyFixMutation = useMutation({
-    mutationFn: (issueId: string) => api.put(`/api/code-issues/${issueId}/apply-fix`, {}),
+    mutationFn: (issueId: string) => api.httpPut(`/api/code-issues/${issueId}/apply-fix`, {}),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/code-issues/active'] });
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });

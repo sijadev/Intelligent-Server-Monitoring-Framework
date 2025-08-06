@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { Header } from "@/components/layout/header";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { 
   LineChart, 
   Line, 
@@ -24,8 +24,7 @@ import {
   HardDrive, 
   Activity, 
   Network, 
-  Users,
-  TrendingUp
+  Users
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { api } from "@/lib/api";
@@ -42,6 +41,7 @@ const timeRanges = [
 const COLORS = ['hsl(207, 90%, 54%)', 'hsl(0, 84.2%, 60.2%)', 'hsl(38, 92%, 50%)', 'hsl(142, 71%, 45%)'];
 
 export default function Metrics() {
+  usePageTitle("Metrics");
   const [timeRange, setTimeRange] = useState("6h");
   
   const selectedRange = timeRanges.find(r => r.value === timeRange) || timeRanges[1];
@@ -61,7 +61,7 @@ export default function Metrics() {
   // Process data for charts
   const chartData = metricsHistory
     .slice(-100) // Limit to last 100 points for performance
-    .map((metric, index) => ({
+    .map((metric) => ({
       time: new Date(metric.timestamp).toLocaleTimeString(),
       cpu: metric.cpuUsage || 0,
       memory: metric.memoryUsage || 0,
@@ -138,8 +138,11 @@ export default function Metrics() {
                 <div className="mt-4">
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div 
-                      className={cn("h-2 rounded-full transition-all", getProgressColor(latestMetrics?.cpuUsage || 0))}
-                      style={{ width: `${Math.min(latestMetrics?.cpuUsage || 0, 100)}%` }}
+                      className={cn(
+                        "progress-bar",
+                        `progress-${Math.round(Math.min(latestMetrics?.cpuUsage || 0, 100))}`,
+                        getProgressColor(latestMetrics?.cpuUsage || 0)
+                      )}
                     />
                   </div>
                 </div>
@@ -160,8 +163,11 @@ export default function Metrics() {
                 <div className="mt-4">
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div 
-                      className={cn("h-2 rounded-full transition-all", getProgressColor(latestMetrics?.memoryUsage || 0))}
-                      style={{ width: `${Math.min(latestMetrics?.memoryUsage || 0, 100)}%` }}
+                      className={cn(
+                        "progress-bar",
+                        `progress-${Math.round(Math.min(latestMetrics?.memoryUsage || 0, 100))}`,
+                        getProgressColor(latestMetrics?.memoryUsage || 0)
+                      )}
                     />
                   </div>
                 </div>
@@ -182,8 +188,11 @@ export default function Metrics() {
                 <div className="mt-4">
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div 
-                      className={cn("h-2 rounded-full transition-all", getProgressColor(latestMetrics?.diskUsage || 0))}
-                      style={{ width: `${Math.min(latestMetrics?.diskUsage || 0, 100)}%` }}
+                      className={cn(
+                        "progress-bar",
+                        `progress-${Math.round(Math.min(latestMetrics?.diskUsage || 0, 100))}`,
+                        getProgressColor(latestMetrics?.diskUsage || 0)
+                      )}
                     />
                   </div>
                 </div>

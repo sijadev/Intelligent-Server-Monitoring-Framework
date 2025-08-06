@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -43,6 +44,7 @@ interface SourceDirectory {
 }
 
 export default function Configuration() {
+  usePageTitle("Configuration");
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [logFiles, setLogFiles] = useState<LogFile[]>([]);

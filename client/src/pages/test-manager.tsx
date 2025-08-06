@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { Header } from "@/components/layout/header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { AlertCircle, Plus, Play, Download, Settings, Clock, CheckCircle, XCircle } from "lucide-react";
+import { AlertCircle, Plus, Play, Download, Settings, Clock, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/api";
 
@@ -102,6 +103,7 @@ interface ProfileTemplate {
 }
 
 export default function TestManager() {
+  usePageTitle("Test Manager");
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedProfile, setSelectedProfile] = useState<TestProfile | null>(null);
@@ -114,7 +116,7 @@ export default function TestManager() {
     queryFn: async () => {
       try {
         console.log('🔍 Fetching test manager profiles...');
-        const response = await api.get('/test-manager/profiles');
+        const response = await api.testManagerGet('/test-manager/profiles');
         console.log('📋 Profiles response:', response);
         return response.profiles || response || [];
       } catch (error) {
@@ -130,7 +132,7 @@ export default function TestManager() {
     queryFn: async () => {
       try {
         console.log('🔍 Fetching test manager generated data...');
-        const response = await api.get('/test-manager/generated-data');
+        const response = await api.testManagerGet('/test-manager/generated-data');
         console.log('📊 Generated data response:', response);
         return response.data || response || [];
       } catch (error) {
@@ -143,13 +145,13 @@ export default function TestManager() {
   // Fetch problem types
   const { data: problemTypes = [] } = useQuery({
     queryKey: ['/api/test-manager/problem-types'],
-    queryFn: () => api.get('/test-manager/problem-types').then(res => res.problemTypes),
+    queryFn: () => api.testManagerGet('/test-manager/problem-types').then(res => res.problemTypes),
   });
 
   // Fetch profile templates
   const { data: templates = [] } = useQuery({
     queryKey: ['/api/test-manager/templates'],
-    queryFn: () => api.get('/test-manager/templates').then(res => res.templates),
+    queryFn: () => api.testManagerGet('/test-manager/templates').then(res => res.templates),
   });
 
   // Fetch test manager status
@@ -158,7 +160,7 @@ export default function TestManager() {
     queryFn: async () => {
       try {
         console.log('🔍 Fetching test manager status...');
-        const response = await api.get('/test-manager/status');
+        const response = await api.testManagerGet('/test-manager/status');
         console.log('📊 Status response:', response);
         return response.status || response;
       } catch (error) {
@@ -198,8 +200,8 @@ export default function TestManager() {
   // Generate test data mutation
   const generateDataMutation = useMutation({
     mutationFn: (profileId: string) => 
-      api.post(`/test-manager/profiles/${profileId}/generate`),
-    onSuccess: (data, profileId) => {
+      api.testManagerPost(`/test-manager/profiles/${profileId}/generate`),
+    onSuccess: (_data, profileId) => {
       queryClient.invalidateQueries({ queryKey: ['/api/test-manager/generated-data'] });
       setIsGenerating(null);
       toast({
@@ -220,7 +222,7 @@ export default function TestManager() {
   // Delete profile mutation
   const deleteProfileMutation = useMutation({
     mutationFn: (profileId: string) => 
-      api.delete(`/test-manager/profiles/${profileId}`),
+      api.testManagerDelete(`/test-manager/profiles/${profileId}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/test-manager/profiles'] });
       setSelectedProfile(null);

@@ -10,6 +10,7 @@ import { CheckCircle, AlertCircle, AlertTriangle, Info } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { cn } from "@/lib/utils";
 import type { Problem } from "@shared/schema";
 
@@ -27,14 +28,9 @@ const severityStatus = {
   CRITICAL: 'error' as const
 };
 
-const severityIcons = {
-  LOW: Info,
-  MEDIUM: AlertTriangle,
-  HIGH: AlertCircle,
-  CRITICAL: AlertCircle
-};
 
 export default function Problems() {
+  usePageTitle("Problems");
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -144,14 +140,14 @@ export default function Problems() {
           </div>
 
           {/* Filters */}
-          <Card className="mb-6">
+          <Card data-testid="filter-controls" className="mb-6">
             <CardHeader>
               <h3 className="text-lg font-medium">Problem Filters</h3>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger>
+                  <SelectTrigger data-testid="status-filter">
                     <SelectValue placeholder="All Status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -162,7 +158,7 @@ export default function Problems() {
                 </Select>
 
                 <Select value={severityFilter} onValueChange={setSeverityFilter}>
-                  <SelectTrigger>
+                  <SelectTrigger data-testid="severity-filter">
                     <SelectValue placeholder="All Severities" />
                   </SelectTrigger>
                   <SelectContent>
@@ -178,7 +174,7 @@ export default function Problems() {
           </Card>
 
           {/* Problems List */}
-          <Card>
+          <Card data-testid="problems-list">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium">
@@ -199,10 +195,10 @@ export default function Problems() {
               ) : (
                 <div className="space-y-4">
                   {filteredProblems.map((problem) => {
-                    const SeverityIcon = severityIcons[problem.severity as keyof typeof severityIcons];
                     return (
                       <div 
                         key={problem.id}
+                        data-testid="problem-item"
                         className={cn(
                           "border rounded-lg p-4 transition-colors",
                           problem.resolved ? "bg-gray-50 border-gray-200" : "bg-white border-gray-300"
@@ -281,6 +277,7 @@ export default function Problems() {
                           {!problem.resolved && (
                             <div className="flex-shrink-0">
                               <Button
+                                data-testid="resolve-button"
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleResolveProblem(problem.id)}

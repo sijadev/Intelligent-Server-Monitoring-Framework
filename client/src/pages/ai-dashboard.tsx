@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { Header } from "@/components/layout/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -58,6 +59,7 @@ interface Deployment {
 }
 
 export default function AiDashboard() {
+  usePageTitle("AI Dashboard");
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedTab, setSelectedTab] = useState("overview");
@@ -65,34 +67,34 @@ export default function AiDashboard() {
   // Query AI learning statistics
   const { data: aiStats, isLoading: statsLoading, refetch: refetchStats } = useQuery({
     queryKey: ['/api/ai/stats'],
-    queryFn: () => api.get('/api/ai/stats') as Promise<AiStats>,
+    queryFn: () => api.httpGet('/api/ai/stats') as Promise<AiStats>,
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   // Query recent AI interventions
   const { data: recentInterventions, isLoading: interventionsLoading } = useQuery({
     queryKey: ['/api/ai/interventions/recent'],
-    queryFn: () => api.get('/api/ai/interventions/recent?hours=24') as Promise<AiIntervention[]>,
+    queryFn: () => api.httpGet('/api/ai/interventions/recent?hours=24') as Promise<AiIntervention[]>,
     refetchInterval: 15000, // Refresh every 15 seconds
   });
 
   // Query active deployments
   const { data: activeDeployments, isLoading: deploymentsLoading } = useQuery({
     queryKey: ['/api/deployments/active'],
-    queryFn: () => api.get('/api/deployments/active') as Promise<Deployment[]>,
+    queryFn: () => api.httpGet('/api/deployments/active') as Promise<Deployment[]>,
     refetchInterval: 10000, // Refresh every 10 seconds
   });
 
   // Query recent deployments
   const { data: recentDeployments } = useQuery({
     queryKey: ['/api/deployments'],
-    queryFn: () => api.get('/api/deployments?limit=10') as Promise<Deployment[]>,
+    queryFn: () => api.httpGet('/api/deployments?limit=10') as Promise<Deployment[]>,
     refetchInterval: 30000,
   });
 
   // Mutation for training AI models
   const trainModelMutation = useMutation({
-    mutationFn: () => api.post('/api/ai/train'),
+    mutationFn: () => api.httpPost('/api/ai/train'),
     onSuccess: () => {
       toast({
         title: "AI Training Started",

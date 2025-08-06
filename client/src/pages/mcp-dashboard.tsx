@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { Header } from "@/components/layout/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,19 +15,15 @@ import {
   CheckCircle, 
   XCircle, 
   AlertCircle,
-  RefreshCw,
   Play,
   Square,
-  Trash2,
   Eye,
   BarChart3,
   Wifi,
-  WifiOff,
   Settings
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
 
 interface MCPServer {
   id: string;
@@ -75,6 +72,7 @@ interface MCPDashboardData {
 }
 
 export default function MCPDashboard() {
+  usePageTitle("MCP Dashboard");
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedTab, setSelectedTab] = useState("overview");
@@ -83,21 +81,21 @@ export default function MCPDashboard() {
   // Query MCP dashboard data
   const { data: dashboardData, isLoading: dashboardLoading, refetch: refetchDashboard } = useQuery({
     queryKey: ['/api/mcp/dashboard'],
-    queryFn: () => api.get('/api/mcp/dashboard') as Promise<MCPDashboardData>,
+    queryFn: () => api.httpGet('/api/mcp/dashboard') as Promise<MCPDashboardData>,
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   // Query MCP servers
   const { data: servers, isLoading: serversLoading } = useQuery({
     queryKey: ['/api/mcp/servers'],
-    queryFn: () => api.get('/api/mcp/servers') as Promise<MCPServer[]>,
+    queryFn: () => api.httpGet('/api/mcp/servers') as Promise<MCPServer[]>,
     refetchInterval: 15000, // Refresh every 15 seconds
   });
 
   // Query metrics for selected server
   const { data: serverMetrics } = useQuery({
     queryKey: ['/api/mcp/servers', selectedServer, 'metrics'],
-    queryFn: () => selectedServer ? api.get(`/api/mcp/servers/${selectedServer}/metrics?limit=50`) as Promise<MCPServerMetrics[]> : Promise.resolve([]),
+    queryFn: () => selectedServer ? api.httpGet(`/api/mcp/servers/${selectedServer}/metrics?limit=50`) as Promise<MCPServerMetrics[]> : Promise.resolve([]),
     enabled: !!selectedServer,
     refetchInterval: 10000,
   });
@@ -105,7 +103,7 @@ export default function MCPDashboard() {
   // Mutation for server actions
   const serverActionMutation = useMutation({
     mutationFn: ({ serverId, action }: { serverId: string; action: string }) => 
-      api.post(`/api/mcp/servers/${serverId}/${action}`),
+      api.httpPost(`/api/mcp/servers/${serverId}/${action}`),
     onSuccess: (_, { action }) => {
       toast({
         title: "Action Completed",

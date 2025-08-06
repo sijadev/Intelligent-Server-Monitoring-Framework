@@ -8,11 +8,13 @@ import { PluginStatus } from "@/components/dashboard/plugin-status";
 import { LogViewer } from "@/components/dashboard/log-viewer";
 import { TestManagerWidget } from "@/components/dashboard/test-manager-widget";
 import { useWebSocket } from "@/hooks/use-websocket";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import type { DashboardData, LogEntry } from "@shared/schema";
+import type { LogEntry } from "@shared/schema";
 
 export default function Dashboard() {
+  usePageTitle("Dashboard");
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [realtimeLogs, setRealtimeLogs] = useState<LogEntry[]>([]);
@@ -103,7 +105,7 @@ export default function Dashboard() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="text-lg">Loading dashboard...</div>
+        <div data-testid="loading" className="text-lg">Loading dashboard...</div>
       </div>
     );
   }

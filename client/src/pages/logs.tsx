@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { Header } from "@/components/layout/header";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,10 +33,11 @@ const sourceIcons = {
 };
 
 export default function Logs() {
+  usePageTitle("Logs");
   const [searchTerm, setSearchTerm] = useState("");
   const [levelFilter, setLevelFilter] = useState<string>("all");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
-  const [limit, setLimit] = useState(100);
+  const [limit, _setLimit] = useState(100);
   const [activeTab, setActiveTab] = useState("all");
 
   // Build filter options
@@ -119,7 +121,7 @@ export default function Logs() {
             <p className="text-sm text-gray-900 break-words font-mono">
               {log.message}
             </p>
-            {log.metadata && Object.keys(log.metadata).length > 0 && (
+            {log.metadata && typeof log.metadata === 'object' && Object.keys(log.metadata).length > 0 && (
               <details className="mt-2">
                 <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
                   Show metadata
