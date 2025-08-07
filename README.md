@@ -1,10 +1,6 @@
+# MCP.Guard - "Your tests just got smarter than your competition"
 
-
-![Preview](https://github.com/user-attachments/assets/3ff7c8bd-cf0b-4f8b-b633-27c83a6c0f3d)
-
-# Intelligent Server Monitoring Framework (ISMF)
-
-A comprehensive full-stack monitoring solution for server systems, log analysis, and MCP (Model Context Protocol) server management. Built with React, Express.js, TypeScript, and Python plugins with an extensive plugin ecosystem.
+MCP.Guard is the new way of testing where test profiles including test-specific data are created through use case definition, and these can be combined into a complete workflow. Non-functional tests are supported by intelligent monitoring with AI support. Long log file analysis is a thing of the past! Today, the affected code area is displayed for quick review, and thanks to intelligent learning, it can also be optionally fixed. What good is the best solution if the server environment crashes? We help you keep everything under control - with forecasts and warnings.
 
 ## 🚀 Features
 
