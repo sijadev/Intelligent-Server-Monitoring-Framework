@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { ProblemsPage } from '../pages/ProblemsPage';
 
-test.describe('IMF Problems Page', () => {
+test.describe('MCP.Guard Problems Page', () => {
   let problemsPage: ProblemsPage;
 
   test.beforeEach(async ({ page }) => {
@@ -12,7 +12,7 @@ test.describe('IMF Problems Page', () => {
     await problemsPage.goto();
     
     // Check page title
-    await expect(problemsPage.page).toHaveTitle(/Problems|IMF.*Problems/);
+    await expect(problemsPage.page).toHaveTitle(/Problems|MCP.Guard.*Problems/);
     
     // Verify page content loads
     const hasContent = await problemsPage.isElementVisible('body');

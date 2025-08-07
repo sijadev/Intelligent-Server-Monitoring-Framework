@@ -38,8 +38,8 @@ describe('App Configuration', () => {
 
   it('should have valid app metadata', () => {
     expect(appConfig.app).toBeDefined();
-    expect(appConfig.app.name).toBe('IMF Dashboard');
+    expect(appConfig.app.name).toBe('MCP.Guard Dashboard');
     expect(appConfig.app.version).toBe('1.0.0');
-    expect(appConfig.app.description).toBe('Intelligent Monitoring Framework');
+    expect(appConfig.app.description).toBe('MCP.Guard');
   });
 });

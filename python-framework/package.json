@@ -1,12 +1,12 @@
 {
-  "name": "@imf/python-monitoring-framework",
+  "name": "@mcp-guard/python-monitoring-framework",
   "version": "1.0.0",
-  "description": "IMF Python Monitoring Framework - AI-powered system monitoring and analysis",
+  "description": "MCP.Guard Python Monitoring Framework - AI-powered system monitoring and analysis",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "imf-python-framework": "dist/cli.js",
-    "imf-monitor": "dist/cli.js"
+    "mcp-guard-python-framework": "dist/cli.js",
+    "mcp-guard-monitor": "dist/cli.js"
   },
   "scripts": {
     "build": "tsc",
@@ -37,16 +37,16 @@
     "docker",
     "containers"
   ],
-  "author": "IMF Team",
+  "author": "MCP.Guard Team",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/sijadev/IMF.git",
+    "url": "https://github.com/sijadev/MCP.Guard.git",
     "directory": "python-framework"
   },
-  "homepage": "https://github.com/sijadev/IMF/tree/main/python-framework",
+  "homepage": "https://github.com/sijadev/MCP.Guard/tree/main/python-framework",
   "bugs": {
-    "url": "https://github.com/sijadev/IMF/issues"
+    "url": "https://github.com/sijadev/MCP.Guard/issues"
   },
   "engines": {
     "node": ">=18.0.0",

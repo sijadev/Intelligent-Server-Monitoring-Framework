@@ -15,7 +15,7 @@ interface FrameworkOptions {
   verbose?: boolean;
 }
 
-class IMFPythonFramework {
+class MCPGuardPythonFramework {
   private process: ChildProcess | null = null;
   private options: FrameworkOptions;
 
@@ -74,7 +74,7 @@ class IMFPythonFramework {
       throw new Error(`Python script not found: ${script}`);
     }
 
-    console.log(`🚀 Starting IMF Python Framework in ${this.options.mode} mode...`);
+    console.log(`🚀 Starting MCP.Guard Python Framework in ${this.options.mode} mode...`);
     console.log(`📍 Script: ${script}`);
     console.log(`🔌 Port: ${this.options.port}`);
 
@@ -103,7 +103,7 @@ class IMFPythonFramework {
 
   stop(): void {
     if (this.process) {
-      console.log('🛑 Stopping IMF Python Framework...');
+      console.log('🛑 Stopping MCP.Guard Python Framework...');
       this.process.kill('SIGTERM');
       this.process = null;
     }
@@ -150,7 +150,7 @@ async function main() {
     }
   }
 
-  const framework = new IMFPythonFramework(options);
+  const framework = new MCPGuardPythonFramework(options);
 
   try {
     switch (command) {
@@ -187,9 +187,9 @@ async function main() {
 
 function printHelp() {
   console.log(`
-🐍 IMF Python Monitoring Framework
+🐍 MCP.Guard Python Monitoring Framework
 
-Usage: imf-python-framework <command> [options]
+Usage: mcp-guard-python-framework <command> [options]
 
 Commands:
   start     Start the monitoring framework (default)
@@ -204,10 +204,10 @@ Options:
   --verbose, -v     Enable verbose logging
 
 Examples:
-  imf-python-framework start --mode api --port 8000
-  imf-python-framework start --mode standalone --verbose
-  imf-python-framework status
-  imf-python-framework --help
+  mcp-guard-python-framework start --mode api --port 8000
+  mcp-guard-python-framework start --mode standalone --verbose
+  mcp-guard-python-framework status
+  mcp-guard-python-framework --help
 
 Environment Variables:
   PORT              API server port
@@ -224,5 +224,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   });
 }
 
-export { IMFPythonFramework };
+export { MCPGuardPythonFramework };
 export type { FrameworkOptions };

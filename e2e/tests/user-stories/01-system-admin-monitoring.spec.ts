@@ -12,12 +12,12 @@ test.describe('👨‍💻 System Admin: Server Monitoring', () => {
   });
 
   test('As a System Admin, I want to check system health when I arrive at work', async ({ page }) => {
-    // STORY: It's Monday morning, Sarah (System Admin) opens IMF to check if everything is running smoothly
+    // STORY: It's Monday morning, Sarah (System Admin) opens MCP.Guard to check if everything is running smoothly
     
     // 1. Navigate to dashboard 
-    await test.step('Open IMF Dashboard', async () => {
+    await test.step('Open MCP.Guard Dashboard', async () => {
       await dashboardPage.goto();
-      await expect(page).toHaveTitle(/IMF/);
+      await expect(page).toHaveTitle(/MCP.Guard/);
     });
 
     // 2. Quick health check - look at status indicators

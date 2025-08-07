@@ -44,7 +44,7 @@ export function Sidebar({ uptime = "0h 0m", problemCount = 0, systemStatus = 'ru
         <div className="flex items-center justify-center h-16 px-4 bg-primary">
           <h1 className="text-xl font-bold text-white">
             <Server className="inline-block mr-2 h-6 w-6" />
-            IMF Dashboard
+            MCP.Guard Dashboard
           </h1>
         </div>
         

@@ -12,7 +12,7 @@ test.describe('👨‍💻 System Admin: Server Monitoring mit Testprofilen', ()
       [
         {
           name: 'Ankunft im Büro - Dashboard öffnen',
-          context: 'Sarah kommt um 8:00 Uhr ins Büro und öffnet als erstes das IMF Dashboard',
+          context: 'Sarah kommt um 8:00 Uhr ins Büro und öffnet als erstes das MCP.Guard Dashboard',
           action: async () => {
             await testTemplate.dashboardPage.goto();
             

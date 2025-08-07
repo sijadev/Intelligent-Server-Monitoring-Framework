@@ -277,7 +277,7 @@ export default function Logs() {
               <Card>
                 <CardHeader>
                   <h3 className="text-lg font-medium">Python Framework Logs</h3>
-                  <p className="text-sm text-gray-500">Monitoring framework events and operations</p>
+                  <p className="text-sm text-gray-500">MCP.Guard framework events and operations</p>
                 </CardHeader>
                 <CardContent>
                   {pythonLogs.length === 0 ? (

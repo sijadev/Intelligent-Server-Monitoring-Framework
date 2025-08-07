@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-IMF Python Framework HTTP API Server
+MCP.Guard Python Framework HTTP API Server
 Provides REST API endpoints for container communication
 """
 
@@ -70,8 +70,8 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI app
 app = FastAPI(
-    title="IMF Python Framework API",
-    description="HTTP API for IMF Python Monitoring Framework",
+    title="MCP.Guard Python Framework API",
+    description="HTTP API for MCP.Guard Python Monitoring Framework",
     version="1.0.0",
     lifespan=lifespan
 )
@@ -88,7 +88,7 @@ app.add_middleware(
 @app.get("/")
 async def root():
     """Root endpoint"""
-    return {"message": "IMF Python Framework API", "version": "1.0.0"}
+    return {"message": "MCP.Guard Python Framework API", "version": "1.0.0"}
 
 @app.get("/health")
 async def health_check():

@@ -42,9 +42,9 @@ export const appConfig = {
 
   // Application Metadata
   app: {
-    name: 'IMF Dashboard',
+    name: 'MCP.Guard Dashboard',
     version: '1.0.0',
-    description: 'Intelligent Monitoring Framework',
+    description: 'MCP.Guard',
   },
 } as const;
 

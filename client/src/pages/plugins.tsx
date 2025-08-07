@@ -466,7 +466,7 @@ export default function Plugins() {
     onSuccess: () => {
       toast({
         title: "Framework Restarted",
-        description: "The monitoring framework has been restarted successfully.",
+        description: "The MCP.Guard framework has been restarted successfully.",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/plugins'] });
       queryClient.invalidateQueries({ queryKey: ['/api/framework/status'] });

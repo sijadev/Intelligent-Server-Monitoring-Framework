@@ -31,6 +31,11 @@ export class ProblemsController extends BaseController {
 
   async createProblem(req: Request, res: Response): Promise<void> {
     try {
+      // Convert timestamp string to Date object if needed
+      if (req.body.timestamp && typeof req.body.timestamp === 'string') {
+        req.body.timestamp = new Date(req.body.timestamp);
+      }
+      
       const problem = insertProblemSchema.parse(req.body);
       const created = await this.storage.createProblem(problem);
       res.status(201).json(created);

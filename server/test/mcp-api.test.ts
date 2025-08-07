@@ -3,18 +3,26 @@ import request from 'supertest'
 import express from 'express'
 import { registerRoutes } from '../routes'
 import { setupTestEnvironment } from './test-setup'
+import { storage as globalStorage } from '../storage-init'
 
 describe('MCP API Endpoints', () => {
-  const { getStorage } = setupTestEnvironment()
+  const testEnv = setupTestEnvironment({
+    useRealDatabase: true, // Use real database like the routes do
+    isolateEachTest: true,
+    cleanupAfterTests: true
+  })
   let app: express.Express
   let server: any
   let storage: any
+  let testCounter: number
 
+  // Create a custom beforeEach that runs AFTER setupTestEnvironment's beforeEach
   beforeEach(async () => {
-    storage = getStorage()
+    storage = testEnv.getStorage()
     app = express()
     app.use(express.json())
     server = await registerRoutes(app as any)
+    testCounter = Date.now() + Math.floor(Math.random() * 1000)
   })
 
   afterEach(() => {
@@ -36,7 +44,7 @@ describe('MCP API Endpoints', () => {
       // First create a test server via API
       const now = new Date();
       const testServer = {
-        serverId: 'test-server-1',
+        serverId: `test-server-1-${testCounter}`,
         name: 'Test MCP Server',
         host: 'localhost',
         port: 8000,
@@ -62,7 +70,7 @@ describe('MCP API Endpoints', () => {
 
       expect(response.body).toHaveLength(1)
       expect(response.body[0]).toMatchObject({
-        serverId: 'test-server-1',
+        serverId: `test-server-1-${testCounter}`,
         name: 'Test MCP Server',
         host: 'localhost',
         port: 8000,
@@ -76,7 +84,7 @@ describe('MCP API Endpoints', () => {
     it('should create a new MCP server', async () => {
       const now = new Date();
       const newServer = {
-        serverId: 'test-server-2',
+        serverId: `test-server-2-${testCounter}`,
         name: 'New Test Server',
         host: '127.0.0.1',
         port: 9000,
@@ -95,7 +103,7 @@ describe('MCP API Endpoints', () => {
         .expect(200)
 
       expect(response.body).toMatchObject({
-        serverId: 'test-server-2',
+        serverId: `test-server-2-${testCounter}`,
         name: 'New Test Server',
         host: '127.0.0.1',
         port: 9000,
@@ -120,7 +128,7 @@ describe('MCP API Endpoints', () => {
     it('should return a specific MCP server', async () => {
       const now = new Date();
       const testServer = {
-        serverId: 'test-server-3',
+        serverId: `test-server-3-${testCounter}`,
         name: 'Specific Test Server',
         host: 'localhost',
         port: 8001,
@@ -141,11 +149,11 @@ describe('MCP API Endpoints', () => {
 
       // Then get the specific server
       const response = await request(app)
-        .get('/api/mcp/servers/test-server-3')
+        .get(`/api/mcp/servers/test-server-3-${testCounter}`)
         .expect(200)
 
       expect(response.body).toMatchObject({
-        serverId: 'test-server-3',
+        serverId: `test-server-3-${testCounter}`,
         name: 'Specific Test Server'
       })
     })
@@ -161,7 +169,7 @@ describe('MCP API Endpoints', () => {
     it('should update an existing MCP server', async () => {
       const now = new Date();
       const testServer = {
-        serverId: 'test-server-4',
+        serverId: `test-server-4-${testCounter}`,
         name: 'Update Test Server',
         host: 'localhost',
         port: 8002,
@@ -186,12 +194,12 @@ describe('MCP API Endpoints', () => {
       }
 
       const response = await request(app)
-        .put('/api/mcp/servers/test-server-4')
+        .put(`/api/mcp/servers/test-server-4-${testCounter}`)
         .send(updates)
         .expect(200)
 
       expect(response.body).toMatchObject({
-        serverId: 'test-server-4',
+        serverId: `test-server-4-${testCounter}`,
         status: 'running',
         port: 8003
       })
@@ -211,7 +219,7 @@ describe('MCP API Endpoints', () => {
     it('should delete an existing MCP server', async () => {
       const now = new Date();
       const testServer = {
-        serverId: 'test-server-5',
+        serverId: `test-server-5-${testCounter}`,
         name: 'Delete Test Server',
         host: 'localhost',
         port: 8004,
@@ -232,12 +240,12 @@ describe('MCP API Endpoints', () => {
 
       // Delete the server
       await request(app)
-        .delete('/api/mcp/servers/test-server-5')
+        .delete(`/api/mcp/servers/test-server-5-${testCounter}`)
         .expect(200)
 
       // Verify server is deleted by trying to get it
       await request(app)
-        .get('/api/mcp/servers/test-server-5')
+        .get(`/api/mcp/servers/test-server-5-${testCounter}`)
         .expect(404)
     })
 
@@ -252,7 +260,7 @@ describe('MCP API Endpoints', () => {
     it('should return metrics for a server', async () => {
       const now = new Date();
       const testServer = {
-        serverId: 'test-server-6',
+        serverId: `test-server-6-${testCounter}`,
         name: 'Metrics Test Server',
         host: 'localhost',
         port: 8005,
@@ -273,7 +281,7 @@ describe('MCP API Endpoints', () => {
 
       // Create test metrics via API
       const testMetrics = {
-        serverId: 'test-server-6',
+        serverId: `test-server-6-${testCounter}`,
         timestamp: new Date(),
         status: 'running',
         responseTime: 150,
@@ -288,12 +296,12 @@ describe('MCP API Endpoints', () => {
         .expect(200)
 
       const response = await request(app)
-        .get('/api/mcp/servers/test-server-6/metrics')
+        .get(`/api/mcp/servers/test-server-6-${testCounter}/metrics`)
         .expect(200)
 
       expect(response.body).toHaveLength(1)
       expect(response.body[0]).toMatchObject({
-        serverId: 'test-server-6',
+        serverId: `test-server-6-${testCounter}`,
         responseTime: 150,
         requestCount: 42,
         errorCount: 0
@@ -312,7 +320,7 @@ describe('MCP API Endpoints', () => {
   describe('POST /api/mcp/metrics', () => {
     it('should create new MCP server metrics', async () => {
       const newMetrics = {
-        serverId: 'test-server-7',
+        serverId: `test-server-7-${testCounter}`,
         timestamp: new Date(),
         status: 'running',
         responseTime: 200,
@@ -327,7 +335,7 @@ describe('MCP API Endpoints', () => {
         .expect(200)
 
       expect(response.body).toMatchObject({
-        serverId: 'test-server-7',
+        serverId: `test-server-7-${testCounter}`,
         responseTime: 200,
         requestCount: 100,
         errorCount: 5
@@ -336,7 +344,7 @@ describe('MCP API Endpoints', () => {
 
     it('should return 400 for invalid metrics data', async () => {
       const invalidMetrics = {
-        serverId: 'test-server-8',
+        serverId: `test-server-8-${testCounter}`,
         // Missing required fields
       }
 

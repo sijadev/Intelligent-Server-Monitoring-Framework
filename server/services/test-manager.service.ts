@@ -2,7 +2,7 @@ import { EventEmitter } from 'events';
 import fs from 'fs-extra';
 import * as path from 'path';
 import { spawn } from 'child_process';
-import { TestProfile, TestScenario, TestDataGenerationResult } from '@imf/test-manager';
+import { TestProfile, TestScenario, TestDataGenerationResult } from '@mcp-guard/test-manager';
 import { getWorkspacePath, isCI, config } from '../config';
 import { 
   loadDevelopmentConfig,
@@ -105,7 +105,7 @@ export class TestManagerService extends EventEmitter {
     await fs.ensureDir(path.join(workspacePath, this.config.logsDir));
 
     // Create workspace config if it doesn't exist
-    const configPath = path.join(workspacePath, 'imf-config.json');
+    const configPath = path.join(workspacePath, 'mcp-guard-config.json');
     if (!await fs.pathExists(configPath)) {
       const config = {
         version: '1.0.0',
@@ -121,7 +121,7 @@ export class TestManagerService extends EventEmitter {
 
   private async testConnection(): Promise<void> {
     // Check if the CLI exists first
-    const cliPath = path.join(process.cwd(), 'node_modules/@imf/test-manager/dist/cli/simple-cli.js');
+    const cliPath = path.join(process.cwd(), 'node_modules/@mcp-guard/test-manager/dist/cli/simple-cli.js');
     
     if (!await fs.pathExists(cliPath)) {
       console.log('⚠️ Test Manager CLI not found, running in mock mode for development');
@@ -179,7 +179,7 @@ export class TestManagerService extends EventEmitter {
       id: `profile-${Date.now()}`,
       name: profileData.name || `Test Profile ${Date.now()}`,
       version: '1.0.0',
-      description: profileData.description || 'Generated via IMF Test Manager Service',
+      description: profileData.description || 'Generated via MCP.Guard Test Manager Service',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       sourceConfig: {
@@ -369,7 +369,7 @@ export class TestManagerService extends EventEmitter {
       console.log(`📤 Output path: ${outputPath}`);
       
       const generateProcess = spawn('node', [
-        path.join(process.cwd(), 'node_modules/@imf/test-manager/dist/cli/simple-cli.js'),
+        path.join(process.cwd(), 'node_modules/@mcp-guard/test-manager/dist/cli/simple-cli.js'),
         'generate', profileId,
         '--profiles', profilesPath,
         '--output', outputPath

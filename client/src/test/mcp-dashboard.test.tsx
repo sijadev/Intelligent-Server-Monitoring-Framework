@@ -6,10 +6,15 @@ import MCPDashboard from '@/pages/mcp-dashboard'
 // Mock the API module
 vi.mock('@/lib/api', () => ({
   api: {
-    get: vi.fn(),
-    post: vi.fn(),
-    put: vi.fn(),
-    delete: vi.fn()
+    httpGet: vi.fn(),
+    httpPost: vi.fn(),
+    httpPut: vi.fn(),
+    httpDelete: vi.fn(),
+    getDashboard: vi.fn(),
+    getProblems: vi.fn(),
+    getMetrics: vi.fn(),
+    getPlugins: vi.fn(),
+    restartFramework: vi.fn()
   }
 }))
 
@@ -75,9 +80,10 @@ describe('MCP Dashboard', () => {
   }
 
   describe('Dashboard Loading and Display', () => {
-    it('should show loading state initially', () => {
-      const { api } = require('@/lib/api')
-      api.get.mockReturnValue(new Promise(() => {})) // Never resolves
+    it('should show loading state initially', async () => {
+      const { api } = await import('@/lib/api')
+      const mockApi = vi.mocked(api)
+      mockApi.httpGet.mockReturnValue(new Promise(() => {})) // Never resolves
 
       renderWithQueryClient(<MCPDashboard />)
 

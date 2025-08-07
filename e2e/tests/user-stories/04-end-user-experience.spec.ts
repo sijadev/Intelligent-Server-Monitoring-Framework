@@ -12,10 +12,10 @@ test.describe('👤 End User: System Experience', () => {
   });
 
   test('As an End User, I want a simple and intuitive interface when checking system status', async ({ page }) => {
-    // STORY: Lisa (End User) occasionally needs to check if the IMF system is working properly
+    // STORY: Lisa (End User) occasionally needs to check if the MCP.Guard system is working properly
     // She's not technical but needs to know if problems affect her work
     
-    await test.step('Navigate to IMF with minimal technical knowledge', async () => {
+    await test.step('Navigate to MCP.Guard with minimal technical knowledge', async () => {
       await dashboardPage.goto();
       
       // Lisa expects a clear, understandable interface

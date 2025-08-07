@@ -24,6 +24,11 @@ export class MetricsController extends BaseController {
 
   async createMetrics(req: Request, res: Response): Promise<void> {
     try {
+      // Convert timestamp string to Date object if needed
+      if (req.body.timestamp && typeof req.body.timestamp === 'string') {
+        req.body.timestamp = new Date(req.body.timestamp);
+      }
+      
       const metrics = insertMetricsSchema.parse(req.body);
       const created = await this.storage.createMetrics(metrics);
       res.json(created);

@@ -1,6 +1,6 @@
-# IMF E2E Testing Framework
+# MCP.Guard E2E Testing Framework
 
-Comprehensive End-to-End testing framework for the Intelligent Server Monitoring Framework (IMF) using Playwright.
+Comprehensive End-to-End testing framework for MCP.Guard using Playwright.
 
 ## 🎭 Features
 
@@ -48,7 +48,7 @@ e2e/
 ### Prerequisites
 
 - Node.js 18+ installed
-- IMF application running or Docker available
+- MCP.Guard application running or Docker available
 - Playwright browsers installed
 
 ### 1. Install Dependencies
@@ -68,7 +68,7 @@ cp .env.example .env
 
 ### 3. Run Tests
 
-**Local Testing** (IMF app running on localhost:3000):
+**Local Testing** (MCP.Guard app running on localhost:3000):
 ```bash
 npm test
 ```
@@ -144,7 +144,7 @@ docker-compose down -v
 ```
 
 ### Docker Components:
-- **IMF Application**: Full application stack
+- **MCP.Guard Application**: Full application stack
 - **PostgreSQL**: Test database
 - **Redis**: Caching layer
 - **Playwright**: Test execution environment
@@ -332,7 +332,7 @@ npm run test:debug -- --grep "specific test"
 ### Common Issues
 
 **Tests fail to start:**
-- Check if IMF application is running
+- Check if MCP.Guard application is running
 - Verify database connectivity
 - Check port availability
 
@@ -371,8 +371,8 @@ npm test -- --trace=on
 
 ## 📄 License
 
-This testing framework is part of the IMF project and follows the same license terms.
+This testing framework is part of the MCP.Guard project and follows the same license terms.
 
 ---
 
-🎭 **Happy Testing!** For questions or issues, please check the IMF main repository or create a new issue.
+🎭 **Happy Testing!** For questions or issues, please check the MCP.Guard main repository or create a new issue.

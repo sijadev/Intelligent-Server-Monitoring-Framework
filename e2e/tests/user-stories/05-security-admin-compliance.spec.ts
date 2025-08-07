@@ -12,7 +12,7 @@ test.describe('🔒 Security Administrator: Compliance & Monitoring', () => {
   });
 
   test('As a Security Administrator, I need to audit system access and monitor for security issues', async ({ page }) => {
-    // STORY: David (Security Admin) performs regular security audits of the IMF system
+    // STORY: David (Security Admin) performs regular security audits of the MCP.Guard system
     // He needs to verify access controls and identify potential security risks
     
     await test.step('Verify secure system access patterns', async () => {

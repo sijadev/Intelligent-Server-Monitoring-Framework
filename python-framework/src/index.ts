@@ -1,9 +1,9 @@
 /**
- * IMF Python Monitoring Framework - Node.js Interface
+ * MCP.Guard Python Monitoring Framework - Node.js Interface
  * Provides programmatic access to the Python monitoring framework
  */
 
-export { IMFPythonFramework } from './cli.js';
+export { MCPGuardPythonFramework } from './cli.js';
 export type { FrameworkOptions } from './cli.js';
 
 // Type definitions for framework data structures
@@ -48,9 +48,9 @@ export interface FrameworkData {
 }
 
 /**
- * Client for interacting with the IMF Python Framework HTTP API
+ * Client for interacting with the MCP.Guard Python Framework HTTP API
  */
-export class IMFFrameworkClient {
+export class MCPGuardFrameworkClient {
   private baseUrl: string;
 
   constructor(baseUrl: string = 'http://localhost:8000') {

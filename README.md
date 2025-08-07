@@ -61,7 +61,7 @@ chmod +x ./docker/setup.sh
 ```
 
 **Verfügbare Services:**
-- **IMF App**: http://localhost:3000
+- **MCP.Guard App**: http://localhost:3000
 - **Vite Dev**: http://localhost:5173  
 - **pgAdmin**: http://localhost:8080
 - **Redis Commander**: http://localhost:8081
@@ -163,7 +163,7 @@ This command starts:
 
 ### Plugin System Activation
 
-The IMF automatically starts with the following plugins:
+MCP.Guard automatically starts with the following plugins:
 
 **Collector Plugins** (Data Collection):
 - ⚙️ `system_metrics_collector` - CPU, Memory, Disk monitoring
@@ -398,7 +398,7 @@ socket.onmessage = (event) => {
 
 ### Built-in Plugin Architecture
 
-The IMF comes with 8 built-in plugins organized by type:
+MCP.Guard comes with 8 built-in plugins organized by type:
 
 **Collector Plugins** (Data Gathering):
 ```python
@@ -814,7 +814,7 @@ If issues persist:
    echo "Node: $(node --version)"
    echo "Python: $(python --version)"
    echo "PostgreSQL: $(psql --version)"
-   echo "IMF Version: $(grep version package.json)"
+   echo "MCP.Guard Version: $(grep version package.json)"
    ```
 
 ## 🚀 Advanced Usage & Best Practices
@@ -875,8 +875,8 @@ psql imf_database -c "SELECT * FROM pg_stat_activity;"
 ### Monitoring & Alerting
 
 ```bash
-# Set up system monitoring for IMF itself
-# Monitor IMF process
+# Set up system monitoring for MCP.Guard itself
+# Monitor MCP.Guard process
 ps aux | grep enhanced_main.py
 
 # Monitor database connections
@@ -911,8 +911,8 @@ tar -czf config_backup_$(date +%Y%m%d).tar.gz .env python-framework/config.yaml
 
 ```bash
 # Fork and clone the repository
-git clone https://github.com/YOUR_USERNAME/IMF.git
-cd IMF
+git clone https://github.com/YOUR_USERNAME/MCP.Guard.git
+cd MCP.Guard
 
 # Install development dependencies
 npm install
@@ -991,7 +991,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ```text
 MIT License
 
-Copyright (c) 2025 Intelligent Monitoring Framework
+Copyright (c) 2025 MCP.Guard
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -1023,7 +1023,7 @@ SOFTWARE.
 
 ### Community Resources
 
-- **GitHub Repository**: [https://github.com/username/IMF](https://github.com/username/IMF)
+- **GitHub Repository**: [https://github.com/username/MCP.Guard](https://github.com/username/MCP.Guard)
 - **Issue Tracker**: Report bugs and request features
 - **Wiki**: Additional documentation and tutorials
 - **Discussions**: Community Q&A and ideas
@@ -1063,7 +1063,7 @@ SOFTWARE.
 - The Python psutil maintainers for system monitoring capabilities
 - The React and TypeScript communities for excellent tooling
 - The PostgreSQL team for robust data persistence
-- All contributors who help improve the IMF
+- All contributors who help improve MCP.Guard
 
 ---
 

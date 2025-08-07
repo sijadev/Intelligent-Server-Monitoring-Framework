@@ -38,7 +38,7 @@ export class ProblemsPage extends BasePage {
     
     // Check for expected title patterns with more flexibility
     try {
-      await expect(this.page).toHaveTitle(/Problems|IMF.*Problems/);
+      await expect(this.page).toHaveTitle(/Problems|MCP.Guard.*Problems/);
     } catch {
       // If title doesn't match expected pattern, check if page loaded correctly
       const title = await this.page.title();

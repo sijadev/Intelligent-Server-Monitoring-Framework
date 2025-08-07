@@ -9,8 +9,8 @@ export interface TestConfig {
   cleanupAfterTests?: boolean;
 }
 
-// Test database configuration
-const TEST_DB_URL = process.env.TEST_DATABASE_URL || 'postgresql://test:test@localhost:5432/imf_test_db';
+// Test database configuration - use same as development by default
+const TEST_DB_URL = process.env.TEST_DATABASE_URL || process.env.DATABASE_URL || 'postgresql://simonjanke@localhost:5432/imf_database';
 
 // Global test state
 let testStorage: MemStorage | DatabaseStorage;
@@ -43,7 +43,7 @@ export function setupTestEnvironment(testConfig: TestConfig = {}) {
         // Dynamic import to avoid issues when database is not available
         const { DatabaseStorage } = await import('../db-storage');
         testStorage = new DatabaseStorage(TEST_DB_URL);
-        await testStorage.initialize();
+        // DatabaseStorage doesn't need initialize() method
         console.log('✅ Test database initialized');
       } catch (error) {
         console.warn('⚠️  Test database initialization failed, falling back to MemStorage:', error);
@@ -57,10 +57,11 @@ export function setupTestEnvironment(testConfig: TestConfig = {}) {
   afterAll(async () => {
     if (cleanupAfterTests) {
       // Cleanup test data
-      if (testStorage && 'query' in testStorage) { // Check if it's DatabaseStorage
+      if (testStorage && 'sql' in testStorage) { // Check if it's DatabaseStorage
         try {
+          console.log('🧹 afterAll: Cleaning up test database...');
           await cleanupTestDatabase();
-          console.log('🧹 Test database cleaned up');
+          console.log('✅ Test database cleaned up after all tests');
         } catch (error) {
           console.warn('⚠️  Test database cleanup failed:', error);
         }
@@ -79,18 +80,23 @@ export function setupTestEnvironment(testConfig: TestConfig = {}) {
 
   if (isolateEachTest) {
     beforeEach(async () => {
+      console.log('🔄 beforeEach: Cleaning test data...');
       // Clear test data before each test
       if (testStorage instanceof MemStorage) {
         testStorage.clear();
-      } else if (testStorage && 'query' in testStorage) { // Check if it's DatabaseStorage
+        console.log('🧹 MemStorage cleared');
+      } else if (testStorage && 'sql' in testStorage) { // Check if it's DatabaseStorage
+        console.log('🗄️  DatabaseStorage detected, running cleanup...');
         await cleanupTestDatabase();
+      } else {
+        console.log('⚠️  Unknown storage type:', typeof testStorage, testStorage);
       }
     });
   }
 
   return {
     getStorage: () => testStorage,
-    isUsingRealDatabase: () => testStorage && 'query' in testStorage,
+    isUsingRealDatabase: () => testStorage && 'sql' in testStorage,
   };
 }
 
@@ -98,24 +104,26 @@ export function setupTestEnvironment(testConfig: TestConfig = {}) {
  * Clean up test database tables
  */
 async function cleanupTestDatabase() {
-  if (!testStorage || !('query' in testStorage)) return;
+  if (!testStorage || !('sql' in testStorage)) return;
 
   try {
+    const storage = testStorage as any;
     // Clear all test data in reverse dependency order
-    await (testStorage as any).query('DELETE FROM mcp_server_metrics WHERE 1=1');
-    await (testStorage as any).query('DELETE FROM mcp_servers WHERE 1=1');
-    await (testStorage as any).query('DELETE FROM deployment_metrics WHERE 1=1');
-    await (testStorage as any).query('DELETE FROM deployments WHERE 1=1');
-    await (testStorage as any).query('DELETE FROM ai_interventions WHERE 1=1');
-    await (testStorage as any).query('DELETE FROM ai_models WHERE 1=1');
-    await (testStorage as any).query('DELETE FROM code_analysis_runs WHERE 1=1');
-    await (testStorage as any).query('DELETE FROM code_issues WHERE 1=1');
-    await (testStorage as any).query('DELETE FROM log_entries WHERE 1=1');
-    await (testStorage as any).query('DELETE FROM metrics WHERE 1=1');
-    await (testStorage as any).query('DELETE FROM problems WHERE 1=1');
-    await (testStorage as any).query('DELETE FROM plugins WHERE 1=1');
-    await (testStorage as any).query('DELETE FROM framework_config WHERE 1=1');
-    await (testStorage as any).query('DELETE FROM users WHERE 1=1');
+    await storage.sql`DELETE FROM mcp_server_metrics`;
+    await storage.sql`DELETE FROM mcp_servers`;
+    await storage.sql`DELETE FROM deployment_metrics`;
+    await storage.sql`DELETE FROM deployments`;
+    await storage.sql`DELETE FROM ai_interventions`;
+    await storage.sql`DELETE FROM ai_models`;
+    await storage.sql`DELETE FROM code_analysis_runs`;
+    await storage.sql`DELETE FROM code_issues`;
+    await storage.sql`DELETE FROM log_entries`;
+    await storage.sql`DELETE FROM metrics`;
+    await storage.sql`DELETE FROM problems`;
+    await storage.sql`DELETE FROM plugins`;
+    await storage.sql`DELETE FROM framework_config`;
+    await storage.sql`DELETE FROM users`;
+    console.log('🧹 Test database tables cleared');
   } catch (error) {
     console.warn('Warning: Could not clean test database:', error);
   }
