@@ -1,3 +1,5 @@
+![images](https://github.com/user-attachments/assets/e371ae0c-bccd-4ad6-aa39-91b34bccdbcd)
+
 # MCP.Guard - "Your tests just got smarter than your competition"
 
 MCP.Guard is the new way of testing where test profiles including test-specific data are created through use case definition, and these can be combined into a complete workflow. Non-functional tests are supported by intelligent monitoring with AI support. Long log file analysis is a thing of the past! Today, the affected code area is displayed for quick review, and thanks to intelligent learning, it can also be optionally fixed. What good is the best solution if the server environment crashes? We help you keep everything under control - with forecasts and warnings.
