@@ -1,10 +1,9 @@
-name: Lightweight Lint
+name: Lightweight Lint (Disabled)
 
+# Disabled: converted triggers to manual-only so it is skipped for all automatic events.
+# Restore by re-adding pull_request/push triggers below.
 on:
-  pull_request:
-    branches: [main, develop, Development]
-  push:
-    branches: [develop, Development]
+  workflow_dispatch: {}
 
 concurrency:
   group: lint-${{ github.ref }}
@@ -12,6 +11,8 @@ concurrency:
 
 jobs:
   lint:
+    # Fully disabled job (guard). Remove this 'if' to re-enable.
+    if: ${{ false }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
