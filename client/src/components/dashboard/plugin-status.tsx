@@ -40,7 +40,7 @@ export function PluginStatus({ plugins }: PluginStatusProps) {
   return (
     <>
       <Card data-testid="plugin-status" className="border border-gray-200">
-        <CardHeader className="px-6 py-4 border-b border-gray-200">
+        <CardHeader className="px-5 py-3 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <button
@@ -72,11 +72,11 @@ export function PluginStatus({ plugins }: PluginStatusProps) {
         {!collapsed && (
           <CardContent id="active-plugins-content" className="p-0">
             {plugins.length === 0 ? (
-              <div className="px-6 py-8 text-center text-gray-500">No plugins loaded</div>
+              <div className="px-5 py-6 text-center text-gray-500">No plugins loaded</div>
             ) : (
               <div className={scrollClass}>
                 {display.map((plugin) => (
-                  <div key={plugin.id} className="px-6 py-3">
+                  <div key={plugin.id} className="px-5 py-2.5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <StatusIndicator

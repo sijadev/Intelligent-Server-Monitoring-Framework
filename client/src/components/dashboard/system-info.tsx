@@ -1,5 +1,4 @@
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import type { Metrics } from '@shared/schema';
 
@@ -35,11 +34,11 @@ export function SystemInfo({ metrics, uptime }: SystemInfoProps) {
 
   return (
     <div data-testid="system-info">
-      <Card className="border border-gray-200 mb-6">
-        <CardHeader className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">System Information</h3>
+      <Card className="border border-gray-200 mb-4">
+        <CardHeader className="px-5 py-3 border-b border-gray-200">
+          <h3 className="text-base font-medium text-gray-900">System Information</h3>
         </CardHeader>
-        <CardContent className="px-6 py-4 space-y-4">
+        <CardContent className="px-5 py-3 space-y-3">
           {systemMetrics.map((metric) => (
             <div key={metric.label}>
               <div className="flex justify-between mb-2">
@@ -62,7 +61,7 @@ export function SystemInfo({ metrics, uptime }: SystemInfoProps) {
           ))}
 
           {uptime && (
-            <div className="pt-4 border-t border-gray-200">
+            <div className="pt-3 border-t border-gray-200">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Uptime</span>
                 <span className="font-medium text-gray-900">{uptime}</span>

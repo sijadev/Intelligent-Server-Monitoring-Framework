@@ -48,7 +48,7 @@ export function ProblemsList({ problems, onResolveProblem }: ProblemsListProps) 
   return (
     <div className="lg:col-span-2">
       <Card data-testid="problems-list" className="border border-gray-200">
-        <CardHeader className="px-6 py-4 border-b border-gray-200">
+        <CardHeader className="px-5 py-3 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <button
@@ -86,12 +86,12 @@ export function ProblemsList({ problems, onResolveProblem }: ProblemsListProps) 
           <CardContent id="recent-problems-content" className="p-0">
             <div className={scrollClass}>
               {problems.length === 0 ? (
-                <div className="px-6 py-8 text-center text-gray-500">
+                <div className="px-5 py-6 text-center text-gray-500">
                   No active problems detected
                 </div>
               ) : (
                 display.map((problem) => (
-                  <div key={problem.id} className="px-6 py-4">
+                  <div key={problem.id} className="px-5 py-3">
                     <div className="flex items-start justify-between">
                       <div className="flex items-start space-x-3">
                         <div className="flex-shrink-0">

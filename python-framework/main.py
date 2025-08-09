@@ -586,19 +586,38 @@ class SystemMetricsCollectorPlugin(MetricsCollectorPlugin):
     
     async def collect_metrics(self) -> Dict[str, Any]:
         """Sammelt System-Metriken"""
-        try:
-            return {
-                'cpu_usage': psutil.cpu_percent(interval=1),
-                'memory_usage': psutil.virtual_memory().percent,
-                'disk_usage': psutil.disk_usage('/').percent,
-                'load_average': os.getloadavg()[0] if hasattr(os, 'getloadavg') else 0,
-                'network_connections': len(psutil.net_connections()),
-                'processes': len(psutil.pids()),
-                'timestamp': time.time()
-            }
-        except Exception as e:
-            logger.error(f"Error collecting system metrics: {e}")
-            return {'system_metrics_error': str(e)}
+        errors: Dict[str, str] = {}
+        metrics: Dict[str, Any] = { 'timestamp': time.time() }
+
+        def safe(name: str, fn):
+            try:
+                return fn()
+            except Exception as e:  # noqa: BLE001 - want to capture all metric failures individually
+                # Store only lightweight error info (exception class and message)
+                errors[name] = f"{e.__class__.__name__}: {e}".strip()
+                return None
+
+        # Use non-blocking cpu_percent (interval=0) to avoid 1s delay in async loop;
+        # first call may return 0.0 which is acceptable.
+        metrics['cpu_usage'] = safe('cpu_usage', lambda: psutil.cpu_percent(interval=0))
+        metrics['memory_usage'] = safe('memory_usage', lambda: psutil.virtual_memory().percent)
+        metrics['disk_usage'] = safe('disk_usage', lambda: psutil.disk_usage('/').percent)
+        metrics['load_average'] = safe('load_average', lambda: os.getloadavg()[0] if hasattr(os, 'getloadavg') else 0)
+        # net_connections can raise AccessDenied on some systems without privileges; fall back gracefully
+        metrics['network_connections'] = safe('network_connections', lambda: len(psutil.net_connections(kind='inet')))
+        metrics['processes'] = safe('processes', lambda: len(psutil.pids()))
+
+        if errors:
+            # Log once per collection cycle with aggregated errors to reduce noise
+            logger.warning(f"Partial system metrics collected with {len(errors)} error(s): {errors}")
+            metrics['errors'] = errors
+
+        # If everything failed, keep backward-compatible error shape
+        if all(v is None for k, v in metrics.items() if k != 'timestamp' and k != 'errors'):
+            logger.error(f"Error collecting system metrics: all metrics failed -> {errors}")
+            return {'system_metrics_error': errors}
+
+        return metrics
 
 class ThresholdDetectorPlugin(ProblemDetectorPlugin):
     """Schwellenwert-basierte Problem-Erkennung"""

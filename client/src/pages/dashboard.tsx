@@ -5,6 +5,7 @@ import { StatusCards } from '@/components/dashboard/status-cards';
 import { ProblemsList } from '@/components/dashboard/problems-list';
 import { SystemInfo } from '@/components/dashboard/system-info';
 import { PluginStatus } from '@/components/dashboard/plugin-status';
+import { RecentTestProfiles } from '@/components/dashboard/recent-test-profiles';
 import { LogViewer } from '@/components/dashboard/log-viewer';
 import { TestManagerWidget } from '@/components/dashboard/test-manager-widget';
 import { useWebSocket } from '@/hooks/use-websocket';
@@ -126,31 +127,29 @@ export default function Dashboard() {
       />
 
       <main className="flex-1 relative overflow-y-auto focus:outline-none">
-        <div className="py-6 px-6">
+        <div className="py-4 px-5">
           <StatusCards status={dashboardData?.status} />
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            <div className="lg:col-span-2">
+          <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
+            <div className="xl:col-span-3 space-y-4">
               <ProblemsList
                 problems={dashboardData?.recentProblems || []}
                 onResolveProblem={handleResolveProblem}
               />
+              <PluginStatus plugins={dashboardData?.pluginStatus || []} />
+              <RecentTestProfiles />
+              <div id="realtime-log-stream">
+                <LogViewer logs={realtimeLogs} onClear={handleClearLogs} />
+              </div>
             </div>
-
-            <div>
+            <div className="space-y-4">
               <SystemInfo
                 metrics={dashboardData?.currentMetrics}
                 uptime={dashboardData?.status?.uptime}
               />
-              <PluginStatus plugins={dashboardData?.pluginStatus || []} />
-            </div>
-
-            <div>
               <TestManagerWidget />
             </div>
           </div>
-
-          <LogViewer logs={realtimeLogs} onClear={handleClearLogs} className="mt-8" />
         </div>
       </main>
     </div>

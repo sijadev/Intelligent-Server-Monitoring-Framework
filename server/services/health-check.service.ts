@@ -5,6 +5,7 @@
 
 import { config, getDatabaseUrl, getRedisUrl, getPythonApiUrl } from '../config';
 import net from 'net';
+import { promises as fs } from 'fs';
 import { pythonMonitorService } from './python-monitor';
 import { logAggregator } from './log-aggregator';
 import { ErrorHandler } from '../utils/error-handler';
@@ -24,6 +25,11 @@ export interface SystemHealth {
   services: HealthCheckResult[];
   timestamp: Date;
   uptime: number;
+  summary?: {
+    healthy: number;
+    degraded: number;
+    unhealthy: number;
+  };
 }
 
 export class HealthCheckService {
@@ -83,12 +89,18 @@ export class HealthCheckService {
     });
 
     const systemStatus = this.calculateSystemStatus(services);
+    const summary = {
+      healthy: services.filter((s) => s.status === 'healthy').length,
+      degraded: services.filter((s) => s.status === 'degraded').length,
+      unhealthy: services.filter((s) => s.status === 'unhealthy').length,
+    };
 
     return {
       status: systemStatus,
       services,
       timestamp: new Date(),
       uptime: Date.now() - this.startTime,
+      summary,
     };
   }
 
@@ -168,20 +180,44 @@ export class HealthCheckService {
    */
   private async checkRedis(): Promise<HealthCheckResult> {
     const start = Date.now();
-
+    const timeoutMs = 3000;
     try {
       const redisUrl = getRedisUrl();
       const url = new URL(redisUrl);
-      const isReachable = await this.testTCPConnection(url.hostname, parseInt(url.port) || 6379);
+
+      let timedOut = false;
+      const reachable = await new Promise<boolean>((resolve) => {
+        const socket = new net.Socket();
+        const timer = setTimeout(() => {
+          timedOut = true;
+          socket.destroy();
+          resolve(false);
+        }, timeoutMs);
+        socket.connect(parseInt(url.port) || 6379, url.hostname, () => {
+          clearTimeout(timer);
+          socket.destroy();
+          resolve(true);
+        });
+        socket.on('error', () => {
+          clearTimeout(timer);
+          resolve(false);
+        });
+      });
+
+      const latency = Date.now() - start;
+      const status: HealthCheckResult['status'] = reachable ? 'healthy' : 'unhealthy';
+      const error = reachable ? undefined : timedOut ? 'Connection timeout' : 'Unreachable';
 
       return {
         service: 'redis',
-        status: isReachable ? 'healthy' : 'unhealthy',
-        latency: Date.now() - start,
+        status,
+        latency,
+        error,
         timestamp: new Date(),
         metadata: {
           host: url.hostname,
           port: url.port,
+          timedOut,
         },
       };
     } catch (error) {
@@ -262,18 +298,15 @@ export class HealthCheckService {
     const start = Date.now();
 
     try {
-      const fs = await import('fs-extra');
       const testFile = '/tmp/imf-health-check.tmp';
-
-      // Test write/read/delete
-      await fs.writeFile(testFile, 'health-check');
+      await fs.writeFile(testFile, 'health-check', 'utf8');
       const content = await fs.readFile(testFile, 'utf8');
-      await fs.remove(testFile);
-
+      await fs.unlink(testFile).catch(() => {
+        /* ignore */
+      });
       if (content !== 'health-check') {
         throw new Error('File content mismatch');
       }
-
       return {
         service: 'filesystem',
         status: 'healthy',
@@ -297,24 +330,36 @@ export class HealthCheckService {
   private async checkMemory(): Promise<HealthCheckResult> {
     try {
       const memUsage = process.memoryUsage();
-      const totalHeap = memUsage.heapTotal;
+      const totalHeap = memUsage.heapTotal || 1; // avoid division by zero
       const usedHeap = memUsage.heapUsed;
       const heapUsagePercent = (usedHeap / totalHeap) * 100;
+      const RSS_MB = Math.round(memUsage.rss / 1024 / 1024);
+      const HEAP_USED_MB = Math.round(usedHeap / 1024 / 1024);
+      const HEAP_TOTAL_MB = Math.round(totalHeap / 1024 / 1024);
+      const EXTERNAL_MB = Math.round(memUsage.external / 1024 / 1024);
+
+      // Thresholds (could be externalized later)
+      const DEGRADED_THRESHOLD = 75;
+      const UNHEALTHY_THRESHOLD = 90;
 
       let status: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
-      if (heapUsagePercent > 90) status = 'unhealthy';
-      else if (heapUsagePercent > 75) status = 'degraded';
+      if (heapUsagePercent > UNHEALTHY_THRESHOLD) status = 'unhealthy';
+      else if (heapUsagePercent > DEGRADED_THRESHOLD) status = 'degraded';
 
       return {
         service: 'memory',
         status,
         timestamp: new Date(),
         metadata: {
-          heapUsed: Math.round(usedHeap / 1024 / 1024), // MB
-          heapTotal: Math.round(totalHeap / 1024 / 1024), // MB
+          heapUsedMB: HEAP_USED_MB,
+          heapTotalMB: HEAP_TOTAL_MB,
           heapUsagePercent: Math.round(heapUsagePercent),
-          rss: Math.round(memUsage.rss / 1024 / 1024), // MB
-          external: Math.round(memUsage.external / 1024 / 1024), // MB
+          rssMB: RSS_MB,
+          externalMB: EXTERNAL_MB,
+          thresholds: {
+            degraded: DEGRADED_THRESHOLD,
+            unhealthy: UNHEALTHY_THRESHOLD,
+          },
         },
       };
     } catch (error) {
@@ -323,6 +368,7 @@ export class HealthCheckService {
         status: 'unhealthy',
         error: error instanceof Error ? error.message : 'Memory check failed',
         timestamp: new Date(),
+        metadata: { failed: true },
       };
     }
   }

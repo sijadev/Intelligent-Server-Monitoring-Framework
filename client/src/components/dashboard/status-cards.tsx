@@ -47,7 +47,7 @@ export function StatusCards({ status }: StatusCardsProps) {
   return (
     <div
       data-testid="status-cards"
-      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6"
     >
       {cards.map((card, index) => {
         const Icon = card.icon;
@@ -58,7 +58,7 @@ export function StatusCards({ status }: StatusCardsProps) {
 
         return (
           <Card key={index} data-testid={testId} className="border border-gray-200 card">
-            <CardContent className="p-5">
+            <CardContent className="p-4">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
                   <Icon className={cn('h-8 w-8', card.iconColor)} />
