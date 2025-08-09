@@ -8,8 +8,11 @@ router.post('/start', async (req, res) => {
   try {
     await pythonMonitorService.start();
     res.json({ message: 'Framework started successfully' });
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to start framework' });
+  } catch (e) {
+    res.status(500).json({
+      message: 'Failed to start framework',
+      error: e instanceof Error ? e.message : String(e),
+    });
   }
 });
 
@@ -17,8 +20,11 @@ router.post('/stop', async (req, res) => {
   try {
     await pythonMonitorService.stop();
     res.json({ message: 'Framework stopped successfully' });
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to stop framework' });
+  } catch (e) {
+    res.status(500).json({
+      message: 'Failed to stop framework',
+      error: e instanceof Error ? e.message : String(e),
+    });
   }
 });
 
@@ -26,8 +32,11 @@ router.post('/restart', async (req, res) => {
   try {
     await pythonMonitorService.restart();
     res.json({ message: 'Framework restarted successfully' });
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to restart framework' });
+  } catch (e) {
+    res.status(500).json({
+      message: 'Failed to restart framework',
+      error: e instanceof Error ? e.message : String(e),
+    });
   }
 });
 
@@ -40,8 +49,11 @@ router.get('/status', async (req, res) => {
       running: frameworkData.status?.running || false,
       data: frameworkData,
     });
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to get framework status' });
+  } catch (e) {
+    res.status(500).json({
+      message: 'Failed to get framework status',
+      error: e instanceof Error ? e.message : String(e),
+    });
   }
 });
 
@@ -49,8 +61,11 @@ router.get('/data', async (req, res) => {
   try {
     const data = await pythonMonitorService.getFrameworkData();
     res.json(data);
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to get framework data', error: error.message });
+  } catch (e) {
+    res.status(500).json({
+      message: 'Failed to get framework data',
+      error: e instanceof Error ? e.message : String(e),
+    });
   }
 });
 
@@ -58,8 +73,11 @@ router.get('/metrics', async (req, res) => {
   try {
     const data = await pythonMonitorService.getFrameworkData();
     res.json(data.metrics || {});
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to get metrics', error: error.message });
+  } catch (e) {
+    res.status(500).json({
+      message: 'Failed to get metrics',
+      error: e instanceof Error ? e.message : String(e),
+    });
   }
 });
 
@@ -67,8 +85,11 @@ router.get('/problems', async (req, res) => {
   try {
     const data = await pythonMonitorService.getFrameworkData();
     res.json(data.problems || []);
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to get problems', error: error.message });
+  } catch (e) {
+    res.status(500).json({
+      message: 'Failed to get problems',
+      error: e instanceof Error ? e.message : String(e),
+    });
   }
 });
 
@@ -76,8 +97,53 @@ router.get('/plugins', async (req, res) => {
   try {
     const data = await pythonMonitorService.getFrameworkData();
     res.json(data.plugins || []);
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to get plugins', error: error.message });
+  } catch (e) {
+    res.status(500).json({
+      message: 'Failed to get plugins',
+      error: e instanceof Error ? e.message : String(e),
+    });
+  }
+});
+
+// Offline queue diagnostics (DB mirror fallback)
+router.get('/offline-queue', async (_req, res) => {
+  try {
+    const dbMaybe = storage as unknown as {
+      isOffline?: () => boolean;
+      getOfflineQueueLength?: () => number;
+      getMirrorPrimed?: () => boolean;
+      getOfflineOpsSnapshot?: () => ReadonlyArray<{
+        entity: string;
+        type: string;
+        id?: string;
+        timestamp: Date;
+        baseTimestamp?: string;
+      }>;
+    };
+    if (typeof dbMaybe.isOffline !== 'function') {
+      return res
+        .status(200)
+        .json({ offline: false, queueLength: 0, mirrorPrimed: false, operations: [] });
+    }
+    const operations = (dbMaybe.getOfflineOpsSnapshot?.() || []).map((op) => ({
+      entity: op.entity,
+      type: op.type,
+      id: op.id,
+      queuedAt: op.timestamp,
+      baseTimestamp: op.baseTimestamp || null,
+      ageMs: Date.now() - new Date(op.timestamp).getTime(),
+    }));
+    res.json({
+      offline: dbMaybe.isOffline(),
+      queueLength: dbMaybe.getOfflineQueueLength?.() || 0,
+      mirrorPrimed: dbMaybe.getMirrorPrimed?.() || false,
+      operations,
+    });
+  } catch (e) {
+    res.status(500).json({
+      message: 'Failed to retrieve offline queue',
+      error: e instanceof Error ? e.message : String(e),
+    });
   }
 });
 
@@ -86,7 +152,7 @@ router.get('/config', async (req, res) => {
   try {
     const config = await storage.getFrameworkConfig();
     res.json(config);
-  } catch (error) {
+  } catch {
     // Fallback configuration if storage fails
     const fallbackConfig = {
       serverType: 'development',
@@ -128,7 +194,7 @@ router.post('/config', async (req, res) => {
       message: 'Configuration updated successfully',
       config: updatedConfig,
     });
-  } catch (error) {
+  } catch {
     res.json({
       success: true,
       message: 'Configuration updated successfully (simulated)',
@@ -143,8 +209,11 @@ router.post('/config/reset', async (req, res) => {
       success: true,
       message: 'Configuration reset to defaults',
     });
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to reset configuration' });
+  } catch (e) {
+    res.status(500).json({
+      message: 'Failed to reset configuration',
+      error: e instanceof Error ? e.message : String(e),
+    });
   }
 });
 
