@@ -17,11 +17,64 @@ env:
   DATABASE_URL: postgresql://postgres:postgres@localhost:5432/imf_test
 
 jobs:
-  # Single Comprehensive Job - Maximum Efficiency
+  # Matrix test job splitting core JS test groups for parallelism with coverage upload
+  tests-matrix:
+    name: 🧪 JS Tests (${{ matrix.group }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [unit, api, integration]
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/imf_test
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: imf_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install deps
+        run: npm ci
+      - name: DB push
+        run: npm run db:push
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+      - name: Select tests
+        id: select
+        run: |
+          case "${{ matrix.group }}" in
+            unit)       echo "files=tests/system-health.test.ts tests/database.test.ts tests/critical-path.test.ts" >> $GITHUB_OUTPUT ;;
+            api)        echo "files=tests/api-paths.test.ts tests/api-contract.test.ts" >> $GITHUB_OUTPUT ;;
+            integration) echo "files=tests/profile-factory.integration.test.ts tests/smoke.test.ts" >> $GITHUB_OUTPUT ;;
+          esac
+      - name: Run vitest (${{ matrix.group }}) with coverage
+        run: |
+          mkdir -p coverage/${{ matrix.group }}
+          npx vitest run ${{ steps.select.outputs.files }} --reporter=default --coverage.enabled --coverage.reportsDirectory coverage/${{ matrix.group }}
+      - name: Upload coverage (partial)
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.group }}
+          path: coverage/${{ matrix.group }}
+          if-no-files-found: error
+
+  # Single Comprehensive Job - Remaining tasks (Python tests, build, docs) depends on tests matrix
   comprehensive-pipeline:
     name: 🚀 Complete IMF Pipeline
+    needs: [tests-matrix]
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 60
 
     services:
       postgres:
@@ -111,51 +164,7 @@ jobs:
 
           echo "✅ Complete Docker infrastructure is ready"
 
-      # COMPREHENSIVE TEST SUITE
-      - name: 🧪 Run Unit Tests
-        run: |
-          echo "🔬 Running Unit Tests (updated paths)..."
-          mkdir -p test-results/unit
-          # Running representative fast core tests from existing 'tests/' directory
-          npx vitest run \
-            tests/system-health.test.ts \
-            tests/database.test.ts \
-            tests/critical-path.test.ts \
-            --reporter=json --outputFile=test-results/unit/unit-test-results.json
-          echo "✅ Unit tests completed"
-        env:
-          DATABASE_URL: ${{ env.DATABASE_URL }}
-
-      - name: � Run API Tests
-        run: |
-          echo "🌐 Running API Tests (updated paths)..."
-          mkdir -p test-results/api
-          npx vitest run \
-            tests/api-paths.test.ts \
-            tests/api-contract.test.ts \
-            --reporter=json --outputFile=test-results/api/api-test-results.json
-          echo "✅ API tests completed"
-        env:
-          CI: true
-          NODE_ENV: test
-          DATABASE_URL: ${{ env.DATABASE_URL }}
-
-      - name: � Run Integration Tests
-        run: |
-          echo "� Running Integration/Smoke Tests (updated paths)..."
-          mkdir -p test-results/integration
-          npx vitest run \
-            tests/profile-factory.integration.test.ts \
-            tests/smoke.test.ts \
-            --reporter=json --outputFile=test-results/integration/integration-test-results.json
-          echo "✅ Integration tests completed"
-        env:
-          DATABASE_URL: ${{ env.DATABASE_URL }}
-          REDIS_URL: redis://localhost:6380
-          NODE_ENV: test
-          CI: true
-          GITHUB_ACTIONS: true
-          TEST_MCP_SERVER_URL: http://localhost:3001
+      # JS tests executed in parallel matrix job (needs dependency ensures completion here)
 
       # Removed Real Data & ML test phases referencing non-existent files.
       # (Re-add when corresponding test specs are introduced under tests/.)
@@ -189,13 +198,37 @@ jobs:
           PYTHON_PATH: python3
           TEST_MCP_SERVER_URL: http://localhost:3001
 
-      - name: 🏗️ Build Application
+      - name: 🏗️ Build Application (after JS tests)
         run: |
           echo "🏗️ Building application..."
           npm run build
           echo "✅ Application build completed"
 
-      - name: 📋 Generate Comprehensive Test Overview
+      - name: 📥 Download partial coverages
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          path: coverage/partial
+          merge-multiple: true
+
+      - name: 📊 Merge coverage (simple concat of lcov)
+        run: |
+          echo "Merging coverage reports..."
+          mkdir -p coverage/final
+          # Collect all lcov.info files
+          find coverage/partial -name lcov.info -maxdepth 4 -print -exec cat {} + > coverage/final/lcov.info || true
+          echo "Coverage files merged (if any)."
+        continue-on-error: true
+
+      - name: � Upload merged coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-merged
+          path: coverage/final/lcov.info
+          if-no-files-found: ignore
+
+      - name: �📋 Generate Comprehensive Test Overview
         if: always()
         run: |
           echo "📊 Generating comprehensive test overview..."
@@ -225,14 +258,12 @@ jobs:
           - ✅ Docker Services (Redis + MCP Server)
           - ✅ Package Installation (npm + pip) - **ONCE**
 
-          ### Phase 2: Core Tests 🔬
-          - ✅ **Unit Tests**: Basic functionality validation
-          - ✅ **API Tests**: REST endpoint verification  
-          - ✅ **Integration Tests**: Service connectivity
+          ### Phase 2: Core JS Tests (Matrix) 🔬
+          - ✅ **Unit Tests** (matrix group)
+          - ✅ **API Tests** (matrix group) 
+          - ✅ **Integration Tests** (matrix group)
 
-          ### Phase 3: Advanced Tests 🎯
-          - ✅ **Real Data Tests**: Profile-based testing
-          - ✅ **ML Tests**: AI/ML functionality validation
+          ### Phase 3: Python & Build 🎯
           - ✅ **Python Framework Tests**: AI Learning Engine, Code Analysis, ML Integration
           - ✅ **Documentation**: Automated reporting
 
@@ -253,7 +284,7 @@ jobs:
 
           ## 🎯 Key Metrics
 
-          - **Total Test Categories:** 6 (Unit, API, Integration, Real Data, ML, Python Framework)
+          - **Total Test Categories:** 4 (Unit, API, Integration, Python Framework)
           - **Python Framework Tests:** ~36 total (AI Learning Engine, Code Analysis, ML Integration)
           - **Docker Services:** Redis + MCP Server (shared)
           - **Database:** PostgreSQL (shared)
@@ -288,15 +319,7 @@ jobs:
           - **Files:** smoke-ci.test.ts
           - **Environment:** Full Docker infrastructure
 
-          ### 🔬 Real Data Tests
-          - **Purpose:** Profile-based real-world scenarios
-          - **Files:** precision-code-repair, ai-learning-engine, mcp-integration
-          - **Environment:** Generated test profiles + shared infrastructure
-
-          ### 🧠 ML Tests
-          - **Purpose:** AI/ML functionality validation
-          - **Files:** continuous-learning, intelligent-monitoring
-          - **Environment:** Python ML framework + shared infrastructure
+          <!-- Real Data and ML test phases currently omitted (no specs present) -->
 
           ### 🐍 Python Framework Tests
           - **Purpose:** Python AI Learning Engine, Code Analysis, ML Integration
@@ -321,8 +344,8 @@ jobs:
           - [ ] All unit tests pass
           - [ ] All API endpoints respond correctly
           - [ ] Integration tests verify service connectivity
-          - [ ] Real data tests validate profile-based expectations
-          - [ ] ML tests confirm AI/ML functionality
+          - [ ] (Deferred) Real data tests (specs not present)
+          - [ ] (Deferred) ML tests (specs not present)
           - [ ] Application builds successfully
           - [ ] No Docker service failures
           - [ ] All test artifacts generated
@@ -389,8 +412,9 @@ jobs:
           echo "   ✅ Unit Tests (Core functionality)"
           echo "   ✅ API Tests (Endpoint verification)" 
           echo "   ✅ Integration Tests (Service connectivity)"
-          echo "   ✅ Real Data Tests (Profile-based scenarios)"
-          echo "   ✅ ML Tests (AI/ML functionality)"
+          echo "   ❇️ JS Tests (Unit/API/Integration via matrix)"
+          echo "   ✅ Python Framework Tests (AI Learning Engine, Code Analysis, ML Integration)"
+          echo "   (Deferred) Real Data & ML JS test phases"
           echo "   ✅ Python Framework Tests (AI Learning Engine, Code Analysis, ML Integration)"
           echo ""
           echo "🏗️ **Build Status:** Application built successfully"
