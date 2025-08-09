@@ -7,6 +7,20 @@ import prettier from 'eslint-plugin-prettier';
 import globals from 'globals';
 
 export default [
+  {
+    ignores: [
+      'dist',
+      'coverage',
+      'coverage-*',
+      'lcov-report',
+      'test-results',
+      'test-workspace',
+      'python-framework',
+      '**/generated/**',
+      '**/*.d.ts',
+      '**/*.d.mts',
+    ],
+  },
   js.configs.recommended,
   ...ts.configs.recommended,
   {

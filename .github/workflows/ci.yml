@@ -67,7 +67,7 @@ jobs:
         run: npm run format:check
 
       - name: 🔍 ESLint Lint Check
-        run: npm run lint
+        run: npm run lint:ci
 
       - name: 🗃️ Setup Database Schema
         run: |

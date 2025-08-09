@@ -1,0 +1,10 @@
+dist/
+coverage/
+coverage-*/
+lcov-report/
+test-results/
+test-workspace/
+python-framework/
+**/generated/
+**/*.d.ts
+**/*.d.mts
