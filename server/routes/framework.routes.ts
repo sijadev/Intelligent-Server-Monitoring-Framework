@@ -147,6 +147,35 @@ router.get('/offline-queue', async (_req, res) => {
   }
 });
 
+// Offline conflict diagnostics
+router.get('/offline-conflicts', async (_req, res) => {
+  try {
+    const dbMaybe = storage as unknown as {
+      getOfflineConflictsSnapshot?: () => ReadonlyArray<{
+        entity: string;
+        id: string;
+        conflictType: string;
+        baseTimestamp?: string;
+        remoteTimestamp?: string;
+        resolvedAt: Date;
+      }>;
+    };
+    const conflicts = dbMaybe.getOfflineConflictsSnapshot?.() || [];
+    res.json({
+      count: conflicts.length,
+      conflicts: conflicts.map((c) => ({
+        ...c,
+        resolvedAt: c.resolvedAt.toISOString(),
+      })),
+    });
+  } catch (e) {
+    res.status(500).json({
+      message: 'Failed to retrieve offline conflicts',
+      error: e instanceof Error ? e.message : String(e),
+    });
+  }
+});
+
 // Configuration endpoints
 router.get('/config', async (req, res) => {
   try {

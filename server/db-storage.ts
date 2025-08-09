@@ -1,4 +1,5 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
+import path from 'path';
 import postgres from 'postgres';
 import * as schema from '../shared/schema.js';
 import {
@@ -65,6 +66,9 @@ export class DatabaseStorage implements IStorage {
   private offlineOps: OfflineOperation[] = []; // queued ops while offline
   private reconnectTimer: NodeJS.Timeout | null = null;
   private mirrorPrimed = false;
+  private offlineConflicts: OfflineConflict[] = [];
+  private readonly offlineStateFile =
+    process.env.OFFLINE_QUEUE_FILE || path.join(process.cwd(), 'data', 'offline-state.json');
 
   // Entities we currently mirror (incrementally extendable)
   private readonly mirroredEntities = [
@@ -87,6 +91,8 @@ export class DatabaseStorage implements IStorage {
       });
       this.db = drizzle(this.connection, { schema });
       this.memStorageFallback = new MemStorage();
+      // Attempt to load persisted offline state before priming mirror
+      this.loadOfflineState().catch(() => {});
       console.log('✅ DatabaseStorage initialized successfully');
       // Kick off async readiness probe (non-blocking)
       this.ensureTablesReady().catch((e) =>
@@ -239,6 +245,7 @@ export class DatabaseStorage implements IStorage {
       timestamp: new Date(),
       id: op.id ?? op.data?.id ?? op.data?.name,
     });
+    this.saveOfflineState().catch(() => {});
   }
 
   private async attemptResync(): Promise<void> {
@@ -260,6 +267,7 @@ export class DatabaseStorage implements IStorage {
       console.log('✅ Offline operations synchronized.');
       // Optionally re-prime mirror to account for server-side changes during outage
       await this.primeMirror().catch(() => {});
+      await this.saveOfflineState().catch(() => {});
     } catch {
       // Still offline
     }
@@ -309,6 +317,14 @@ export class DatabaseStorage implements IStorage {
                   merged.scenarios = combined;
                 }
                 console.warn('⚠️ Conflict resolved for test_profile', op.id);
+                this.offlineConflicts.push({
+                  entity: 'test_profile',
+                  id: op.id || 'unknown',
+                  conflictType: 'updatedAt',
+                  resolvedAt: new Date(),
+                  baseTimestamp: op.baseTimestamp,
+                  remoteTimestamp: new Date(current.updatedAt).toISOString(),
+                });
               }
             } catch {
               // ignore conflict fetch errors
@@ -318,6 +334,7 @@ export class DatabaseStorage implements IStorage {
             .update(testProfiles)
             .set({ ...merged, updatedAt: new Date() })
             .where(eq(testProfiles.id, op.id));
+          this.saveOfflineState().catch(() => {});
         } else if (op.type === 'delete' && op.id) {
           await this.db.delete(testProfiles).where(eq(testProfiles.id, op.id));
         }
@@ -375,6 +392,14 @@ export class DatabaseStorage implements IStorage {
                   merged.config = { ...current.config, ...op.data.config };
                 }
                 console.warn('⚠️ Conflict resolved for plugin', op.id || op.data?.name);
+                this.offlineConflicts.push({
+                  entity: 'plugin',
+                  id: (op.id || op.data?.name) ?? 'unknown',
+                  conflictType: 'lastUpdate',
+                  resolvedAt: new Date(),
+                  baseTimestamp: op.baseTimestamp,
+                  remoteTimestamp: new Date(current.lastUpdate).toISOString(),
+                });
               }
             } catch {
               // ignore
@@ -384,6 +409,7 @@ export class DatabaseStorage implements IStorage {
             .update(plugins)
             .set({ ...merged, lastUpdate: new Date() })
             .where(identifier);
+          this.saveOfflineState().catch(() => {});
         } else if (op.type === 'delete' && op.id) {
           await this.db.delete(plugins).where(eq(plugins.id, op.id));
         }
@@ -1092,6 +1118,61 @@ export class DatabaseStorage implements IStorage {
   async getDashboardData(): Promise<DashboardData> {
     return this.memStorageFallback.getDashboardData();
   }
+
+  // -----------------------
+  // Offline persistence
+  // -----------------------
+  private async loadOfflineState(): Promise<void> {
+    try {
+      const fs = await import('fs-extra');
+      if (!(await fs.pathExists(this.offlineStateFile))) return;
+      const raw = await fs.readFile(this.offlineStateFile, 'utf8');
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed.offlineOps)) {
+        this.offlineOps = parsed.offlineOps.map((o: any) => ({
+          ...o,
+          timestamp: o.timestamp ? new Date(o.timestamp) : new Date(),
+        }));
+      }
+      if (Array.isArray(parsed.offlineConflicts)) {
+        this.offlineConflicts = parsed.offlineConflicts.map((c: any) => ({
+          ...c,
+          resolvedAt: c.resolvedAt ? new Date(c.resolvedAt) : new Date(),
+        }));
+      }
+      if (this.offlineOps.length > 0) {
+        this.offlineMode = true; // assume still offline until proven otherwise
+        console.warn('⚠️ Restored', this.offlineOps.length, 'offline ops from persisted state');
+      }
+    } catch (e) {
+      console.warn('⚠️ Failed to load offline state:', (e as any)?.message || e);
+    }
+  }
+
+  private async saveOfflineState(): Promise<void> {
+    try {
+      const fs = await import('fs-extra');
+      await fs.ensureDir(path.dirname(this.offlineStateFile));
+      const data = {
+        offlineOps: this.offlineOps.map((o) => ({
+          ...o,
+          // Ensure Date objects serialized
+          timestamp: o.timestamp.toISOString(),
+        })),
+        offlineConflicts: this.offlineConflicts.map((c) => ({
+          ...c,
+          resolvedAt: c.resolvedAt.toISOString(),
+        })),
+      };
+      await fs.writeFile(this.offlineStateFile, JSON.stringify(data, null, 2), 'utf8');
+    } catch {
+      // Ignore persistence errors silently to avoid cascading failures
+    }
+  }
+
+  getOfflineConflictsSnapshot(): ReadonlyArray<OfflineConflict> {
+    return [...this.offlineConflicts];
+  }
 }
 
 // Offline operation descriptor (placed outside class)
@@ -1113,4 +1194,13 @@ interface OfflineOperation {
   conflictResolved?: boolean;
   conflictType?: string; // e.g. 'test_profile.updatedAt'
   timestamp: Date;
+}
+
+interface OfflineConflict {
+  entity: string;
+  id: string;
+  conflictType: string;
+  baseTimestamp?: string;
+  remoteTimestamp?: string;
+  resolvedAt: Date;
 }
