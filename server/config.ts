@@ -54,6 +54,8 @@ const configSchema = z.object({
   // Framework Mode Configuration
   IMF_FRAMEWORK_MODE: z.enum(['api', 'standalone', 'embedded']).default('standalone'),
   IMF_FRAMEWORK_PORT: z.coerce.number().min(1).max(65535).default(8000),
+  // Lightweight test mode (skip heavy services like Python monitor & Test Manager)
+  IMF_LIGHTWEIGHT_TEST: z.coerce.boolean().default(false),
 
   // Development HTTPS (optional)
   DEV_HTTPS_ENABLED: z.coerce.boolean().default(false),
@@ -81,6 +83,9 @@ const parseConfig = () => {
     console.log('  - AI_STORAGE_TYPE:', config.AI_STORAGE_TYPE);
     console.log('  - CI Environment:', config.CI || config.GITHUB_ACTIONS ? 'detected' : 'local');
     console.log('  - Framework Mode:', config.IMF_FRAMEWORK_MODE);
+    if (config.IMF_LIGHTWEIGHT_TEST) {
+      console.log('  - Lightweight Test Mode: enabled');
+    }
     if (config.DEV_HTTPS_ENABLED) {
       console.log('  - Dev HTTPS: enabled');
       console.log('  - TLS Key:', config.DEV_TLS_KEY_PATH || '(not set)');

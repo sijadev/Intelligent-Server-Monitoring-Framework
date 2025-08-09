@@ -1,4 +1,6 @@
 import { beforeAll, afterAll, describe, test, expect } from 'vitest';
+// Ensure lightweight mode env is set before server code imports config
+process.env.IMF_LIGHTWEIGHT_TEST = '1';
 import { startTestServer } from './utils/test-server';
 
 let close: (() => Promise<void>) | null = null;
@@ -26,7 +28,7 @@ describe('API paths contract', () => {
     { path: '/api/plugins', ok: [200] },
     { path: '/api/problems', ok: [200] },
     { path: '/api/metrics', ok: [200] },
-    { path: '/api/test-manager/status', ok: [200, 404] },
+    { path: '/api/test-manager/status', ok: [200, 404, 503] },
     { path: '/api/mcp/servers', ok: [200] },
     { path: '/api/logs', ok: [200] },
     { path: '/api/config', ok: [200] },

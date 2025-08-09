@@ -25,6 +25,7 @@ export default defineConfig({
 
     // Setup files for test utilities
     setupFiles: [
+      './tests/setup/lightweight-mode-setup.ts',
       './tests/setup/env-bridge-setup.ts',
       './tests/setup/test-retry-setup.ts',
       './tests/setup/test-migration-setup.ts',

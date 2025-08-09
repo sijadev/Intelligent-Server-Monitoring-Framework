@@ -11,7 +11,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
 
   // Initialize Test Manager Service
-  if (config.TEST_MANAGER_ENABLED) {
+  if (config.IMF_LIGHTWEIGHT_TEST) {
+    console.log('Lightweight test mode: skipping Test Manager initialization');
+  } else if (config.TEST_MANAGER_ENABLED) {
     const testManagerService = createTestManagerService({
       testManagerPath: config.TEST_MANAGER_PATH,
       workspacePath: config.TEST_MANAGER_WORKSPACE,
@@ -23,7 +25,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await testManagerService.initialize();
       console.log('✅ Test Manager Service initialized');
     } catch (error) {
-      console.warn('Failed to initialize Test Manager Service:', error.message);
+      const msg = error instanceof Error ? error.message : String(error);
+      console.warn('Failed to initialize Test Manager Service:', msg);
       console.log('Test Manager functionality will be limited');
     }
   } else {
@@ -31,7 +34,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   // Initialize Python monitoring service
-  if (config.PYTHON_FRAMEWORK_ENABLED) {
+  if (config.IMF_LIGHTWEIGHT_TEST) {
+    console.log('Lightweight test mode: skipping Python framework monitor');
+  } else if (config.PYTHON_FRAMEWORK_ENABLED) {
     pythonMonitorService.start().catch((error) => {
       console.warn('Failed to start Python monitoring service:', error.message);
       console.log('Python monitoring will be disabled. Install psutil: pip install psutil');
@@ -41,15 +46,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   // Setup WebSocket server with connection limits
-  const wss = new WebSocketServer({
-    server: httpServer,
-    path: '/ws',
-    maxConnections: 50,
-    perMessageDeflate: false,
-  });
+  const wss = new WebSocketServer({ server: httpServer, path: '/ws', perMessageDeflate: false });
 
   // Broadcast to all connected WebSocket clients
-  const broadcast = (type: string, data: any) => {
+  const broadcast = (type: string, data: unknown) => {
     const message = JSON.stringify({ type, data });
     wss.clients.forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {
