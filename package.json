@@ -46,6 +46,7 @@
     "postgres:stop": "brew services stop postgresql || sudo systemctl stop postgresql",
     "profiles:cleanup": "tsx scripts/cleanup-test-profiles.ts",
     "plugins:cleanup:active": "PLUGIN_STATUS=running tsx scripts/cleanup-plugins.ts",
+    "plugins:cleanup:active:dry": "DRY_RUN=true PLUGIN_STATUS=running tsx scripts/cleanup-plugins.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint . --ext .ts,.tsx",
