@@ -1,9 +1,4 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
 echo "Running pre-push checks..."
-# Run format check
-npm run format:check || exit 1
-# Run lint (no auto-fix)
-npm run lint || exit 1
-echo "Pre-push checks passed."
+npm run format:check
+npm run lint
+

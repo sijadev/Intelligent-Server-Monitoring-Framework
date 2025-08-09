@@ -1,5 +1,1 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
-# Run staged file linters
-npx lint-staged || exit 1
+npx lint-staged
