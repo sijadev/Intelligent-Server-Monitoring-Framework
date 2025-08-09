@@ -84,6 +84,17 @@ export const api = {
     await apiRequest('DELETE', `/api/plugins/${id}`);
   },
 
+  // Plugin control methods
+  startPlugin: async (id: string): Promise<any> => {
+    const response = await apiRequest('POST', `/api/plugins/${id}/start`);
+    return response.json();
+  },
+
+  stopPlugin: async (id: string): Promise<any> => {
+    const response = await apiRequest('POST', `/api/plugins/${id}/stop`);
+    return response.json();
+  },
+
   // Configuration
   getConfig: async (): Promise<FrameworkConfig> => {
     const response = await apiRequest('GET', '/api/config');
@@ -116,13 +127,13 @@ export const api = {
     return response.json();
   },
 
-  // Generic HTTP methods for code analysis endpoints
-  get: async (url: string): Promise<any> => {
+  // Generic HTTP methods
+  httpGet: async (url: string): Promise<any> => {
     const response = await apiRequest('GET', url);
     return response.json();
   },
 
-  post: async (url: string, data?: any): Promise<any> => {
+  httpPost: async (url: string, data?: any): Promise<any> => {
     try {
       console.log('POST request to:', url, 'with data:', data);
       const response = await apiRequest('POST', url, data);
@@ -159,18 +170,18 @@ export const api = {
     }
   },
 
-  put: async (url: string, data?: any): Promise<any> => {
+  httpPut: async (url: string, data?: any): Promise<any> => {
     const response = await apiRequest('PUT', url, data);
     return response.json();
   },
 
-  patch: async (url: string, data?: any): Promise<any> => {
+  httpPatch: async (url: string, data?: any): Promise<any> => {
     const response = await apiRequest('PATCH', url, data);
     return response.json();
   },
 
   // Test Manager API methods
-  get: async (path: string): Promise<any> => {
+  testManagerGet: async (path: string): Promise<any> => {
     try {
       console.log(`🔍 GET request to: ${path}`);
       const response = await apiRequest('GET', `/api${path}`);
@@ -183,7 +194,7 @@ export const api = {
     }
   },
 
-  post: async (path: string, data?: any): Promise<any> => {
+  testManagerPost: async (path: string, data?: any): Promise<any> => {
     try {
       console.log(`🚀 POST request to: ${path}`, data);
       const response = await apiRequest('POST', `/api${path}`, data);
@@ -196,7 +207,7 @@ export const api = {
     }
   },
 
-  delete: async (path: string): Promise<any> => {
+  testManagerDelete: async (path: string): Promise<any> => {
     try {
       console.log(`🗑️ DELETE request to: ${path}`);
       const response = await apiRequest('DELETE', `/api${path}`);

@@ -1,43 +1,49 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Header } from "@/components/layout/header";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { StatusIndicator } from "@/components/ui/status-indicator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Code, 
-  Play, 
-  CheckCircle, 
-  AlertTriangle, 
-  AlertCircle, 
-  Bug, 
-  Shield, 
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { usePageTitle } from '@/hooks/use-page-title';
+import { Header } from '@/components/layout/header';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { StatusIndicator } from '@/components/ui/status-indicator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Code,
+  Play,
+  CheckCircle,
+  AlertTriangle,
+  AlertCircle,
+  Bug,
+  Shield,
   Zap,
   FileCode,
   Clock,
-  TrendingUp
-} from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
-import { api } from "@/lib/api";
-import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
-import type { CodeIssue, CodeAnalysisRun } from "@shared/schema";
+  TrendingUp,
+} from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { api } from '@/lib/api';
+import { useToast } from '@/hooks/use-toast';
+import type { CodeIssue, CodeAnalysisRun } from '@shared/schema';
 
 const severityColors = {
-  LOW: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-  MEDIUM: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200", 
-  HIGH: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
-  CRITICAL: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+  LOW: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+  MEDIUM: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+  HIGH: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+  CRITICAL: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
 };
 
 const severityStatus = {
   LOW: 'running' as const,
   MEDIUM: 'warning' as const,
   HIGH: 'error' as const,
-  CRITICAL: 'error' as const
+  CRITICAL: 'error' as const,
 };
 
 const issueTypeIcons = {
@@ -48,112 +54,121 @@ const issueTypeIcons = {
   undefined_function: Code,
   null_pointer: AlertCircle,
   memory_issue: TrendingUp,
-  concurrency_issue: Clock
+  concurrency_issue: Clock,
 };
 
 const statusColors = {
-  running: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-  completed: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-  failed: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+  running: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+  completed: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  failed: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
 };
 
 export default function CodeAnalysis() {
+  usePageTitle('Code Analysis');
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [severityFilter, setSeverityFilter] = useState<string>("all");
-  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [severityFilter, setSeverityFilter] = useState<string>('all');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
 
   // Query for code analysis configuration
   const { data: config } = useQuery({
     queryKey: ['/api/code-analysis/config'],
-    queryFn: () => api.get('/api/code-analysis/config'),
+    queryFn: () => api.httpGet('/api/code-analysis/config'),
   });
 
   // Query for active code issues
-  const { data: codeIssues = [], isLoading: issuesLoading, refetch: refetchIssues } = useQuery({
+  const {
+    data: codeIssues = [],
+    isLoading: issuesLoading,
+    refetch: refetchIssues,
+  } = useQuery({
     queryKey: ['/api/code-issues/active'],
-    queryFn: () => api.get('/api/code-issues/active'),
+    queryFn: () => api.httpGet('/api/code-issues/active'),
     refetchInterval: 10000, // Refetch every 10 seconds
   });
 
   // Query for code analysis runs
-  const { data: analysisRuns = [], isLoading: runsLoading, refetch: refetchRuns } = useQuery({
+  const {
+    data: analysisRuns = [],
+    isLoading: runsLoading,
+    refetch: refetchRuns,
+  } = useQuery({
     queryKey: ['/api/code-analysis/runs'],
-    queryFn: () => api.get('/api/code-analysis/runs'),
+    queryFn: () => api.httpGet('/api/code-analysis/runs'),
     refetchInterval: 15000, // Refetch every 15 seconds
   });
 
   // Query for latest analysis run
   const { data: latestRun } = useQuery({
     queryKey: ['/api/code-analysis/runs/latest'],
-    queryFn: () => api.get('/api/code-analysis/runs/latest'),
+    queryFn: () => api.httpGet('/api/code-analysis/runs/latest'),
     refetchInterval: 10000,
   });
 
   // Mutation to start code analysis
   const startAnalysisMutation = useMutation({
-    mutationFn: () => api.post('/api/code-analysis/start', {}),
+    mutationFn: () => api.httpPost('/api/code-analysis/start', {}),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/code-analysis/runs'] });
       queryClient.invalidateQueries({ queryKey: ['/api/code-analysis/runs/latest'] });
       toast({
-        title: "Code Analysis Started",
-        description: "Code analysis is now running in the background.",
+        title: 'Code Analysis Started',
+        description: 'Code analysis is now running in the background.',
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.response?.data?.message || "Failed to start code analysis.",
-        variant: "destructive",
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to start code analysis.',
+        variant: 'destructive',
       });
     },
   });
 
   // Mutation to resolve code issue
   const resolveIssueMutation = useMutation({
-    mutationFn: (issueId: string) => api.put(`/api/code-issues/${issueId}/resolve`, {}),
+    mutationFn: (issueId: string) => api.httpPut(`/api/code-issues/${issueId}/resolve`, {}),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/code-issues/active'] });
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
       toast({
-        title: "Issue Resolved",
-        description: "The code issue has been marked as resolved.",
+        title: 'Issue Resolved',
+        description: 'The code issue has been marked as resolved.',
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to resolve issue. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to resolve issue. Please try again.',
+        variant: 'destructive',
       });
     },
   });
 
   // Mutation to apply code fix
   const applyFixMutation = useMutation({
-    mutationFn: (issueId: string) => api.put(`/api/code-issues/${issueId}/apply-fix`, {}),
+    mutationFn: (issueId: string) => api.httpPut(`/api/code-issues/${issueId}/apply-fix`, {}),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/code-issues/active'] });
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
       toast({
-        title: "Fix Applied",
-        description: "The code fix has been applied successfully.",
+        title: 'Fix Applied',
+        description: 'The code fix has been applied successfully.',
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to apply fix. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to apply fix. Please try again.',
+        variant: 'destructive',
       });
     },
   });
 
   // Filter issues
   const filteredIssues = codeIssues.filter((issue: CodeIssue) => {
-    if (severityFilter !== "all" && issue.severity !== severityFilter) return false;
-    if (typeFilter !== "all" && issue.issueType !== typeFilter) return false;
+    if (severityFilter !== 'all' && issue.severity !== severityFilter) return false;
+    if (typeFilter !== 'all' && issue.issueType !== typeFilter) return false;
     return true;
   });
 
@@ -180,9 +195,10 @@ export default function CodeAnalysis() {
             </CardHeader>
             <CardContent>
               <p className="text-gray-600 dark:text-gray-400 mb-4">
-                Code analysis is currently disabled. Enable it in the configuration to start analyzing your code for issues.
+                Code analysis is currently disabled. Enable it in the configuration to start
+                analyzing your code for issues.
               </p>
-              <Button variant="outline" onClick={() => window.location.href = '/configuration'}>
+              <Button variant="outline" onClick={() => (window.location.href = '/configuration')}>
                 <Code className="h-4 w-4 mr-2" />
                 Go to Configuration
               </Button>
@@ -203,7 +219,7 @@ export default function CodeAnalysis() {
         }}
         isRefreshing={issuesLoading || runsLoading}
       />
-      
+
       <main className="flex-1 relative overflow-y-auto focus:outline-none">
         <div className="py-6 px-6">
           {/* Summary Cards */}
@@ -215,8 +231,12 @@ export default function CodeAnalysis() {
                     <Bug className="h-8 w-8 text-red-500" />
                   </div>
                   <div className="ml-5">
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Active Issues</p>
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{codeIssues.length}</p>
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      Active Issues
+                    </p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                      {codeIssues.length}
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -229,9 +249,14 @@ export default function CodeAnalysis() {
                     <AlertCircle className="h-8 w-8 text-orange-500" />
                   </div>
                   <div className="ml-5">
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Critical Issues</p>
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      Critical Issues
+                    </p>
                     <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                      {codeIssues.filter((issue: CodeIssue) => issue.severity === 'CRITICAL').length}
+                      {
+                        codeIssues.filter((issue: CodeIssue) => issue.severity === 'CRITICAL')
+                          .length
+                      }
                     </p>
                   </div>
                 </div>
@@ -245,7 +270,9 @@ export default function CodeAnalysis() {
                     <FileCode className="h-8 w-8 text-blue-500" />
                   </div>
                   <div className="ml-5">
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Source Directories</p>
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      Source Directories
+                    </p>
                     <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
                       {config?.sourceDirectories?.length || 0}
                     </p>
@@ -261,9 +288,13 @@ export default function CodeAnalysis() {
                     <TrendingUp className="h-8 w-8 text-green-500" />
                   </div>
                   <div className="ml-5">
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Last Analysis</p>
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      Last Analysis
+                    </p>
                     <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                      {latestRun ? formatDistanceToNow(new Date(latestRun.timestamp), { addSuffix: true }) : 'Never'}
+                      {latestRun
+                        ? formatDistanceToNow(new Date(latestRun.timestamp), { addSuffix: true })
+                        : 'Never'}
                     </p>
                   </div>
                 </div>
@@ -276,7 +307,7 @@ export default function CodeAnalysis() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium">Analysis Control</h3>
-                <Button 
+                <Button
                   onClick={handleStartAnalysis}
                   disabled={startAnalysisMutation.isPending || latestRun?.status === 'running'}
                 >
@@ -294,14 +325,23 @@ export default function CodeAnalysis() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Confidence Threshold</p>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Confidence Threshold
+                  </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     {Math.round((config?.confidenceThreshold || 0) * 100)}%
                   </p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Status</p>
-                  <Badge variant="outline" className={latestRun ? statusColors[latestRun.status as keyof typeof statusColors] : 'bg-gray-100 text-gray-800'}>
+                  <Badge
+                    variant="outline"
+                    className={
+                      latestRun
+                        ? statusColors[latestRun.status as keyof typeof statusColors]
+                        : 'bg-gray-100 text-gray-800'
+                    }
+                  >
                     {latestRun?.status || 'Not Started'}
                   </Badge>
                 </div>
@@ -364,9 +404,7 @@ export default function CodeAnalysis() {
                     <h3 className="text-lg font-medium">
                       Code Issues ({filteredIssues.length} of {codeIssues.length})
                     </h3>
-                    <Badge variant="outline">
-                      {issuesLoading ? "Updating..." : "Live"}
-                    </Badge>
+                    <Badge variant="outline">{issuesLoading ? 'Updating...' : 'Live'}</Badge>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -374,22 +412,27 @@ export default function CodeAnalysis() {
                     <div className="text-center py-8">Loading code issues...</div>
                   ) : filteredIssues.length === 0 ? (
                     <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                      {codeIssues.length === 0 ? "No code issues found" : "No issues match your criteria"}
+                      {codeIssues.length === 0
+                        ? 'No code issues found'
+                        : 'No issues match your criteria'}
                     </div>
                   ) : (
                     <div className="space-y-4">
                       {filteredIssues.map((issue: CodeIssue) => {
-                        const TypeIcon = issueTypeIcons[issue.issueType as keyof typeof issueTypeIcons] || Bug;
+                        const TypeIcon =
+                          issueTypeIcons[issue.issueType as keyof typeof issueTypeIcons] || Bug;
                         return (
-                          <div 
+                          <div
                             key={issue.id}
                             className="border rounded-lg p-4 transition-colors bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
                           >
                             <div className="flex items-start justify-between">
                               <div className="flex items-start space-x-4">
                                 <div className="flex-shrink-0">
-                                  <StatusIndicator 
-                                    status={severityStatus[issue.severity as keyof typeof severityStatus]} 
+                                  <StatusIndicator
+                                    status={
+                                      severityStatus[issue.severity as keyof typeof severityStatus]
+                                    }
                                     size="lg"
                                     className="mt-2"
                                   />
@@ -400,9 +443,13 @@ export default function CodeAnalysis() {
                                     <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100">
                                       {issue.description}
                                     </h4>
-                                    <Badge 
+                                    <Badge
                                       variant="secondary"
-                                      className={severityColors[issue.severity as keyof typeof severityColors]}
+                                      className={
+                                        severityColors[
+                                          issue.severity as keyof typeof severityColors
+                                        ]
+                                      }
                                     >
                                       {issue.severity}
                                     </Badge>
@@ -428,7 +475,10 @@ export default function CodeAnalysis() {
                                       </p>
                                     )}
                                     <p className="text-sm text-gray-500 dark:text-gray-500">
-                                      Detected {formatDistanceToNow(new Date(issue.timestamp), { addSuffix: true })}
+                                      Detected{' '}
+                                      {formatDistanceToNow(new Date(issue.timestamp), {
+                                        addSuffix: true,
+                                      })}
                                     </p>
                                   </div>
                                 </div>
@@ -470,9 +520,7 @@ export default function CodeAnalysis() {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-medium">Analysis Run History</h3>
-                    <Badge variant="outline">
-                      {runsLoading ? "Updating..." : "Live"}
-                    </Badge>
+                    <Badge variant="outline">{runsLoading ? 'Updating...' : 'Live'}</Badge>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -485,7 +533,7 @@ export default function CodeAnalysis() {
                   ) : (
                     <div className="space-y-4">
                       {analysisRuns.map((run: CodeAnalysisRun) => (
-                        <div 
+                        <div
                           key={run.id}
                           className="border rounded-lg p-4 transition-colors bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
                         >
@@ -494,7 +542,7 @@ export default function CodeAnalysis() {
                               <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100">
                                 Analysis Run
                               </h4>
-                              <Badge 
+                              <Badge
                                 variant="outline"
                                 className={statusColors[run.status as keyof typeof statusColors]}
                               >
@@ -507,19 +555,29 @@ export default function CodeAnalysis() {
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                             <div>
-                              <p className="font-medium text-gray-700 dark:text-gray-300">Files Analyzed</p>
-                              <p className="text-gray-600 dark:text-gray-400">{run.filesAnalyzed}</p>
+                              <p className="font-medium text-gray-700 dark:text-gray-300">
+                                Files Analyzed
+                              </p>
+                              <p className="text-gray-600 dark:text-gray-400">
+                                {run.filesAnalyzed}
+                              </p>
                             </div>
                             <div>
-                              <p className="font-medium text-gray-700 dark:text-gray-300">Issues Found</p>
+                              <p className="font-medium text-gray-700 dark:text-gray-300">
+                                Issues Found
+                              </p>
                               <p className="text-gray-600 dark:text-gray-400">{run.issuesFound}</p>
                             </div>
                             <div>
-                              <p className="font-medium text-gray-700 dark:text-gray-300">Fixes Applied</p>
+                              <p className="font-medium text-gray-700 dark:text-gray-300">
+                                Fixes Applied
+                              </p>
                               <p className="text-gray-600 dark:text-gray-400">{run.fixesApplied}</p>
                             </div>
                             <div>
-                              <p className="font-medium text-gray-700 dark:text-gray-300">Duration</p>
+                              <p className="font-medium text-gray-700 dark:text-gray-300">
+                                Duration
+                              </p>
                               <p className="text-gray-600 dark:text-gray-400">
                                 {run.duration ? `${Math.round(run.duration / 1000)}s` : 'N/A'}
                               </p>

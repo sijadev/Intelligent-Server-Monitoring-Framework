@@ -80,9 +80,9 @@ export class ServiceFactory implements IServiceFactory {
 
   createPythonMonitorService(): PythonMonitorService {
     console.log(`🏭 Creating Python monitor service (enabled: ${this.config.python.enabled})...`);
-    
+
     const service = new PythonMonitorService();
-    
+
     // Configure service based on factory config
     if (this.config.python.scriptPath) {
       // Set custom script path if provided

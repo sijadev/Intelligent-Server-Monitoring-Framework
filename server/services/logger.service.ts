@@ -24,22 +24,22 @@ class LoggerService {
       DEBUG: 0,
       INFO: 1,
       WARN: 2,
-      ERROR: 3
+      ERROR: 3,
     };
-    
+
     return levels[level] >= levels[this.logLevel];
   }
 
   private formatMessage(entry: LogEntry): string {
     const timestamp = entry.timestamp.toISOString();
     const emoji = this.getEmoji(entry.level);
-    
+
     let message = `${timestamp} ${emoji} [${entry.source}] ${entry.message}`;
-    
+
     if (entry.metadata && Object.keys(entry.metadata).length > 0) {
       message += ` ${JSON.stringify(entry.metadata)}`;
     }
-    
+
     return message;
   }
 
@@ -48,13 +48,18 @@ class LoggerService {
       DEBUG: '🔍',
       INFO: 'ℹ️',
       WARN: '⚠️',
-      ERROR: '❌'
+      ERROR: '❌',
     };
-    
+
     return emojis[level] || 'ℹ️';
   }
 
-  private log(level: LogLevel, source: string, message: string, metadata?: Record<string, any>): void {
+  private log(
+    level: LogLevel,
+    source: string,
+    message: string,
+    metadata?: Record<string, any>,
+  ): void {
     if (!this.shouldLog(level)) return;
 
     const entry: LogEntry = {
@@ -62,7 +67,7 @@ class LoggerService {
       level,
       source,
       message,
-      metadata
+      metadata,
     };
 
     const formattedMessage = this.formatMessage(entry);

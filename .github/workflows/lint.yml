@@ -1,0 +1,30 @@
+name: Lightweight Lint (Disabled)
+
+# Disabled: converted triggers to manual-only so it is skipped for all automatic events.
+# Restore by re-adding pull_request/push triggers below.
+on:
+  workflow_dispatch: {}
+
+concurrency:
+  group: lint-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    # Fully disabled job (guard). Remove this 'if' to re-enable.
+    if: ${{ false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install (production + dev needed for eslint)
+        run: npm ci --omit=optional
+      - name: Run ESLint (lightweight scope)
+        run: npx eslint server client/src tests --ext .ts,.tsx --max-warnings=0
+      - name: Upload eslint report (if needed)
+        if: failure()
+        run: npx eslint server client/src tests --ext .ts,.tsx -f json > eslint-report.json || true

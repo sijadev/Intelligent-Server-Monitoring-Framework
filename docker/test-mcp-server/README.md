@@ -36,18 +36,19 @@ docker-compose up -d
 
 Nach dem Start sind folgende Test-Server verfügbar:
 
-| Service | Port | Szenario | URL |
-|---------|------|----------|-----|
-| Basic | 3001 | Grundfunktionalität | http://localhost:3001 |
-| Errors | 3002 | Fehlerbehandlung | http://localhost:3002 |
-| Performance | 3003 | Performance-Tests | http://localhost:3003 |
-| WebSocket | 3004 | WebSocket-Protokoll | ws://localhost:3004 |
+| Service     | Port | Szenario            | URL                     |
+| ----------- | ---- | ------------------- | ----------------------- |
+| Basic       | 3001 | Grundfunktionalität | <http://localhost:3001> |
+| Errors      | 3002 | Fehlerbehandlung    | <http://localhost:3002> |
+| Performance | 3003 | Performance-Tests   | <http://localhost:3003> |
+| WebSocket   | 3004 | WebSocket-Protokoll | ws://localhost:3004     |
 
 ## Konfiguration
 
 ### Test-Szenarien
 
 #### Basic Test (`config/basic-test.json`)
+
 - **Zweck**: Grundlegende MCP-Protokoll-Funktionalität testen
 - **Tools**: `echo`, `calculate`
 - **Resources**: Einfache JSON-Daten
@@ -55,6 +56,7 @@ Nach dem Start sind folgende Test-Server verfügbar:
 - **Fehler**: Keine simulierten Fehler
 
 #### Error Simulation (`config/error-simulation.json`)
+
 - **Zweck**: Fehlerbehandlung und Recovery-Mechanismen testen
 - **Tools**: `reliable_tool`, `unreliable_tool`, `timeout_tool`, `slow_tool`
 - **Resources**: Arbeitende, defekte und langsame Resources
@@ -62,6 +64,7 @@ Nach dem Start sind folgende Test-Server verfügbar:
 - **Fehler**: 5% Verbindungsabbrüche, 10% Response-Fehler
 
 #### Performance Test (`config/performance-test.json`)
+
 - **Zweck**: Performance unter verschiedenen Lastbedingungen testen
 - **Tools**: Schnelle, mittlere und langsame Tools
 - **Resources**: Verschiedene Datengrößen
@@ -120,21 +123,25 @@ Erstellen Sie eigene Konfigurationsdateien im `config/` Verzeichnis:
 ## API Endpunkte
 
 ### Health Check
+
 ```bash
 curl http://localhost:3001/health
 ```
 
 ### Statistiken abrufen
+
 ```bash
 curl http://localhost:3001/stats
 ```
 
 ### Statistiken zurücksetzen
+
 ```bash
 curl -X POST http://localhost:3001/stats/reset
 ```
 
 ### Konfiguration anzeigen
+
 ```bash
 curl http://localhost:3001/config
 ```
@@ -142,6 +149,7 @@ curl http://localhost:3001/config
 ## MCP Protokoll Tests
 
 ### Tools testen
+
 ```bash
 # Liste verfügbarer Tools
 curl -X POST http://localhost:3001/mcp/tools/list \\
@@ -168,6 +176,7 @@ curl -X POST http://localhost:3001/mcp/tools/call \\
 ```
 
 ### Resources testen
+
 ```bash
 # Liste verfügbarer Resources
 curl -X POST http://localhost:3001/mcp/resources/list \\
@@ -195,11 +204,7 @@ curl -X POST http://localhost:3001/mcp/resources/read \\
 Der Test MCP Server integriert sich nahtlos in die bestehende Vitest-Test-Infrastruktur:
 
 ```typescript
-import { 
-  startTestMcpServers, 
-  stopTestMcpServers, 
-  createMcpClient 
-} from './test-mcp-client';
+import { startTestMcpServers, stopTestMcpServers, createMcpClient } from './test-mcp-client';
 
 describe('MCP Integration Tests', () => {
   beforeAll(async () => {
@@ -221,6 +226,7 @@ describe('MCP Integration Tests', () => {
 ## Troubleshooting
 
 ### Container starten nicht
+
 ```bash
 # Logs überprüfen
 docker-compose logs
@@ -230,13 +236,16 @@ docker-compose down && docker-compose up -d
 ```
 
 ### Port-Konflikte
+
 Ports in `docker-compose.yml` anpassen:
+
 ```yaml
 ports:
-  - \"3005:3001\"  # Externen Port ändern
+  - \"3005:3001\" # Externen Port ändern
 ```
 
 ### Fehler beim Health Check
+
 ```bash
 # Container-Status prüfen
 docker-compose ps
@@ -246,6 +255,7 @@ docker-compose logs test-mcp-basic
 ```
 
 ### Performance-Probleme
+
 - Reduzieren Sie `delayMs` in der Konfiguration
 - Deaktivieren Sie unnötigte Services
 - Überprüfen Sie System-Ressourcen
@@ -253,6 +263,7 @@ docker-compose logs test-mcp-basic
 ## Entwicklung
 
 ### Lokale Entwicklung
+
 ```bash
 # Dependencies installieren
 npm install

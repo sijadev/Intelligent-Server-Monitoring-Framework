@@ -2,12 +2,11 @@
 
 ## 🎯 Problem mit der aktuellen Implementation
 
-### ❌ Was nicht funktioniert:
+### ❌ Was nicht funktioniert
+
 ```typescript
 // Aktuelle shareModel Methode - zu simpel
-await sourceStorage.shareModel('model_name', [
-  { serverId: 'target-server' }
-], ['read']);
+await sourceStorage.shareModel('model_name', [{ serverId: 'target-server' }], ['read']);
 
 // Problem: Target Storage kann shared model nicht korrekt laden
 const targetModels = await targetStorage.loadAIProgress(); // [] - leer!
@@ -18,50 +17,54 @@ const targetModels = await targetStorage.loadAIProgress(); // [] - leer!
 ### 1. **Enhanced Permission System**
 
 **Alt (zu simpel):**
+
 ```typescript
-permissions: ['read', 'execute']
+permissions: ['read', 'execute'];
 ```
 
 **Neu (detailliert):**
+
 ```typescript
 const permissions: SharingPermission[] = [
   {
     action: 'read',
     conditions: {
       allowedEnvironments: ['production', 'staging'],
-      maxExecutions: 100
+      maxExecutions: 100,
     },
-    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
+    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
   },
   {
     action: 'execute',
     conditions: {
       requiresApproval: true,
-      maxExecutions: 50
-    }
-  }
+      maxExecutions: 50,
+    },
+  },
 ];
 ```
 
 ### 2. **Proper Model Sharing with Metadata**
 
 **Alt (unvollständig):**
+
 ```typescript
 // Sharing fügt nur permissions hinzu - Target sieht nichts
 progress.access_permissions = [...existingPermissions, ...newPermissions];
 ```
 
 **Neu (vollständige Replikation):**
+
 ```typescript
 // Erstellt shared copy in target tenant storage
 const sharedModel: TenantAIProgress = {
   ...sourceModel,
   model_name: `shared_${sourceModel.model_name}`, // Prefix für Identifikation
-  isolation_key: targetIsolationKey,              // Target's isolation key
+  isolation_key: targetIsolationKey, // Target's isolation key
   tenant_context: {
     ...targetTenant,
-    shared_from: sourceTenant,                    // Tracking
-    sharing_timestamp: new Date().toISOString()
+    shared_from: sourceTenant, // Tracking
+    sharing_timestamp: new Date().toISOString(),
   },
   sharing_metadata: {
     original_model: sourceModel.model_name,
@@ -69,8 +72,8 @@ const sharedModel: TenantAIProgress = {
     shared_at: new Date().toISOString(),
     permissions: detailedPermissions,
     expires_at: expirationDate,
-    sharing_reason: 'Cross-team collaboration'
-  }
+    sharing_reason: 'Cross-team collaboration',
+  },
 };
 
 await targetStorage.baseStorage.saveAIProgress(sharedModel);
@@ -79,6 +82,7 @@ await targetStorage.baseStorage.saveAIProgress(sharedModel);
 ### 3. **Enhanced Loading Logic**
 
 **Alt (nur eigene Models):**
+
 ```typescript
 async loadAIProgress(): Promise<AIProgress[]> {
   const allProgress = await this.storage.loadProgress();
@@ -87,6 +91,7 @@ async loadAIProgress(): Promise<AIProgress[]> {
 ```
 
 **Neu (own + shared models):**
+
 ```typescript
 async loadAIProgressEnhanced(): Promise<{
   ownModels: TenantAIProgress[];
@@ -95,10 +100,10 @@ async loadAIProgressEnhanced(): Promise<{
 }> {
   const allProgress = await this.baseStorage.loadAIProgress();
   const currentKey = this.generateIsolationKey(this.currentTenant);
-  
+
   const ownModels = [];
   const sharedModels = [];
-  
+
   for (const progress of allProgress) {
     if (progress.isolation_key === currentKey) {
       if (progress.model_name.startsWith('shared_')) {
@@ -108,7 +113,7 @@ async loadAIProgressEnhanced(): Promise<{
       }
     }
   }
-  
+
   return { ownModels, sharedModels, totalModels: [...ownModels, ...sharedModels] };
 }
 ```
@@ -116,13 +121,14 @@ async loadAIProgressEnhanced(): Promise<{
 ### 4. **Audit Trail System**
 
 **Neu (vollständige Nachverfolgung):**
+
 ```typescript
 interface SharingAuditLog {
   id: string;
   timestamp: Date;
   action: 'share' | 'revoke' | 'access' | 'modify';
   sourceIsolationKey: string;
-  targetIsolationKey: string; 
+  targetIsolationKey: string;
   modelName: string;
   userId: string;
   success: boolean;
@@ -139,7 +145,7 @@ const auditLog: SharingAuditLog = {
   modelName: 'advanced_classifier',
   userId: 'user-source',
   success: true,
-  reason: 'Cross-team collaboration'
+  reason: 'Cross-team collaboration',
 };
 ```
 
@@ -152,7 +158,7 @@ const auditLog: SharingAuditLog = {
 
 // Alte shareModel Methode ersetzen
 async shareModelEnhanced(
-  modelName: string, 
+  modelName: string,
   sharingRequests: SharingRequest[]
 ): Promise<SharingResult> {
   // 1. Validate source model exists
@@ -160,20 +166,20 @@ async shareModelEnhanced(
   if (!sourceModel) {
     throw new Error(`Model '${modelName}' not found`);
   }
-  
+
   // 2. Create shared copies in target tenants
   for (const request of sharingRequests) {
     const sharedModel = this.createSharedModelCopy(sourceModel, request);
     await this.saveSharedModel(sharedModel, request.targetTenant);
     this.logSharingAction('share', modelName, request);
   }
-  
+
   return { success: true, shared: sharingRequests.length };
 }
 
 private createSharedModelCopy(sourceModel: TenantAIProgress, request: SharingRequest): TenantAIProgress {
   const targetKey = this.generateIsolationKey(request.targetTenant);
-  
+
   return {
     ...sourceModel,
     model_name: `shared_${sourceModel.model_name}`,
@@ -208,7 +214,7 @@ async getTenantModels(): Promise<{
   canShare: TenantAIProgress[];
 }> {
   const enhanced = await this.loadAIProgressEnhanced();
-  
+
   return {
     own: enhanced.ownModels.filter(m => !m.model_name.startsWith('shared_')),
     shared: enhanced.sharedModels,
@@ -222,32 +228,32 @@ async getTenantModels(): Promise<{
 ```typescript
 // Enhanced permission checking
 private validateSharingPermission(
-  progress: TenantAIProgress, 
-  action: string, 
+  progress: TenantAIProgress,
+  action: string,
   context: { environment?: string; userId?: string }
 ): boolean {
   if (!progress.sharing_metadata) return false;
-  
+
   const permission = progress.sharing_metadata.permissions?.find(p => p.action === action);
   if (!permission) return false;
-  
+
   // Check environment restrictions
   if (permission.conditions?.allowedEnvironments) {
     if (!permission.conditions.allowedEnvironments.includes(context.environment || '')) {
       return false;
     }
   }
-  
+
   // Check expiration
   if (permission.expiresAt && new Date() > new Date(permission.expiresAt)) {
     return false;
   }
-  
+
   // Check execution limits
   if (permission.conditions?.maxExecutions) {
     // Would need to track execution count
   }
-  
+
   return true;
 }
 ```
@@ -255,41 +261,39 @@ private validateSharingPermission(
 ### Step 4: Tests aktualisieren
 
 ```typescript
-// server/test/long-term/ai-enhanced-continuous-monitoring-tenant-aware.test.ts
+<!-- (Deprecated long-term test path removed) -->
 
 async function testCrossTenantModelSharing(
   data: GeneratedTestData[],
   sourceStorage: any,
-  targetStorage: any
+  targetStorage: any,
 ): Promise<void> {
   // ... existing setup ...
-  
+
   // Use enhanced sharing
   const sharingRequest: SharingRequest = {
     modelName: bestModel.model_name,
     targetTenant: { serverId: 'mcp-server-analytics' },
-    permissions: [
-      { action: 'read' },
-      { action: 'execute', conditions: { maxExecutions: 100 } }
-    ],
+    permissions: [{ action: 'read' }, { action: 'execute', conditions: { maxExecutions: 100 } }],
     requestedBy: 'test-user',
-    reason: 'Test cross-tenant collaboration'
+    reason: 'Test cross-tenant collaboration',
   };
-  
+
   const result = await sourceStorage.shareModelEnhanced(bestModel.model_name, [sharingRequest]);
-  
+
   expect(result.success).toBe(true);
   expect(result.shared).toBe(1);
-  
+
   // Enhanced loading should now find shared model
   const targetModels = await targetStorage.loadAIProgress();
   expect(targetModels.length).toBeGreaterThan(initialCount);
-  
-  const sharedModel = targetModels.find(m => 
-    m.model_name === bestModel.model_name || 
-    m.sharing_metadata?.original_model === bestModel.model_name
+
+  const sharedModel = targetModels.find(
+    (m) =>
+      m.model_name === bestModel.model_name ||
+      m.sharing_metadata?.original_model === bestModel.model_name,
   );
-  
+
   expect(sharedModel).toBeDefined();
   expect(sharedModel.sharing_metadata).toBeDefined();
 }
@@ -298,18 +302,21 @@ async function testCrossTenantModelSharing(
 ## 📊 Implementation Checklist
 
 ### Phase 1: Core Fixes
+
 - [ ] ✅ Enhanced permission system implementiert
-- [ ] ✅ Shared model replication implementiert  
+- [ ] ✅ Shared model replication implementiert
 - [ ] ✅ Enhanced loading logic implementiert
 - [ ] ✅ Audit trail system implementiert
 
 ### Phase 2: Integration
+
 - [ ] 🔄 TenantAwareAIStorage erweitern
 - [ ] 🔄 Tests auf neue API umstellen
 - [ ] 🔄 Database schema für sharing metadata erweitern
 - [ ] 🔄 UI für sharing management erstellen
 
 ### Phase 3: Production
+
 - [ ] 📋 Performance optimization
 - [ ] 📋 Security audit
 - [ ] 📋 Monitoring & alerting
@@ -317,14 +324,16 @@ async function testCrossTenantModelSharing(
 
 ## 🎯 Expected Results Nach Umstellung
 
-### Before (nicht funktionierend):
+### Before (nicht funktionierend)
+
 ```bash
 Source models: 1 (own model)
 Target models: 0 (can't see shared model)
 Sharing result: ❌ Failed
 ```
 
-### After (funktionierend):
+### After (funktionierend)
+
 ```bash
 Source models: 1 (own model)
 Target models: 1 (shared model visible)

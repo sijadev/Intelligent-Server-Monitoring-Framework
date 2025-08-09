@@ -1,25 +1,31 @@
-import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Header } from "@/components/layout/header";
-import { StatusCards } from "@/components/dashboard/status-cards";
-import { ProblemsList } from "@/components/dashboard/problems-list";
-import { SystemInfo } from "@/components/dashboard/system-info";
-import { PluginStatus } from "@/components/dashboard/plugin-status";
-import { LogViewer } from "@/components/dashboard/log-viewer";
-import { TestManagerWidget } from "@/components/dashboard/test-manager-widget";
-import { useWebSocket } from "@/hooks/use-websocket";
-import { api } from "@/lib/api";
-import { useToast } from "@/hooks/use-toast";
-import type { DashboardData, LogEntry } from "@shared/schema";
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Header } from '@/components/layout/header';
+import { StatusCards } from '@/components/dashboard/status-cards';
+import { ProblemsList } from '@/components/dashboard/problems-list';
+import { SystemInfo } from '@/components/dashboard/system-info';
+import { PluginStatus } from '@/components/dashboard/plugin-status';
+import { LogViewer } from '@/components/dashboard/log-viewer';
+import { TestManagerWidget } from '@/components/dashboard/test-manager-widget';
+import { useWebSocket } from '@/hooks/use-websocket';
+import { usePageTitle } from '@/hooks/use-page-title';
+import { api } from '@/lib/api';
+import { useToast } from '@/hooks/use-toast';
+import type { LogEntry } from '@shared/schema';
 
 export default function Dashboard() {
+  usePageTitle('Dashboard');
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [realtimeLogs, setRealtimeLogs] = useState<LogEntry[]>([]);
   const [isLive, setIsLive] = useState(false);
 
   // Fetch dashboard data
-  const { data: dashboardData, isLoading, refetch } = useQuery({
+  const {
+    data: dashboardData,
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ['/api/dashboard'],
     queryFn: () => api.getDashboard(),
     refetchInterval: 30000, // Refetch every 30 seconds
@@ -39,15 +45,15 @@ export default function Dashboard() {
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['/api/problems'] });
       toast({
-        title: "Problem Resolved",
-        description: "The problem has been marked as resolved.",
+        title: 'Problem Resolved',
+        description: 'The problem has been marked as resolved.',
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to resolve problem. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to resolve problem. Please try again.',
+        variant: 'destructive',
       });
     },
   });
@@ -68,7 +74,7 @@ export default function Dashboard() {
           queryClient.invalidateQueries({ queryKey: ['/api/metrics'] });
           break;
         case 'logEntries':
-          setRealtimeLogs(prev => [...message.data, ...prev].slice(0, 100));
+          setRealtimeLogs((prev) => [...message.data, ...prev].slice(0, 100));
           break;
         case 'plugins':
           queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
@@ -103,7 +109,9 @@ export default function Dashboard() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="text-lg">Loading dashboard...</div>
+        <div data-testid="loading" className="text-lg">
+          Loading dashboard...
+        </div>
       </div>
     );
   }
@@ -116,21 +124,21 @@ export default function Dashboard() {
         isLive={isConnected && isLive}
         isRefreshing={isLoading}
       />
-      
+
       <main className="flex-1 relative overflow-y-auto focus:outline-none">
         <div className="py-6 px-6">
           <StatusCards status={dashboardData?.status} />
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             <div className="lg:col-span-2">
-              <ProblemsList 
+              <ProblemsList
                 problems={dashboardData?.recentProblems || []}
                 onResolveProblem={handleResolveProblem}
               />
             </div>
-            
+
             <div>
-              <SystemInfo 
+              <SystemInfo
                 metrics={dashboardData?.currentMetrics}
                 uptime={dashboardData?.status?.uptime}
               />
@@ -141,12 +149,8 @@ export default function Dashboard() {
               <TestManagerWidget />
             </div>
           </div>
-          
-          <LogViewer 
-            logs={realtimeLogs}
-            onClear={handleClearLogs}
-            className="mt-8"
-          />
+
+          <LogViewer logs={realtimeLogs} onClear={handleClearLogs} className="mt-8" />
         </div>
       </main>
     </div>

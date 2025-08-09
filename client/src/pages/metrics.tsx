@@ -1,52 +1,61 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Header } from "@/components/layout/header";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { usePageTitle } from '@/hooks/use-page-title';
+import { Header } from '@/components/layout/header';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   BarChart,
   Bar,
   PieChart,
   Pie,
-  Cell
-} from "recharts";
-import { 
-  Cpu, 
-  HardDrive, 
-  Activity, 
-  Network, 
-  Users,
-  TrendingUp
-} from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
-import { api } from "@/lib/api";
-import { cn } from "@/lib/utils";
-import type { Metrics } from "@shared/schema";
+  Cell,
+} from 'recharts';
+import { Cpu, HardDrive, Activity, Network, Users } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { api } from '@/lib/api';
+import { cn } from '@/lib/utils';
+import type { Metrics } from '@shared/schema';
 
 const timeRanges = [
-  { value: "1h", label: "Last Hour", limit: 120 },
-  { value: "6h", label: "Last 6 Hours", limit: 360 },
-  { value: "24h", label: "Last 24 Hours", limit: 1440 },
-  { value: "7d", label: "Last 7 Days", limit: 10080 },
+  { value: '1h', label: 'Last Hour', limit: 120 },
+  { value: '6h', label: 'Last 6 Hours', limit: 360 },
+  { value: '24h', label: 'Last 24 Hours', limit: 1440 },
+  { value: '7d', label: 'Last 7 Days', limit: 10080 },
 ];
 
-const COLORS = ['hsl(207, 90%, 54%)', 'hsl(0, 84.2%, 60.2%)', 'hsl(38, 92%, 50%)', 'hsl(142, 71%, 45%)'];
+const COLORS = [
+  'hsl(207, 90%, 54%)',
+  'hsl(0, 84.2%, 60.2%)',
+  'hsl(38, 92%, 50%)',
+  'hsl(142, 71%, 45%)',
+];
 
 export default function Metrics() {
-  const [timeRange, setTimeRange] = useState("6h");
-  
-  const selectedRange = timeRanges.find(r => r.value === timeRange) || timeRanges[1];
+  usePageTitle('Metrics');
+  const [timeRange, setTimeRange] = useState('6h');
 
-  const { data: metricsHistory = [], isLoading, refetch } = useQuery({
+  const selectedRange = timeRanges.find((r) => r.value === timeRange) || timeRanges[1];
+
+  const {
+    data: metricsHistory = [],
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ['/api/metrics', selectedRange.limit],
     queryFn: () => api.getMetrics(selectedRange.limit),
     refetchInterval: 30000, // Refetch every 30 seconds
@@ -61,7 +70,7 @@ export default function Metrics() {
   // Process data for charts
   const chartData = metricsHistory
     .slice(-100) // Limit to last 100 points for performance
-    .map((metric, index) => ({
+    .map((metric) => ({
       time: new Date(metric.timestamp).toLocaleTimeString(),
       cpu: metric.cpuUsage || 0,
       memory: metric.memoryUsage || 0,
@@ -72,32 +81,30 @@ export default function Metrics() {
     .reverse();
 
   // Current usage for pie chart
-  const currentUsageData = latestMetrics ? [
-    { name: 'CPU', value: latestMetrics.cpuUsage || 0, color: COLORS[0] },
-    { name: 'Memory', value: latestMetrics.memoryUsage || 0, color: COLORS[1] },
-    { name: 'Disk', value: latestMetrics.diskUsage || 0, color: COLORS[2] },
-  ] : [];
+  const currentUsageData = latestMetrics
+    ? [
+        { name: 'CPU', value: latestMetrics.cpuUsage || 0, color: COLORS[0] },
+        { name: 'Memory', value: latestMetrics.memoryUsage || 0, color: COLORS[1] },
+        { name: 'Disk', value: latestMetrics.diskUsage || 0, color: COLORS[2] },
+      ]
+    : [];
 
   const getUsageColor = (value: number) => {
-    if (value >= 90) return "text-red-600";
-    if (value >= 75) return "text-orange-600";
-    return "text-green-600";
+    if (value >= 90) return 'text-red-600';
+    if (value >= 75) return 'text-orange-600';
+    return 'text-green-600';
   };
 
   const getProgressColor = (value: number) => {
-    if (value >= 90) return "bg-red-500";
-    if (value >= 75) return "bg-orange-500";
-    return "bg-primary";
+    if (value >= 90) return 'bg-red-500';
+    if (value >= 75) return 'bg-orange-500';
+    return 'bg-primary';
   };
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
-      <Header
-        title="Metrics"
-        onRefresh={() => refetch()}
-        isRefreshing={isLoading}
-      />
-      
+      <Header title="Metrics" onRefresh={() => refetch()} isRefreshing={isLoading} />
+
       <main className="flex-1 relative overflow-y-auto focus:outline-none">
         <div className="py-6 px-6">
           {/* Time Range Selector */}
@@ -116,9 +123,7 @@ export default function Metrics() {
                   ))}
                 </SelectContent>
               </Select>
-              <Badge variant="outline">
-                {isLoading ? "Updating..." : "Live"}
-              </Badge>
+              <Badge variant="outline">{isLoading ? 'Updating...' : 'Live'}</Badge>
             </div>
           </div>
 
@@ -129,7 +134,12 @@ export default function Metrics() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-500">CPU Usage</p>
-                    <p className={cn("text-2xl font-semibold", getUsageColor(latestMetrics?.cpuUsage || 0))}>
+                    <p
+                      className={cn(
+                        'text-2xl font-semibold',
+                        getUsageColor(latestMetrics?.cpuUsage || 0),
+                      )}
+                    >
                       {latestMetrics?.cpuUsage || 0}%
                     </p>
                   </div>
@@ -137,9 +147,12 @@ export default function Metrics() {
                 </div>
                 <div className="mt-4">
                   <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className={cn("h-2 rounded-full transition-all", getProgressColor(latestMetrics?.cpuUsage || 0))}
-                      style={{ width: `${Math.min(latestMetrics?.cpuUsage || 0, 100)}%` }}
+                    <div
+                      className={cn(
+                        'progress-bar',
+                        `progress-${Math.round(Math.min(latestMetrics?.cpuUsage || 0, 100))}`,
+                        getProgressColor(latestMetrics?.cpuUsage || 0),
+                      )}
                     />
                   </div>
                 </div>
@@ -151,7 +164,12 @@ export default function Metrics() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-500">Memory Usage</p>
-                    <p className={cn("text-2xl font-semibold", getUsageColor(latestMetrics?.memoryUsage || 0))}>
+                    <p
+                      className={cn(
+                        'text-2xl font-semibold',
+                        getUsageColor(latestMetrics?.memoryUsage || 0),
+                      )}
+                    >
                       {latestMetrics?.memoryUsage || 0}%
                     </p>
                   </div>
@@ -159,9 +177,12 @@ export default function Metrics() {
                 </div>
                 <div className="mt-4">
                   <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className={cn("h-2 rounded-full transition-all", getProgressColor(latestMetrics?.memoryUsage || 0))}
-                      style={{ width: `${Math.min(latestMetrics?.memoryUsage || 0, 100)}%` }}
+                    <div
+                      className={cn(
+                        'progress-bar',
+                        `progress-${Math.round(Math.min(latestMetrics?.memoryUsage || 0, 100))}`,
+                        getProgressColor(latestMetrics?.memoryUsage || 0),
+                      )}
                     />
                   </div>
                 </div>
@@ -173,7 +194,12 @@ export default function Metrics() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-500">Disk Usage</p>
-                    <p className={cn("text-2xl font-semibold", getUsageColor(latestMetrics?.diskUsage || 0))}>
+                    <p
+                      className={cn(
+                        'text-2xl font-semibold',
+                        getUsageColor(latestMetrics?.diskUsage || 0),
+                      )}
+                    >
                       {latestMetrics?.diskUsage || 0}%
                     </p>
                   </div>
@@ -181,9 +207,12 @@ export default function Metrics() {
                 </div>
                 <div className="mt-4">
                   <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className={cn("h-2 rounded-full transition-all", getProgressColor(latestMetrics?.diskUsage || 0))}
-                      style={{ width: `${Math.min(latestMetrics?.diskUsage || 0, 100)}%` }}
+                    <div
+                      className={cn(
+                        'progress-bar',
+                        `progress-${Math.round(Math.min(latestMetrics?.diskUsage || 0, 100))}`,
+                        getProgressColor(latestMetrics?.diskUsage || 0),
+                      )}
                     />
                   </div>
                 </div>
@@ -240,24 +269,24 @@ export default function Metrics() {
                       <XAxis dataKey="time" />
                       <YAxis domain={[0, 100]} />
                       <Tooltip />
-                      <Line 
-                        type="monotone" 
-                        dataKey="cpu" 
-                        stroke={COLORS[0]} 
+                      <Line
+                        type="monotone"
+                        dataKey="cpu"
+                        stroke={COLORS[0]}
                         strokeWidth={2}
                         name="CPU %"
                       />
-                      <Line 
-                        type="monotone" 
-                        dataKey="memory" 
-                        stroke={COLORS[1]} 
+                      <Line
+                        type="monotone"
+                        dataKey="memory"
+                        stroke={COLORS[1]}
                         strokeWidth={2}
                         name="Memory %"
                       />
-                      <Line 
-                        type="monotone" 
-                        dataKey="disk" 
-                        stroke={COLORS[2]} 
+                      <Line
+                        type="monotone"
+                        dataKey="disk"
+                        stroke={COLORS[2]}
                         strokeWidth={2}
                         name="Disk %"
                       />
@@ -349,7 +378,9 @@ export default function Metrics() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
                   <div>
                     <p className="font-medium text-gray-900">Load Average</p>
-                    <p className="text-gray-600">{latestMetrics.loadAverage?.toFixed(2) || "N/A"}</p>
+                    <p className="text-gray-600">
+                      {latestMetrics.loadAverage?.toFixed(2) || 'N/A'}
+                    </p>
                   </div>
                   <div>
                     <p className="font-medium text-gray-900">Last Updated</p>

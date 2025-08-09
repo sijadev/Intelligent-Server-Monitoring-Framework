@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 import { storage } from '../storage-init';
-import type { InsertLogEntry } from '@shared/schema';
+import type { InsertLogEntry } from '../../shared/schema.js';
 
 export interface LogEntry {
   timestamp: Date;
@@ -17,7 +17,7 @@ class LogAggregator extends EventEmitter {
     warn: console.warn,
     error: console.error,
     info: console.info,
-    debug: console.debug
+    debug: console.debug,
   };
 
   constructor() {
@@ -58,20 +58,25 @@ class LogAggregator extends EventEmitter {
     };
   }
 
-  private async captureLog(level: 'INFO' | 'WARN' | 'ERROR' | 'DEBUG', source: string, message: string, metadata?: Record<string, any>) {
+  private async captureLog(
+    level: 'INFO' | 'WARN' | 'ERROR' | 'DEBUG',
+    source: string,
+    message: string,
+    metadata?: Record<string, any>,
+  ) {
     const logEntry: InsertLogEntry = {
       timestamp: new Date(),
       level,
       message,
       source,
       rawLine: message,
-      metadata: metadata || {}
+      metadata: metadata || {},
     };
 
     try {
       // Store in database
       await storage.createLogEntry(logEntry);
-      
+
       // Emit event for real-time updates
       this.emit('log', logEntry);
     } catch (error) {
@@ -81,7 +86,12 @@ class LogAggregator extends EventEmitter {
   }
 
   // Method to log custom entries
-  async log(level: 'INFO' | 'WARN' | 'ERROR' | 'DEBUG', source: string, message: string, metadata?: Record<string, any>) {
+  async log(
+    level: 'INFO' | 'WARN' | 'ERROR' | 'DEBUG',
+    source: string,
+    message: string,
+    metadata?: Record<string, any>,
+  ) {
     await this.captureLog(level, source, message, metadata);
   }
 
@@ -95,13 +105,19 @@ class LogAggregator extends EventEmitter {
   }
 
   // Log HTTP requests
-  logRequest(method: string, url: string, statusCode: number, duration: number, userAgent?: string) {
+  logRequest(
+    method: string,
+    url: string,
+    statusCode: number,
+    duration: number,
+    userAgent?: string,
+  ) {
     this.captureLog('INFO', 'http', `${method} ${url} ${statusCode} - ${duration}ms`, {
       method,
       url,
       statusCode,
       duration,
-      userAgent
+      userAgent,
     });
   }
 
@@ -110,7 +126,7 @@ class LogAggregator extends EventEmitter {
     this.captureLog('INFO', 'websocket', `${event}${clientId ? ` - Client: ${clientId}` : ''}`, {
       event,
       clientId,
-      data
+      data,
     });
   }
 
@@ -118,7 +134,7 @@ class LogAggregator extends EventEmitter {
   logPythonFramework(event: string, message: string, data?: any) {
     // Determine log level from data if provided
     const level = data?.level || 'INFO';
-    
+
     // Clean up the message to remove redundant prefixes
     let cleanMessage = message;
     if (message.includes(' - INFO -')) {
@@ -130,27 +146,38 @@ class LogAggregator extends EventEmitter {
     } else if (message.includes(' - DEBUG -')) {
       cleanMessage = message.split(' - DEBUG - ')[1] || message;
     }
-    
-    this.captureLog(level as 'INFO' | 'WARN' | 'ERROR' | 'DEBUG', 'python-framework', cleanMessage, {
-      event,
-      originalMessage: message !== cleanMessage ? message : undefined,
-      ...data
-    });
+
+    this.captureLog(
+      level as 'INFO' | 'WARN' | 'ERROR' | 'DEBUG',
+      'python-framework',
+      cleanMessage,
+      {
+        event,
+        originalMessage: message !== cleanMessage ? message : undefined,
+        ...data,
+      },
+    );
   }
 
   // Log database operations
-  logDatabase(operation: string, table: string, success: boolean, duration?: number, error?: string) {
+  logDatabase(
+    operation: string,
+    table: string,
+    success: boolean,
+    duration?: number,
+    error?: string,
+  ) {
     const level = success ? 'INFO' : 'ERROR';
-    const message = success 
+    const message = success
       ? `${operation} on ${table}${duration ? ` (${duration}ms)` : ''}`
       : `${operation} on ${table} failed: ${error}`;
-    
+
     this.captureLog(level, 'database', message, {
       operation,
       table,
       success,
       duration,
-      error
+      error,
     });
   }
 
@@ -158,12 +185,12 @@ class LogAggregator extends EventEmitter {
   logPlugin(pluginName: string, operation: string, success: boolean, message?: string, data?: any) {
     const level = success ? 'INFO' : 'ERROR';
     const logMessage = `Plugin ${pluginName}: ${operation}${message ? ` - ${message}` : ''}`;
-    
+
     this.captureLog(level, 'plugin', logMessage, {
       pluginName,
       operation,
       success,
-      data
+      data,
     });
   }
 }

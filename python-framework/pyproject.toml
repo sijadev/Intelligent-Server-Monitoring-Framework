@@ -1,0 +1,19 @@
+[tool.coverage.run]
+source = ["."]
+branch = true
+omit = [
+  "tests/*",
+  "*/__init__.py",
+  "ai_models/*",
+  "data/*"
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+fail_under = 0
+
+[tool.pytest.ini_options]
+addopts = "-q --cov --cov-report=term-missing"
+asyncio_mode = "auto"
+pythonpath = ["."]

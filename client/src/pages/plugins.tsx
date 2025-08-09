@@ -1,45 +1,58 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Header } from "@/components/layout/header";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { StatusIndicator } from "@/components/ui/status-indicator";
-import { 
-  Puzzle, 
-  Database, 
-  AlertCircle, 
-  Wrench, 
-  Play, 
-  Pause, 
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { usePageTitle } from '@/hooks/use-page-title';
+import { Header } from '@/components/layout/header';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { StatusIndicator } from '@/components/ui/status-indicator';
+import {
+  Puzzle,
+  Database,
+  AlertCircle,
+  Wrench,
+  Play,
+  Pause,
   RotateCcw,
   Settings,
   Plus,
   Code,
-  Download
-} from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
-import { api } from "@/lib/api";
-import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
-import type { Plugin } from "@shared/schema";
+  Download,
+} from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { api } from '@/lib/api';
+import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
+import type { Plugin } from '@shared/schema';
 
 const pluginTypeIcons = {
   collector: Database,
   detector: AlertCircle,
-  remediator: Wrench
+  remediator: Wrench,
 };
 
 const pluginTypeColors = {
-  collector: "bg-blue-100 text-blue-800",
-  detector: "bg-orange-100 text-orange-800", 
-  remediator: "bg-green-100 text-green-800"
+  collector: 'bg-blue-100 text-blue-800',
+  detector: 'bg-orange-100 text-orange-800',
+  remediator: 'bg-green-100 text-green-800',
 };
 
 const getPluginStatus = (status: string) => {
@@ -88,7 +101,7 @@ class CustomSystemMetricsCollector:
 
 if __name__ == "__main__":
     collector = CustomSystemMetricsCollector()
-    asyncio.run(collector.run())`
+    asyncio.run(collector.run())`,
     },
     network_monitor: {
       name: 'Network Traffic Monitor',
@@ -127,8 +140,8 @@ class NetworkMonitor:
 
 if __name__ == "__main__":
     monitor = NetworkMonitor()
-    asyncio.run(monitor.run())`
-    }
+    asyncio.run(monitor.run())`,
+    },
   },
   detector: {
     threshold_detector: {
@@ -213,7 +226,7 @@ if __name__ == "__main__":
     mock_metrics = {'cpuUsage': 85, 'memoryUsage': 90, 'diskUsage': 75}
     problems = asyncio.run(detector.detect_problems(mock_metrics))
     for problem in problems:
-        print(problem)`
+        print(problem)`,
     },
     security_monitor: {
       name: 'Security Monitor',
@@ -300,8 +313,8 @@ class SecurityMonitor:
 
 if __name__ == "__main__":
     monitor = SecurityMonitor()
-    asyncio.run(monitor.run())`
-    }
+    asyncio.run(monitor.run())`,
+    },
   },
   remediator: {
     auto_remediator: {
@@ -428,16 +441,17 @@ if __name__ == "__main__":
     # Example usage
     mock_problem = {'type': 'HIGH_MEMORY_USAGE', 'severity': 'WARNING'}
     result = asyncio.run(remediator.remediate_problem('HIGH_MEMORY_USAGE', mock_problem))
-    print(f"Remediation result: {result}")`
-    }
-  }
+    print(f"Remediation result: {result}")`,
+    },
+  },
 };
 
 export default function Plugins() {
+  usePageTitle('Plugins');
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [typeFilter, setTypeFilter] = useState<string>("all");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showEditor, setShowEditor] = useState(false);
   const [showDefaultPlugins, setShowDefaultPlugins] = useState(false);
   const [editorMode, setEditorMode] = useState<'create' | 'edit'>('create');
@@ -445,9 +459,15 @@ export default function Plugins() {
   const [pluginCode, setPluginCode] = useState('');
   const [pluginName, setPluginName] = useState('');
   const [pluginDescription, setPluginDescription] = useState('');
-  const [pluginType, setPluginType] = useState<'collector' | 'detector' | 'remediator'>('collector');
+  const [pluginType, setPluginType] = useState<'collector' | 'detector' | 'remediator'>(
+    'collector',
+  );
 
-  const { data: plugins = [], isLoading, refetch } = useQuery({
+  const {
+    data: plugins = [],
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ['/api/plugins'],
     queryFn: () => api.getPlugins(),
     refetchInterval: 10000, // Refetch every 10 seconds
@@ -463,17 +483,17 @@ export default function Plugins() {
     mutationFn: () => api.restartFramework(),
     onSuccess: () => {
       toast({
-        title: "Framework Restarted",
-        description: "The monitoring framework has been restarted successfully.",
+        title: 'Framework Restarted',
+        description: 'The MCP.Guard framework has been restarted successfully.',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/plugins'] });
       queryClient.invalidateQueries({ queryKey: ['/api/framework/status'] });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to restart framework. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to restart framework. Please try again.',
+        variant: 'destructive',
       });
     },
   });
@@ -482,8 +502,8 @@ export default function Plugins() {
     mutationFn: (pluginData: any) => api.createPlugin(pluginData),
     onSuccess: () => {
       toast({
-        title: "Plugin Created",
-        description: "The plugin has been created successfully.",
+        title: 'Plugin Created',
+        description: 'The plugin has been created successfully.',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/plugins'] });
       setShowEditor(false);
@@ -491,9 +511,9 @@ export default function Plugins() {
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to create plugin. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to create plugin. Please try again.',
+        variant: 'destructive',
       });
     },
   });
@@ -502,8 +522,8 @@ export default function Plugins() {
     mutationFn: ({ id, ...data }: any) => api.updatePlugin(id, data),
     onSuccess: () => {
       toast({
-        title: "Plugin Updated",
-        description: "The plugin has been updated successfully.",
+        title: 'Plugin Updated',
+        description: 'The plugin has been updated successfully.',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/plugins'] });
       setShowEditor(false);
@@ -511,62 +531,65 @@ export default function Plugins() {
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to update plugin. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to update plugin. Please try again.',
+        variant: 'destructive',
       });
     },
   });
 
   const startPluginMutation = useMutation({
-    mutationFn: (pluginId: string) => api.post(`/api/plugins/${pluginId}/start`),
+    mutationFn: (pluginId: string) => api.startPlugin(pluginId),
     onSuccess: (_, pluginId) => {
       toast({
-        title: "Plugin Started",
-        description: "The plugin has been started successfully.",
+        title: 'Plugin Started',
+        description: 'The plugin has been started successfully.',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/plugins'] });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to start plugin. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to start plugin. Please try again.',
+        variant: 'destructive',
       });
     },
   });
 
   const stopPluginMutation = useMutation({
-    mutationFn: (pluginId: string) => api.post(`/api/plugins/${pluginId}/stop`),
+    mutationFn: (pluginId: string) => api.stopPlugin(pluginId),
     onSuccess: (_, pluginId) => {
       toast({
-        title: "Plugin Stopped",
-        description: "The plugin has been stopped successfully.",
+        title: 'Plugin Stopped',
+        description: 'The plugin has been stopped successfully.',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/plugins'] });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to stop plugin. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to stop plugin. Please try again.',
+        variant: 'destructive',
       });
     },
   });
 
   // Filter plugins
-  const filteredPlugins = plugins.filter(plugin => {
-    if (typeFilter !== "all" && plugin.type !== typeFilter) return false;
-    if (statusFilter !== "all" && plugin.status.toLowerCase() !== statusFilter) return false;
+  const filteredPlugins = plugins.filter((plugin) => {
+    if (typeFilter !== 'all' && plugin.type !== typeFilter) return false;
+    if (statusFilter !== 'all' && plugin.status.toLowerCase() !== statusFilter) return false;
     return true;
   });
 
   // Group plugins by type
-  const pluginsByType = filteredPlugins.reduce((acc, plugin) => {
-    if (!acc[plugin.type]) acc[plugin.type] = [];
-    acc[plugin.type].push(plugin);
-    return acc;
-  }, {} as Record<string, Plugin[]>);
+  const pluginsByType = filteredPlugins.reduce(
+    (acc, plugin) => {
+      if (!acc[plugin.type]) acc[plugin.type] = [];
+      acc[plugin.type].push(plugin);
+      return acc;
+    },
+    {} as Record<string, Plugin[]>,
+  );
 
   const handleRestartFramework = () => {
     restartFrameworkMutation.mutate();
@@ -591,9 +614,9 @@ export default function Plugins() {
     setEditorMode('edit');
     setSelectedPlugin(plugin);
     setPluginName(plugin.name);
-    setPluginDescription(plugin.metadata?.description || '');
+    setPluginDescription((plugin.config as any)?.description || '');
     setPluginType(plugin.type as 'collector' | 'detector' | 'remediator');
-    setPluginCode(plugin.metadata?.code || '# Plugin code here');
+    setPluginCode((plugin.config as any)?.code || '# Plugin code here');
     setShowEditor(true);
   };
 
@@ -618,8 +641,8 @@ export default function Plugins() {
       config: {},
       metadata: {
         description: pluginDescription,
-        code: pluginCode
-      }
+        code: pluginCode,
+      },
     };
 
     if (editorMode === 'create') {
@@ -639,12 +662,8 @@ export default function Plugins() {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
-      <Header
-        title="Plugins"
-        onRefresh={() => refetch()}
-        isRefreshing={isLoading}
-      />
-      
+      <Header title="Plugins" onRefresh={() => refetch()} isRefreshing={isLoading} />
+
       <main className="flex-1 relative overflow-y-auto focus:outline-none">
         <div className="py-6 px-6">
           {/* Framework Status */}
@@ -659,25 +678,21 @@ export default function Plugins() {
                   size="sm"
                 >
                   <RotateCcw className="h-4 w-4 mr-2" />
-                  {restartFrameworkMutation.isPending ? "Restarting..." : "Restart Framework"}
+                  {restartFrameworkMutation.isPending ? 'Restarting...' : 'Restart Framework'}
                 </Button>
               </div>
             </CardHeader>
             <CardContent>
               <div className="flex items-center space-x-4">
-                <StatusIndicator 
-                  status={frameworkStatus?.running ? 'running' : 'stopped'} 
+                <StatusIndicator
+                  status={frameworkStatus?.running ? 'running' : 'stopped'}
                   animated={frameworkStatus?.running}
                   size="lg"
                 />
                 <div>
-                  <p className="font-medium">
-                    {frameworkStatus?.running ? 'Running' : 'Stopped'}
-                  </p>
+                  <p className="font-medium">{frameworkStatus?.running ? 'Running' : 'Stopped'}</p>
                   {frameworkStatus?.processId && (
-                    <p className="text-sm text-gray-500">
-                      Process ID: {frameworkStatus.processId}
-                    </p>
+                    <p className="text-sm text-gray-500">Process ID: {frameworkStatus.processId}</p>
                   )}
                 </div>
               </div>
@@ -709,7 +724,7 @@ export default function Plugins() {
                   <div className="ml-5">
                     <p className="text-sm font-medium text-gray-500">Collectors</p>
                     <p className="text-2xl font-semibold text-gray-900">
-                      {plugins.filter(p => p.type === 'collector').length}
+                      {plugins.filter((p) => p.type === 'collector').length}
                     </p>
                   </div>
                 </div>
@@ -725,7 +740,7 @@ export default function Plugins() {
                   <div className="ml-5">
                     <p className="text-sm font-medium text-gray-500">Detectors</p>
                     <p className="text-2xl font-semibold text-gray-900">
-                      {plugins.filter(p => p.type === 'detector').length}
+                      {plugins.filter((p) => p.type === 'detector').length}
                     </p>
                   </div>
                 </div>
@@ -741,7 +756,7 @@ export default function Plugins() {
                   <div className="ml-5">
                     <p className="text-sm font-medium text-gray-500">Remediators</p>
                     <p className="text-2xl font-semibold text-gray-900">
-                      {plugins.filter(p => p.type === 'remediator').length}
+                      {plugins.filter((p) => p.type === 'remediator').length}
                     </p>
                   </div>
                 </div>
@@ -799,7 +814,7 @@ export default function Plugins() {
           <div className="space-y-6">
             {Object.entries(pluginsByType).map(([type, typePlugins]) => {
               const TypeIcon = pluginTypeIcons[type as keyof typeof pluginTypeIcons] || Puzzle;
-              
+
               return (
                 <Card key={type}>
                   <CardHeader>
@@ -808,7 +823,7 @@ export default function Plugins() {
                       <h3 className="text-lg font-medium capitalize">
                         {type}s ({typePlugins.length})
                       </h3>
-                      <Badge 
+                      <Badge
                         variant="secondary"
                         className={pluginTypeColors[type as keyof typeof pluginTypeColors]}
                       >
@@ -818,19 +833,14 @@ export default function Plugins() {
                   </CardHeader>
                   <CardContent>
                     {typePlugins.length === 0 ? (
-                      <div className="text-center py-8 text-gray-500">
-                        No {type} plugins found
-                      </div>
+                      <div className="text-center py-8 text-gray-500">No {type} plugins found</div>
                     ) : (
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         {typePlugins.map((plugin) => (
-                          <div 
-                            key={plugin.id}
-                            className="border rounded-lg p-4 bg-gray-50"
-                          >
+                          <div key={plugin.id} className="border rounded-lg p-4 bg-gray-50">
                             <div className="flex items-start justify-between">
                               <div className="flex items-start space-x-3">
-                                <StatusIndicator 
+                                <StatusIndicator
                                   status={getPluginStatus(plugin.status)}
                                   animated={plugin.status === 'running'}
                                   className="mt-1"
@@ -839,17 +849,17 @@ export default function Plugins() {
                                   <h4 className="text-lg font-medium text-gray-900">
                                     {plugin.name}
                                   </h4>
-                                  <p className="text-sm text-gray-500">
-                                    Version {plugin.version}
-                                  </p>
+                                  <p className="text-sm text-gray-500">Version {plugin.version}</p>
                                   <div className="mt-2">
-                                    <Badge 
+                                    <Badge
                                       variant="outline"
                                       className={cn(
-                                        "capitalize",
-                                        plugin.status === 'running' ? "bg-green-50 text-green-700" :
-                                        plugin.status === 'stopped' ? "bg-gray-50 text-gray-700" :
-                                        "bg-red-50 text-red-700"
+                                        'capitalize',
+                                        plugin.status === 'running'
+                                          ? 'bg-green-50 text-green-700'
+                                          : plugin.status === 'stopped'
+                                            ? 'bg-gray-50 text-gray-700'
+                                            : 'bg-red-50 text-red-700',
                                       )}
                                     >
                                       {plugin.status}
@@ -884,17 +894,17 @@ export default function Plugins() {
                                 >
                                   <Code className="h-4 w-4" />
                                 </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                >
+                                <Button variant="ghost" size="sm">
                                   <Settings className="h-4 w-4" />
                                 </Button>
                               </div>
                             </div>
-                            
+
                             <div className="mt-4 text-sm text-gray-500">
-                              Last updated {formatDistanceToNow(new Date(plugin.lastUpdate), { addSuffix: true })}
+                              Last updated{' '}
+                              {formatDistanceToNow(new Date(plugin.lastUpdate), {
+                                addSuffix: true,
+                              })}
                             </div>
                           </div>
                         ))}
@@ -912,10 +922,9 @@ export default function Plugins() {
                 <Puzzle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No plugins found</h3>
                 <p className="text-gray-500">
-                  {plugins.length === 0 
-                    ? "No plugins are currently loaded in the framework."
-                    : "No plugins match your current filters."
-                  }
+                  {plugins.length === 0
+                    ? 'No plugins are currently loaded in the framework.'
+                    : 'No plugins match your current filters.'}
                 </p>
               </CardContent>
             </Card>
@@ -931,7 +940,7 @@ export default function Plugins() {
               {editorMode === 'create' ? 'Create New Plugin' : 'Edit Plugin'}
             </DialogTitle>
           </DialogHeader>
-          
+
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -945,7 +954,12 @@ export default function Plugins() {
               </div>
               <div>
                 <Label htmlFor="plugin-type">Plugin Type</Label>
-                <Select value={pluginType} onValueChange={(value: 'collector' | 'detector' | 'remediator') => setPluginType(value)}>
+                <Select
+                  value={pluginType}
+                  onValueChange={(value: 'collector' | 'detector' | 'remediator') =>
+                    setPluginType(value)
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -957,7 +971,7 @@ export default function Plugins() {
                 </Select>
               </div>
             </div>
-            
+
             <div>
               <Label htmlFor="plugin-description">Description</Label>
               <Input
@@ -967,7 +981,7 @@ export default function Plugins() {
                 placeholder="Enter plugin description"
               />
             </div>
-            
+
             <div>
               <Label htmlFor="plugin-code">Plugin Code (Python)</Label>
               <Textarea
@@ -979,14 +993,19 @@ export default function Plugins() {
               />
             </div>
           </div>
-          
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowEditor(false)}>
               Cancel
             </Button>
-            <Button 
+            <Button
               onClick={handleSavePlugin}
-              disabled={!pluginName || !pluginCode || createPluginMutation.isPending || updatePluginMutation.isPending}
+              disabled={
+                !pluginName ||
+                !pluginCode ||
+                createPluginMutation.isPending ||
+                updatePluginMutation.isPending
+              }
             >
               {editorMode === 'create' ? 'Create Plugin' : 'Update Plugin'}
             </Button>
@@ -1000,18 +1019,22 @@ export default function Plugins() {
           <DialogHeader>
             <DialogTitle>Default Plugin Templates</DialogTitle>
           </DialogHeader>
-          
+
           <Tabs defaultValue="collector" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="collector">Collectors</TabsTrigger>
               <TabsTrigger value="detector">Detectors</TabsTrigger>
               <TabsTrigger value="remediator">Remediators</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="collector" className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {Object.entries(defaultPlugins.collector).map(([key, plugin]) => (
-                  <Card key={key} className="cursor-pointer hover:bg-gray-50" onClick={() => handleLoadDefaultPlugin('collector', key)}>
+                  <Card
+                    key={key}
+                    className="cursor-pointer hover:bg-gray-50"
+                    onClick={() => handleLoadDefaultPlugin('collector', key)}
+                  >
                     <CardHeader>
                       <div className="flex items-center space-x-2">
                         <Database className="h-5 w-5 text-blue-500" />
@@ -1025,11 +1048,15 @@ export default function Plugins() {
                 ))}
               </div>
             </TabsContent>
-            
+
             <TabsContent value="detector" className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {Object.entries(defaultPlugins.detector).map(([key, plugin]) => (
-                  <Card key={key} className="cursor-pointer hover:bg-gray-50" onClick={() => handleLoadDefaultPlugin('detector', key)}>
+                  <Card
+                    key={key}
+                    className="cursor-pointer hover:bg-gray-50"
+                    onClick={() => handleLoadDefaultPlugin('detector', key)}
+                  >
                     <CardHeader>
                       <div className="flex items-center space-x-2">
                         <AlertCircle className="h-5 w-5 text-orange-500" />
@@ -1043,11 +1070,15 @@ export default function Plugins() {
                 ))}
               </div>
             </TabsContent>
-            
+
             <TabsContent value="remediator" className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {Object.entries(defaultPlugins.remediator).map(([key, plugin]) => (
-                  <Card key={key} className="cursor-pointer hover:bg-gray-50" onClick={() => handleLoadDefaultPlugin('remediator', key)}>
+                  <Card
+                    key={key}
+                    className="cursor-pointer hover:bg-gray-50"
+                    onClick={() => handleLoadDefaultPlugin('remediator', key)}
+                  >
                     <CardHeader>
                       <div className="flex items-center space-x-2">
                         <Wrench className="h-5 w-5 text-green-500" />
@@ -1062,7 +1093,7 @@ export default function Plugins() {
               </div>
             </TabsContent>
           </Tabs>
-          
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDefaultPlugins(false)}>
               Close

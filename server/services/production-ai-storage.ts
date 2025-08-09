@@ -19,17 +19,17 @@ interface StorageConfig {
 export class ProductionAIStorage {
   private storage: any;
   private config: StorageConfig;
-  
+
   constructor(config?: StorageConfig) {
     this.config = config || this.getDefaultConfig();
     this.storage = AIProgressStorageFactory.create(this.config.type, this.config.options);
   }
-  
+
   private getDefaultConfig(): StorageConfig {
     const env = process.env.NODE_ENV || 'development';
     const isProduction = env === 'production';
     const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
-    
+
     if (isProduction) {
       // Production: Use hybrid storage (DB + Redis)
       return {
@@ -37,7 +37,7 @@ export class ProductionAIStorage {
         options: {
           // These would be injected in real production
           connectionString: process.env.DATABASE_URL,
-        }
+        },
       };
     } else if (isCI) {
       // CI: Use in-memory storage (no persistence needed)
@@ -47,7 +47,7 @@ export class ProductionAIStorage {
       return { type: 'file' };
     }
   }
-  
+
   // Main API - matches current file-based API
   async saveAIProgress(progress: AIProgress): Promise<void> {
     try {
@@ -58,7 +58,7 @@ export class ProductionAIStorage {
       throw error;
     }
   }
-  
+
   async loadAIProgress(): Promise<AIProgress[]> {
     try {
       const progress = await this.storage.loadProgress();
@@ -69,7 +69,7 @@ export class ProductionAIStorage {
       return []; // Graceful fallback
     }
   }
-  
+
   async getModelProgress(modelName: string): Promise<AIProgress | null> {
     try {
       return await this.storage.getLatestProgress(modelName);
@@ -78,7 +78,7 @@ export class ProductionAIStorage {
       return null;
     }
   }
-  
+
   // Production-specific methods
   async healthCheck(): Promise<boolean> {
     try {
@@ -89,23 +89,23 @@ export class ProductionAIStorage {
       return false;
     }
   }
-  
-  async getStorageInfo(): Promise<{type: string, healthy: boolean, modelCount: number}> {
+
+  async getStorageInfo(): Promise<{ type: string; healthy: boolean; modelCount: number }> {
     const healthy = await this.healthCheck();
     const models = healthy ? await this.loadAIProgress() : [];
-    
+
     return {
       type: this.config.type,
       healthy,
-      modelCount: models.length
+      modelCount: models.length,
     };
   }
-  
+
   // Migration helper (for moving from file to production storage)
   async migrateFromFile(filePath?: string): Promise<number> {
     const fileStorage = AIProgressStorageFactory.create('file', { filePath });
     const fileData = await fileStorage.loadProgress();
-    
+
     let migrated = 0;
     for (const progress of fileData) {
       try {
@@ -115,7 +115,7 @@ export class ProductionAIStorage {
         console.error(`Failed to migrate ${progress.model_name}:`, error);
       }
     }
-    
+
     console.log(`📦 Migrated ${migrated}/${fileData.length} AI models from file`);
     return migrated;
   }
@@ -150,32 +150,32 @@ export const PRODUCTION_CONFIGS = {
     options: {
       connectionString: process.env.DATABASE_URL,
       redisUrl: process.env.REDIS_URL,
-    }
+    },
   },
-  
+
   // For serverless environments (no persistent storage)
   serverless: {
     type: 'database' as const,
     options: {
       connectionString: process.env.DATABASE_URL,
-    }
+    },
   },
-  
+
   // For high-performance scenarios
   performance: {
     type: 'redis' as const,
     options: {
       redisUrl: process.env.REDIS_URL,
-    }
+    },
   },
-  
+
   // For development/testing
   development: {
     type: 'file' as const,
     options: {
-      filePath: './python-framework/ai_models/training_metrics.json'
-    }
-  }
+      filePath: './python-framework/ai_models/training_metrics.json',
+    },
+  },
 };
 
 export default ProductionAIStorage;

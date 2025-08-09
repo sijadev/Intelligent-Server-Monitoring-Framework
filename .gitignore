@@ -1,3 +1,5 @@
+# Ignore large generated test manager profiles (replaced by runtime factory)
+test-workspace/profiles/profile-*.json
 # Dependencies
 node_modules/
 .pnp
@@ -13,6 +15,10 @@ build/
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Local development configuration (keep development.json for sharing)
+.config/local.json
+.config/personal.json
 
 # Logs
 *.log
@@ -32,6 +38,9 @@ pids
 # Coverage directory used by tools like istanbul
 coverage/
 *.lcov
+coverage-final.json
+coverage-summary.json
+python-framework/coverage.xml
 
 # IDE and editor files
 .vscode/
@@ -86,17 +95,26 @@ venv.bak/
 .coverage
 .pytest_cache/
 .nyc_output
+jest-results*
+report.*.html
 
 # Temporary files
 *.tmp
 *.temp
 .local/
 .cache/
+*.bak
+*.orig
+*.rej
+*.swp
+*.un~
 
 # Database
 *.db
 *.sqlite
 *.sqlite3
+dump-*.sql
+backup-*.sql
 
 # Backup files
 *.backup
@@ -106,3 +124,93 @@ package.json.backup
 # Local development
 migrations/
 drizzle/
+!migrations/0000_*.sql
+!migrations/0001_*.sql
+!migrations/0002_*.sql
+
+# Playwright Test Results
+test-results/
+playwright-report/
+playwright/.cache/
+**/playwright/.cache/
+
+# E2E Test Artifacts
+e2e/test-results/
+e2e/playwright-report/
+*.png
+*.webm
+*.trace
+*.har
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+.docker/
+docker/*.local.yml
+
+# TypeScript
+*.tsbuildinfo
+
+# Tailwind CSS
+.tailwindcss-cache
+
+# Next.js (if applicable)
+.next/
+out/
+
+# Vercel (if applicable)
+.vercel
+
+# Turbo (if applicable)
+.turbo
+
+# Storybook (if applicable)
+storybook-static
+
+# Bundle analyzer
+.bundle-analyzer
+
+# Local test files
+**/test-logs/
+**/logs/
+*.test.local.*
+test-workspace/output/
+test-workspace/temp/
+
+# Temporary development files
+temp/
+tmp/
+.tmp/
+
+# Configuration overrides
+config.local.*
+*.local.config.*
+
+# API keys and secrets (additional patterns)
+.secrets
+.api-keys
+.credentials
+**/secrets/
+**/keys/
+
+# Lock files (keep package-lock.json but ignore others)
+yarn.lock
+pnpm-lock.yaml
+uv.lock
+
+# Development tools
+.eslintcache
+.stylelintcache
+tsconfig.tsbuildinfo
+**/*.tsbuildinfo
+
+# Redis / misc
+dump.rdb
+
+# Cypress (if introduced later)
+cypress/videos/
+cypress/screenshots/
+
+# Env examples (keep template examples, ignore local variants)
+.env.*.local
+*.example.local

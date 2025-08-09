@@ -8,7 +8,7 @@ export interface IRepository<T, CreateT = Partial<T>, UpdateT = Partial<T>> {
   create(data: CreateT): Promise<T>;
   update(id: string, data: UpdateT): Promise<T | null>;
   delete(id: string): Promise<boolean>;
-  
+
   // Query Options
   count(filters?: Record<string, any>): Promise<number>;
   exists(id: string): Promise<boolean>;
@@ -24,11 +24,11 @@ export interface QueryOptions {
 }
 
 // Base Repository Implementation
-export abstract class BaseRepository<T, CreateT = Partial<T>, UpdateT = Partial<T>> 
-  implements IRepository<T, CreateT, UpdateT> {
-  
+export abstract class BaseRepository<T, CreateT = Partial<T>, UpdateT = Partial<T>>
+  implements IRepository<T, CreateT, UpdateT>
+{
   protected abstract tableName: string;
-  
+
   // Abstract methods to be implemented by concrete repositories
   abstract findById(id: string): Promise<T | null>;
   abstract findAll(options?: QueryOptions): Promise<T[]>;
@@ -88,14 +88,17 @@ export abstract class BaseRepository<T, CreateT = Partial<T>, UpdateT = Partial<
   // Filter helpers
   protected buildFilters(filters?: Record<string, any>): Record<string, any> {
     if (!filters) return {};
-    
+
     // Remove undefined/null values
     return Object.entries(filters)
       .filter(([_, value]) => value !== undefined && value !== null)
-      .reduce((acc, [key, value]) => {
-        acc[key] = value;
-        return acc;
-      }, {} as Record<string, any>);
+      .reduce(
+        (acc, [key, value]) => {
+          acc[key] = value;
+          return acc;
+        },
+        {} as Record<string, any>,
+      );
   }
 }
 

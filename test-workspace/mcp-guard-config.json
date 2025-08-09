@@ -1,0 +1,7 @@
+{
+  "version": "1.0.0",
+  "created": "2025-08-07T17:44:16.611Z",
+  "profilesDir": "./profiles",
+  "outputDir": "./output",
+  "logsDir": "./logs"
+}

@@ -31,11 +31,15 @@ export const ResourceConfigSchema = z.object({
 export const PromptConfigSchema = z.object({
   name: z.string(),
   description: z.string(),
-  arguments: z.array(z.object({
-    name: z.string(),
-    description: z.string(),
-    required: z.boolean().default(false),
-  })).default([]),
+  arguments: z
+    .array(
+      z.object({
+        name: z.string(),
+        description: z.string(),
+        required: z.boolean().default(false),
+      }),
+    )
+    .default([]),
   behavior: z.enum(['success', 'error', 'slow']).default('success'),
   responseTemplate: z.string().optional(),
   errorMessage: z.string().optional(),
@@ -54,17 +58,21 @@ export const ServerConfigSchema = z.object({
   tools: z.array(ToolConfigSchema).default([]),
   resources: z.array(ResourceConfigSchema).default([]),
   prompts: z.array(PromptConfigSchema).default([]),
-  errorSimulation: z.object({
-    connectionDropRate: z.number().min(0).max(1).default(0),
-    responseErrorRate: z.number().min(0).max(1).default(0),
-    slowResponseRate: z.number().min(0).max(1).default(0),
-    timeoutDuration: z.number().min(100).default(5000),
-  }).default({}),
-  logging: z.object({
-    level: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
-    requests: z.boolean().default(true),
-    responses: z.boolean().default(true),
-  }).default({}),
+  errorSimulation: z
+    .object({
+      connectionDropRate: z.number().min(0).max(1).default(0),
+      responseErrorRate: z.number().min(0).max(1).default(0),
+      slowResponseRate: z.number().min(0).max(1).default(0),
+      timeoutDuration: z.number().min(100).default(5000),
+    })
+    .default({}),
+  logging: z
+    .object({
+      level: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
+      requests: z.boolean().default(true),
+      responses: z.boolean().default(true),
+    })
+    .default({}),
 });
 
 export type TestScenario = z.infer<typeof TestScenarioSchema>;

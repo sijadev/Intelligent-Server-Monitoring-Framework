@@ -12,17 +12,13 @@ import { aiRoutes } from './ai.routes';
 import { deploymentsRoutes } from './deployments.routes';
 import { codeAnalysisRoutes } from './code-analysis.routes';
 import { debugRoutes } from './debug.routes';
+import { dslCompositionRoutes } from './dsl-composition.routes';
+import { healthRoutes } from './health.routes';
 
 const apiRouter = Router();
 
-// Health check endpoint
-apiRouter.get('/health', (_req, res) => {
-  res.json({ 
-    status: 'healthy', 
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
-  });
-});
+// Health check endpoints (comprehensive)
+apiRouter.use('/health', healthRoutes);
 
 // Mount all route modules
 apiRouter.use('/dashboard', dashboardRoutes);
@@ -38,5 +34,6 @@ apiRouter.use('/ai', aiRoutes);
 apiRouter.use('/deployments', deploymentsRoutes);
 apiRouter.use('/code-analysis', codeAnalysisRoutes);
 apiRouter.use('/debug', debugRoutes);
+apiRouter.use('/dsl', dslCompositionRoutes);
 
 export { apiRouter };

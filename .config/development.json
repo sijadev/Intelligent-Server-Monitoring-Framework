@@ -1,0 +1,56 @@
+{
+  "environment": "development",
+  "services": {
+    "testManager": {
+      "enabled": true,
+      "cliRequired": true,
+      "reason": "Full CLI functionality with complete development environment"
+    },
+    "pythonFramework": {
+      "enabled": true,
+      "autoStart": true,
+      "healthCheckInterval": 30000,
+      "maxRetries": 5
+    },
+    "storage": {
+      "type": "database",
+      "migrations": {
+        "autoRun": true
+      }
+    },
+    "monitoring": {
+      "enabled": true,
+      "interval": 30000,
+      "healthChecks": true
+    }
+  },
+  "logging": {
+    "level": "INFO",
+    "console": true,
+    "file": false
+  },
+  "development": {
+    "hotReload": true,
+    "debugMode": true,
+    "useFallbackImplementations": false,
+    "bypassAuthentication": false,
+    "enableTestRoutes": true
+  },
+  "workspace": {
+    "path": "./test-workspace",
+    "createIfMissing": true,
+    "cleanOnStart": false
+  },
+  "ports": {
+    "main": 3000,
+    "python": 8000,
+    "redis": 6379,
+    "database": 5432
+  },
+  "external": {
+    "requirePythonAPI": true,
+    "requireRedis": true,
+    "requireTestManager": true,
+    "gracefulFallback": false
+  }
+}

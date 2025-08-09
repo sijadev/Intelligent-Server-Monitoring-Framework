@@ -1,0 +1,15 @@
+name: E2E UI Tests (DISABLED)
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Placeholder no-op dispatch while E2E tests are disabled'
+        required: false
+
+jobs:
+  noop:
+    runs-on: ubuntu-latest
+    steps:
+      - name: E2E tests are disabled
+        run: echo "E2E workflow disabled (2025-08-09)."

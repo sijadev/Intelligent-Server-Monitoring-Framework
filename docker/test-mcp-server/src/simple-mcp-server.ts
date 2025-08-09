@@ -64,7 +64,7 @@ export class SimpleMcpServer {
     // MCP Protocol endpoints
     this.app.post('/mcp/tools/list', async (req, res) => {
       try {
-        const tools = this.config.getConfig().tools.map(tool => ({
+        const tools = this.config.getConfig().tools.map((tool) => ({
           name: tool.name,
           description: tool.description,
           inputSchema: tool.inputSchema,
@@ -73,7 +73,7 @@ export class SimpleMcpServer {
         res.json({
           jsonrpc: '2.0',
           id: req.body.id,
-          result: { tools }
+          result: { tools },
         });
       } catch (error) {
         this.handleError(req, res, error);
@@ -84,7 +84,7 @@ export class SimpleMcpServer {
       try {
         const { name, arguments: args } = req.body.params;
         const startTime = Date.now();
-        
+
         this.stats.toolCalls[name] = (this.stats.toolCalls[name] || 0) + 1;
 
         const toolConfig = this.config.getToolConfig(name);
@@ -129,7 +129,7 @@ export class SimpleMcpServer {
                 text: JSON.stringify(responseData, null, 2),
               },
             ],
-          }
+          },
         });
       } catch (error) {
         this.handleError(req, res, error);
@@ -138,7 +138,7 @@ export class SimpleMcpServer {
 
     this.app.post('/mcp/resources/list', async (req, res) => {
       try {
-        const resources = this.config.getConfig().resources.map(resource => ({
+        const resources = this.config.getConfig().resources.map((resource) => ({
           uri: resource.uri,
           name: resource.name,
           description: resource.description,
@@ -148,7 +148,7 @@ export class SimpleMcpServer {
         res.json({
           jsonrpc: '2.0',
           id: req.body.id,
-          result: { resources }
+          result: { resources },
         });
       } catch (error) {
         this.handleError(req, res, error);
@@ -159,7 +159,7 @@ export class SimpleMcpServer {
       try {
         const { uri } = req.body.params;
         const startTime = Date.now();
-        
+
         this.stats.resourceRequests[uri] = (this.stats.resourceRequests[uri] || 0) + 1;
 
         const resourceConfig = this.config.getResourceConfig(uri);
@@ -197,7 +197,7 @@ export class SimpleMcpServer {
                 text: resourceConfig.content || `Content for ${uri}`,
               },
             ],
-          }
+          },
         });
       } catch (error) {
         this.handleError(req, res, error);
@@ -206,7 +206,7 @@ export class SimpleMcpServer {
 
     this.app.post('/mcp/prompts/list', async (req, res) => {
       try {
-        const prompts = this.config.getConfig().prompts.map(prompt => ({
+        const prompts = this.config.getConfig().prompts.map((prompt) => ({
           name: prompt.name,
           description: prompt.description,
           arguments: prompt.arguments,
@@ -215,7 +215,7 @@ export class SimpleMcpServer {
         res.json({
           jsonrpc: '2.0',
           id: req.body.id,
-          result: { prompts }
+          result: { prompts },
         });
       } catch (error) {
         this.handleError(req, res, error);
@@ -226,7 +226,7 @@ export class SimpleMcpServer {
       try {
         const { name, arguments: args } = req.body.params;
         const startTime = Date.now();
-        
+
         this.stats.promptRequests[name] = (this.stats.promptRequests[name] || 0) + 1;
 
         const promptConfig = this.config.getPromptConfig(name);
@@ -273,7 +273,7 @@ export class SimpleMcpServer {
                 },
               },
             ],
-          }
+          },
         });
       } catch (error) {
         this.handleError(req, res, error);
@@ -282,7 +282,7 @@ export class SimpleMcpServer {
   }
 
   private async delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   private updateResponseTime(responseTime: number): void {
@@ -300,7 +300,7 @@ export class SimpleMcpServer {
       error: {
         code: -32603,
         message: error.message || 'Internal error',
-      }
+      },
     });
   }
 
@@ -319,7 +319,7 @@ export class SimpleMcpServer {
 
   public async start(): Promise<void> {
     const { port, host } = this.config.getConfig().server;
-    
+
     return new Promise((resolve) => {
       this.app.listen(port, host, () => {
         console.log(`🚀 Simple MCP Server listening on ${host}:${port}`);

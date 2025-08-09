@@ -63,9 +63,9 @@ class ServiceContainer extends EventEmitter {
   // Initialize all services
   async initialize(dependencies: ServiceDependencies): Promise<void> {
     this.dependencies = dependencies;
-    
+
     console.log('🔧 Initializing service container...');
-    
+
     // Register core services
     this.register('storage', dependencies.storage);
     this.register('pythonMonitor', dependencies.pythonMonitor);
@@ -75,7 +75,7 @@ class ServiceContainer extends EventEmitter {
 
     // Initialize services in dependency order
     const initOrder = ['storage', 'logAggregator', 'testManager', 'pythonMonitor'];
-    
+
     for (const serviceName of initOrder) {
       try {
         await this.initializeService(serviceName);
@@ -156,9 +156,9 @@ class ServiceContainer extends EventEmitter {
   // Graceful shutdown
   async shutdown(): Promise<void> {
     console.log('🛑 Shutting down services...');
-    
+
     const shutdownOrder = ['pythonMonitor', 'testManager', 'storage']; // Reverse dependency order
-    
+
     for (const serviceName of shutdownOrder) {
       try {
         const service = this.services.get(serviceName);

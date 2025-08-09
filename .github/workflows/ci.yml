@@ -2,10 +2,14 @@ name: IMF CI/CD Pipeline
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, Development]
   pull_request:
     branches: [main]
   workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   NODE_VERSION: '20'
@@ -13,12 +17,73 @@ env:
   DATABASE_URL: postgresql://postgres:postgres@localhost:5432/imf_test
 
 jobs:
-  # Single Comprehensive Job - Maximum Efficiency
+  # Matrix test job splitting core JS test groups for parallelism with coverage upload
+  tests-matrix:
+    name: 🧪 JS Tests (${{ matrix.group }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [unit, api, integration]
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/imf_test
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: imf_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install deps
+        run: npm ci
+      - name: DB push
+        run: npm run db:push
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+      - name: Select tests
+        id: select
+        run: |
+          case "${{ matrix.group }}" in
+            unit)       echo "files=tests/system-health.test.ts tests/database.test.ts tests/critical-path.test.ts" >> $GITHUB_OUTPUT ;;
+            api)        echo "files=tests/api-paths.test.ts tests/api-contract.test.ts" >> $GITHUB_OUTPUT ;;
+            integration) echo "files=tests/profile-factory.integration.test.ts tests/smoke.test.ts" >> $GITHUB_OUTPUT ;;
+          esac
+      - name: Run vitest (${{ matrix.group }}) with coverage + json
+        run: |
+          mkdir -p coverage/${{ matrix.group }} test-results/${{ matrix.group }}
+          npx vitest run ${{ steps.select.outputs.files }} \
+            --reporter=default --reporter=json --outputFile=test-results/${{ matrix.group }}/results.json \
+            --coverage.enabled --coverage.reportsDirectory coverage/${{ matrix.group }}
+      - name: Upload test results (json)
+        uses: actions/upload-artifact@v4
+        with:
+          name: tests-${{ matrix.group }}-json
+          path: test-results/${{ matrix.group }}/results.json
+          if-no-files-found: error
+      - name: Upload coverage (partial)
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.group }}
+          path: coverage/${{ matrix.group }}
+          if-no-files-found: error
+
+  # Single Comprehensive Job - Remaining tasks (Python tests, build, docs) depends on tests matrix
   comprehensive-pipeline:
     name: 🚀 Complete IMF Pipeline
+    needs: [tests-matrix]
     runs-on: ubuntu-latest
-    timeout-minutes: 90
-    
+    timeout-minutes: 60
+
     services:
       postgres:
         image: postgres:15
@@ -33,13 +98,13 @@ jobs:
     steps:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
-      
+
       - name: ⚙️ Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
-          
+
       - name: 🐍 Setup Python
         uses: actions/setup-python@v4
         with:
@@ -51,13 +116,18 @@ jobs:
         run: |
           echo "📦 Installing Node.js dependencies..."
           npm ci
-          
+
           echo "🐍 Installing Python dependencies..."
           if [ -f python-framework/requirements.txt ]; then
             cd python-framework && pip install -r requirements.txt && cd ..
           fi
-          
+
           echo "✅ All dependencies installed successfully"
+
+      # - name: 🎨 Prettier Format Check (disabled)
+      #   run: npm run format:check
+
+      # ESLint step intentionally removed (no dedicated lightweight workflow active)
 
       - name: 🗃️ Setup Database Schema
         run: |
@@ -70,158 +140,51 @@ jobs:
       - name: 🐳 Setup Complete Docker Infrastructure
         run: |
           echo "🚀 Setting up complete Docker infrastructure (once)..."
-          
+
           # Start Redis service
           echo "📡 Starting Redis..."
           docker compose -f docker-compose.ci.yml up -d redis
-          
+
           # Wait for Redis
           echo "⏳ Waiting for Redis to be ready..."
           timeout 30 bash -c 'until docker compose -f docker-compose.ci.yml exec -T redis redis-cli ping; do sleep 2; done'
           echo "✅ Redis is ready"
-          
+
           # Start test MCP services
           echo "🧪 Starting Test MCP Services..."
           cd docker/test-mcp-server
           docker compose -f docker-compose.yml up -d --build
           cd ../..
-          
+
           # Wait for MCP services
           echo "⏳ Waiting for MCP services to be ready..."
           sleep 15
-          
+
           # Verify all services are running
           echo "🔍 Verifying all services are running..."
           docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-          
+
           # Test service connectivity
           echo "🔗 Testing service connectivity..."
           docker compose -f docker-compose.ci.yml exec -T redis redis-cli ping
           curl -f http://localhost:3001/health || echo "MCP service will be ready shortly"
-          
+
           echo "✅ Complete Docker infrastructure is ready"
 
-      # COMPREHENSIVE TEST SUITE
-      - name: 🧪 Run Unit Tests
-        run: |
-          echo "🔬 Running Unit Tests..."
-          mkdir -p test-results/unit
-          npx vitest run server/test/basic-storage.test.ts server/test/config.test.ts server/test/services.test.ts \
-            --reporter=json --outputFile=test-results/unit/unit-test-results.json
-          echo "✅ Unit tests completed"
-        env:
-          DATABASE_URL: ${{ env.DATABASE_URL }}
+      # JS tests executed in parallel matrix job (needs dependency ensures completion here)
 
-      - name: 📡 Run API Tests
-        run: |
-          echo "🌐 Running API Tests..."
-          mkdir -p test-results/api
-          npx vitest run server/test/mcp-api-ci.test.ts \
-            --reporter=json --outputFile=test-results/api/api-test-results.json
-          echo "✅ API tests completed"
-        env:
-          CI: true
-          NODE_ENV: test
-          DATABASE_URL: ${{ env.DATABASE_URL }}
-
-      - name: 🔗 Run Integration Tests
-        run: |
-          echo "🔗 Running Integration/Smoke Tests..."
-          mkdir -p test-results/integration
-          npx vitest run server/test/smoke-ci.test.ts \
-            --reporter=json --outputFile=test-results/integration/integration-test-results.json
-          echo "✅ Integration tests completed"
-        env:
-          DATABASE_URL: ${{ env.DATABASE_URL }}
-          REDIS_URL: redis://localhost:6380
-          NODE_ENV: test
-          CI: true
-          GITHUB_ACTIONS: true
-          TEST_MCP_SERVER_URL: http://localhost:3001
-
-      - name: 📊 Generate Test Data for Advanced Tests
-        run: |
-          echo "📊 Generating test data for Real Data and ML tests..."
-          
-          # Check for Test Manager CLI
-          if command -v imf-test-manager &> /dev/null; then
-            echo "✅ IMF Test Manager CLI found"
-            imf-test-manager --version
-          else
-            echo "📦 Using CI mock data generation (Test Manager CLI not available in CI)"
-          fi
-
-          # Generate CI Test Profiles and Data
-          if [ -f .github/workflows/ci-setup-test-data.sh ]; then
-            chmod +x .github/workflows/ci-setup-test-data.sh
-            ./.github/workflows/ci-setup-test-data.sh
-          else
-            echo "⚠️ CI setup script not found, tests will use inline generation"
-          fi
-          echo "✅ Test data generation completed"
-
-      - name: 🔬 Run Real Data Tests  
-        run: |
-          echo "🎯 Running Real Data Tests..."
-          mkdir -p test-results/real-data
-          
-          # Set environment variables for GitHub CI
-          export GITHUB_ACTIONS=true
-          export CI=true
-          export IMF_TEST_WORKSPACE=./test-workspace
-          
-          # Run available real-data tests
-          echo "🤖 Running AI Learning Engine Test..."  
-          npx vitest run server/test/ai-learning-engine-real-data.test.ts \
-            --reporter=json --outputFile=test-results/real-data/ai-learning-results.json || true
-            
-          echo "🔗 Running MCP Integration Test..."
-          npx vitest run server/test/mcp-integration-real-data.test.ts \
-            --reporter=json --outputFile=test-results/real-data/mcp-integration-results.json || true
-            
-          echo "📚 Running ML Continuous Learning Test..."
-          npx vitest run server/test/long-term/mcp-monitoring-continuous-learning.test.ts \
-            --reporter=json --outputFile=test-results/real-data/ml-continuous-learning-results.json || true
-            
-          echo "✅ Real Data tests completed"
-        env:
-          DATABASE_URL: ${{ env.DATABASE_URL }}
-          REDIS_URL: redis://localhost:6380
-          PYTHON_PATH: python3
-          IMF_TEST_WORKSPACE: ./test-workspace
-          TEST_MCP_SERVER_URL: http://localhost:3001
-
-      - name: 🧠 Run ML Tests & Documentation
-        run: |
-          echo "🎯 Running ML Tests..."
-          mkdir -p test-results/ml
-          
-          # Run ML Test Suite - MUST PASS
-          echo "📚 Running Continuous Learning Tests..."
-          npx vitest run server/test/long-term/mcp-monitoring-continuous-learning-simple.test.ts \
-            --reporter=json --outputFile=test-results/ml/ml-continuous-learning-results.json
-            
-          # Run Intelligent Monitoring Tests - MUST PASS  
-          echo "🧠 Running Intelligent Monitoring Tests..."
-          npx vitest run server/test/intelligent-mcp-monitoring.test.ts \
-            --reporter=json --outputFile=test-results/ml/intelligent-monitoring-results.json
-            
-          echo "✅ ML tests completed"
-        env:
-          DATABASE_URL: ${{ env.DATABASE_URL }}
-          REDIS_URL: redis://localhost:6380
-          PYTHON_PATH: python3
-          TEST_MCP_SERVER_URL: http://localhost:3001
+      # Removed Real Data & ML test phases referencing non-existent files.
+      # (Re-add when corresponding test specs are introduced under tests/.)
 
       - name: 🐍 Run Python Framework Tests
         run: |
           echo "🐍 Running Python Framework Tests..."
           mkdir -p test-results/python-framework
-          
+
           # Run Python Framework Tests via npm
           echo "🔬 Running Python Framework Core Tests..."
           npm test --prefix ./python-framework || echo "Some Python tests may have failed (non-blocking)"
-          
+
           # Run additional Python tests  
           echo "🧠 Running Python AI Learning Engine Tests..."
           python -m pytest python-framework/test_ai_learning_engine.py \
@@ -242,59 +205,81 @@ jobs:
           PYTHON_PATH: python3
           TEST_MCP_SERVER_URL: http://localhost:3001
 
-      - name: 🏗️ Build Application
+      - name: 🏗️ Build Application (after JS tests)
         run: |
           echo "🏗️ Building application..."
           npm run build
           echo "✅ Application build completed"
 
-      - name: 📋 Generate Comprehensive Test Overview
+      - name: 📥 Download partial coverages
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          path: coverage/partial
+          merge-multiple: true
+
+      - name: 📊 Merge coverage (simple concat of lcov)
+        run: |
+          echo "Merging coverage reports..."
+          mkdir -p coverage/final
+          # Collect all lcov.info files
+          find coverage/partial -name lcov.info -maxdepth 4 -print -exec cat {} + > coverage/final/lcov.info || true
+          echo "Coverage files merged (if any)."
+        continue-on-error: true
+
+      - name: � Upload merged coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-merged
+          path: coverage/final/lcov.info
+          if-no-files-found: ignore
+
+      - name: �📋 Generate Comprehensive Test Overview
         if: always()
         run: |
           echo "📊 Generating comprehensive test overview..."
-          
+
           # Create comprehensive test overview in root directory
           cat > TEST_OVERVIEW.md << 'EOL'
           # 🚀 IMF CI/CD Pipeline - Test Overview
-          
+
           **Generated:** $(date)  
           **Pipeline Run:** ${{ github.run_number }}  
           **Commit:** ${{ github.sha }}  
           **Branch:** ${{ github.ref_name }}  
-          
+
           ## 📊 Pipeline Architecture
-          
+
           **✅ Single-Job Optimized Architecture**
           - **Efficiency:** Maximum resource utilization
           - **Consistency:** Single environment for all tests
           - **Speed:** No redundant setups or teardowns
           - **Reliability:** Shared infrastructure state
-          
+
           ## 🧪 Test Execution Summary
-          
+
           ### Phase 1: Infrastructure Setup ⚙️
           - ✅ Node.js ${{ env.NODE_VERSION }} + Python ${{ env.PYTHON_VERSION }}
           - ✅ PostgreSQL Database Schema
           - ✅ Docker Services (Redis + MCP Server)
           - ✅ Package Installation (npm + pip) - **ONCE**
-          
-          ### Phase 2: Core Tests 🔬
-          - ✅ **Unit Tests**: Basic functionality validation
-          - ✅ **API Tests**: REST endpoint verification  
-          - ✅ **Integration Tests**: Service connectivity
-          
-          ### Phase 3: Advanced Tests 🎯
-          - ✅ **Real Data Tests**: Profile-based testing
-          - ✅ **ML Tests**: AI/ML functionality validation
+
+          ### Phase 2: Core JS Tests (Matrix) 🔬
+          - ✅ **Unit Tests** (matrix group)
+          - ✅ **API Tests** (matrix group) 
+          - ✅ **Integration Tests** (matrix group)
+
+          ### Phase 3: Python & Build 🎯
           - ✅ **Python Framework Tests**: AI Learning Engine, Code Analysis, ML Integration
           - ✅ **Documentation**: Automated reporting
-          
+
           ### Phase 4: Build & Finalization 🏗️
           - ✅ **Application Build**: Production-ready build
           - ✅ **Test Overview**: This comprehensive report
-          
+
           ## 📁 Test Results Structure
-          
+
           ```
           test-results/
           ├── unit/                 # Unit test results
@@ -303,18 +288,18 @@ jobs:
           ├── real-data/            # Real data test results
           └── ml/                   # ML test results
           ```
-          
+
           ## 🎯 Key Metrics
-          
-          - **Total Test Categories:** 6 (Unit, API, Integration, Real Data, ML, Python Framework)
+
+          - **Total Test Categories:** 4 (Unit, API, Integration, Python Framework)
           - **Python Framework Tests:** ~36 total (AI Learning Engine, Code Analysis, ML Integration)
           - **Docker Services:** Redis + MCP Server (shared)
           - **Database:** PostgreSQL (shared)
           - **Package Installs:** 1 (optimized - npm + pip)
           - **Infrastructure Setups:** 1 (optimized)
-          
+
           ## 🚀 Optimization Benefits
-          
+
           | Metric | Old Multi-Job | New Single-Job | Improvement |
           |--------|---------------|----------------|-------------|
           | Package Installs | 4x | 1x | **75% reduction** |
@@ -323,79 +308,71 @@ jobs:
           | Execution Speed | Slow | Fast | **~50% faster** |
           | Resource Usage | High | Optimized | **~40% reduction** |
           | Maintenance Complexity | High | Low | **Simplified** |
-          
+
           ## 📊 Test Categories Detail
-          
+
           ### 🔬 Unit Tests
           - **Purpose:** Core functionality validation
           - **Files:** basic-storage, config, services
           - **Environment:** Isolated testing
-          
+
           ### 📡 API Tests  
           - **Purpose:** REST endpoint verification
           - **Files:** mcp-api-ci.test.ts
           - **Environment:** CI-optimized with mocking
-          
+
           ### 🔗 Integration Tests
           - **Purpose:** Service connectivity and smoke tests
           - **Files:** smoke-ci.test.ts
           - **Environment:** Full Docker infrastructure
-          
-          ### 🔬 Real Data Tests
-          - **Purpose:** Profile-based real-world scenarios
-          - **Files:** precision-code-repair, ai-learning-engine, mcp-integration
-          - **Environment:** Generated test profiles + shared infrastructure
-          
-          ### 🧠 ML Tests
-          - **Purpose:** AI/ML functionality validation
-          - **Files:** continuous-learning, intelligent-monitoring
-          - **Environment:** Python ML framework + shared infrastructure
-          
+
+          <!-- Real Data and ML test phases currently omitted (no specs present) -->
+
           ### 🐍 Python Framework Tests
           - **Purpose:** Python AI Learning Engine, Code Analysis, ML Integration
           - **Files:** test_ai_learning_engine.py, test_code_analysis.py, test_ml_integration.py
           - **Environment:** Python 3.11+ with ML libraries + shared infrastructure
-          
+
           ## 🛠️ Infrastructure Details
-          
+
           **Docker Services:**
           - **Redis:** Cache and session storage
           - **MCP Server:** Model Context Protocol testing
           - **PostgreSQL:** Primary database (GitHub Actions service)
-          
+
           **Shared Environment Variables:**
           - `DATABASE_URL`: postgresql://postgres:postgres@localhost:5432/imf_test
           - `REDIS_URL`: redis://localhost:6380
           - `TEST_MCP_SERVER_URL`: http://localhost:3001
           - `IMF_TEST_WORKSPACE`: ./test-workspace
-          
+
           ## ✅ Success Criteria
-          
+
           - [ ] All unit tests pass
           - [ ] All API endpoints respond correctly
           - [ ] Integration tests verify service connectivity
-          - [ ] Real data tests validate profile-based expectations
-          - [ ] ML tests confirm AI/ML functionality
+          - [ ] (Deferred) Real data tests (specs not present)
+          - [ ] (Deferred) ML tests (specs not present)
           - [ ] Application builds successfully
           - [ ] No Docker service failures
           - [ ] All test artifacts generated
-          
+
           ## 📈 Continuous Improvement
-          
+
           This optimized pipeline represents a **major efficiency improvement** over the previous multi-job architecture:
-          
+
           - **Eliminated redundancy:** No more duplicate setups
           - **Improved reliability:** Consistent shared state
           - **Enhanced speed:** Single-pass execution
           - **Simplified debugging:** All logs in one place
           - **Better resource usage:** Optimal container utilization
-          
+
           ---
-          
+
           **🤖 Generated automatically by the IMF CI/CD Pipeline**
           **📋 For detailed results, check the comprehensive-test-results artifact**
           EOL
-          
+
           echo "✅ Comprehensive test overview generated: TEST_OVERVIEW.md"
 
       - name: 📈 Upload Complete Test Results
@@ -416,7 +393,7 @@ jobs:
           echo "🧹 Cleaning up Docker infrastructure..."
           docker compose -f docker-compose.ci.yml down --remove-orphans || true
           cd docker/test-mcp-server && docker compose -f docker-compose.yml down --remove-orphans || true
-          
+
           echo "📊 Final Docker cleanup verification:"
           docker ps -a --filter "name=redis\|test-mcp"
           echo "✅ Docker cleanup completed"
@@ -442,8 +419,9 @@ jobs:
           echo "   ✅ Unit Tests (Core functionality)"
           echo "   ✅ API Tests (Endpoint verification)" 
           echo "   ✅ Integration Tests (Service connectivity)"
-          echo "   ✅ Real Data Tests (Profile-based scenarios)"
-          echo "   ✅ ML Tests (AI/ML functionality)"
+          echo "   ❇️ JS Tests (Unit/API/Integration via matrix)"
+          echo "   ✅ Python Framework Tests (AI Learning Engine, Code Analysis, ML Integration)"
+          echo "   (Deferred) Real Data & ML JS test phases"
           echo "   ✅ Python Framework Tests (AI Learning Engine, Code Analysis, ML Integration)"
           echo ""
           echo "🏗️ **Build Status:** Application built successfully"

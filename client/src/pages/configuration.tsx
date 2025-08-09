@@ -1,21 +1,28 @@
-import React, { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Header } from "@/components/layout/header";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Trash2, Plus, Save, RotateCcw } from "lucide-react";
-import { api } from "@/lib/api";
-import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
-import type { FrameworkConfig } from "@shared/schema";
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { usePageTitle } from '@/hooks/use-page-title';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Header } from '@/components/layout/header';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Trash2, Plus, Save, RotateCcw } from 'lucide-react';
+import { api } from '@/lib/api';
+import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
+import type { FrameworkConfig } from '@shared/schema';
 
 const configSchema = z.object({
   serverType: z.string(),
@@ -43,14 +50,19 @@ interface SourceDirectory {
 }
 
 export default function Configuration() {
+  usePageTitle('Configuration');
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [logFiles, setLogFiles] = useState<LogFile[]>([]);
-  const [newLogFile, setNewLogFile] = useState({ path: "", type: "application" });
+  const [newLogFile, setNewLogFile] = useState({ path: '', type: 'application' });
   const [sourceDirectories, setSourceDirectories] = useState<SourceDirectory[]>([]);
-  const [newSourceDir, setNewSourceDir] = useState({ path: "" });
+  const [newSourceDir, setNewSourceDir] = useState({ path: '' });
 
-  const { data: config, isLoading, refetch } = useQuery({
+  const {
+    data: config,
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ['/api/config'],
     queryFn: () => api.getConfig(),
   });
@@ -61,15 +73,15 @@ export default function Configuration() {
       queryClient.invalidateQueries({ queryKey: ['/api/config'] });
       queryClient.invalidateQueries({ queryKey: ['/api/framework/status'] });
       toast({
-        title: "Configuration Updated",
-        description: "Framework configuration has been updated and framework will restart.",
+        title: 'Configuration Updated',
+        description: 'Framework configuration has been updated and framework will restart.',
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to update configuration. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to update configuration. Please try again.',
+        variant: 'destructive',
       });
     },
   });
@@ -77,33 +89,33 @@ export default function Configuration() {
   const form = useForm<ConfigFormData>({
     resolver: zodResolver(configSchema),
     defaultValues: {
-      serverType: config?.serverType || "generic",
+      serverType: config?.serverType || 'generic',
       monitoringInterval: config?.monitoringInterval || 30,
       learningEnabled: config?.learningEnabled || true,
       autoRemediation: config?.autoRemediation || true,
-      logLevel: config?.logLevel || "INFO",
-      dataDir: config?.dataDir || "./data",
+      logLevel: config?.logLevel || 'INFO',
+      dataDir: config?.dataDir || './data',
       codeAnalysisEnabled: config?.codeAnalysisEnabled || false,
       autoFixEnabled: config?.autoFixEnabled || false,
       confidenceThreshold: config?.confidenceThreshold || 70,
-      backupDirectory: config?.backupDirectory || "./backups",
+      backupDirectory: config?.backupDirectory || './backups',
     },
   });
 
   // Update form when config loads
-  React.useEffect(() => {
+  useEffect(() => {
     if (config) {
       form.reset({
-        serverType: config.serverType || "generic",
+        serverType: config.serverType || 'generic',
         monitoringInterval: config.monitoringInterval || 30,
         learningEnabled: config.learningEnabled || true,
         autoRemediation: config.autoRemediation || true,
-        logLevel: config.logLevel || "INFO",
-        dataDir: config.dataDir || "./data",
+        logLevel: config.logLevel || 'INFO',
+        dataDir: config.dataDir || './data',
         codeAnalysisEnabled: config.codeAnalysisEnabled || false,
         autoFixEnabled: config.autoFixEnabled || false,
         confidenceThreshold: config.confidenceThreshold || 70,
-        backupDirectory: config.backupDirectory || "./backups",
+        backupDirectory: config.backupDirectory || './backups',
       });
       if (Array.isArray(config.logFiles)) {
         setLogFiles(config.logFiles as LogFile[]);
@@ -118,7 +130,7 @@ export default function Configuration() {
     updateConfigMutation.mutate({
       ...data,
       logFiles: logFiles,
-      sourceDirectories: sourceDirectories.map(dir => dir.path),
+      sourceDirectories: sourceDirectories.map((dir) => dir.path),
       updatedAt: new Date(),
     });
   };
@@ -126,7 +138,7 @@ export default function Configuration() {
   const addLogFile = () => {
     if (newLogFile.path.trim()) {
       setLogFiles([...logFiles, { ...newLogFile }]);
-      setNewLogFile({ path: "", type: "application" });
+      setNewLogFile({ path: '', type: 'application' });
     }
   };
 
@@ -137,7 +149,7 @@ export default function Configuration() {
   const addSourceDirectory = () => {
     if (newSourceDir.path.trim()) {
       setSourceDirectories([...sourceDirectories, { ...newSourceDir }]);
-      setNewSourceDir({ path: "" });
+      setNewSourceDir({ path: '' });
     }
   };
 
@@ -155,12 +167,8 @@ export default function Configuration() {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
-      <Header
-        title="Configuration"
-        onRefresh={() => refetch()}
-        isRefreshing={isLoading}
-      />
-      
+      <Header title="Configuration" onRefresh={() => refetch()} isRefreshing={isLoading} />
+
       <main className="flex-1 relative overflow-y-auto focus:outline-none">
         <div className="py-6 px-6">
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -174,8 +182,8 @@ export default function Configuration() {
                   <div className="space-y-2">
                     <Label htmlFor="serverType">Server Type</Label>
                     <Select
-                      value={form.watch("serverType")}
-                      onValueChange={(value) => form.setValue("serverType", value)}
+                      value={form.watch('serverType')}
+                      onValueChange={(value) => form.setValue('serverType', value)}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -195,7 +203,7 @@ export default function Configuration() {
                       type="number"
                       min="1"
                       max="3600"
-                      {...form.register("monitoringInterval", { valueAsNumber: true })}
+                      {...form.register('monitoringInterval', { valueAsNumber: true })}
                     />
                     {form.formState.errors.monitoringInterval && (
                       <p className="text-sm text-red-600">
@@ -207,8 +215,8 @@ export default function Configuration() {
                   <div className="space-y-2">
                     <Label htmlFor="logLevel">Log Level</Label>
                     <Select
-                      value={form.watch("logLevel")}
-                      onValueChange={(value) => form.setValue("logLevel", value)}
+                      value={form.watch('logLevel')}
+                      onValueChange={(value) => form.setValue('logLevel', value)}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -224,7 +232,7 @@ export default function Configuration() {
 
                   <div className="space-y-2">
                     <Label htmlFor="dataDir">Data Directory</Label>
-                    <Input {...form.register("dataDir")} />
+                    <Input {...form.register('dataDir')} />
                   </div>
                 </div>
 
@@ -237,8 +245,8 @@ export default function Configuration() {
                       </p>
                     </div>
                     <Switch
-                      checked={form.watch("learningEnabled")}
-                      onCheckedChange={(checked) => form.setValue("learningEnabled", checked)}
+                      checked={form.watch('learningEnabled')}
+                      onCheckedChange={(checked) => form.setValue('learningEnabled', checked)}
                     />
                   </div>
 
@@ -250,8 +258,8 @@ export default function Configuration() {
                       </p>
                     </div>
                     <Switch
-                      checked={form.watch("autoRemediation")}
-                      onCheckedChange={(checked) => form.setValue("autoRemediation", checked)}
+                      checked={form.watch('autoRemediation')}
+                      onCheckedChange={(checked) => form.setValue('autoRemediation', checked)}
                     />
                   </div>
                 </div>
@@ -267,7 +275,10 @@ export default function Configuration() {
                 {/* Existing Log Files */}
                 <div className="space-y-3">
                   {logFiles.map((logFile, index) => (
-                    <div key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                    <div
+                      key={index}
+                      className="flex items-center justify-between bg-gray-50 p-3 rounded-lg"
+                    >
                       <div className="flex-1">
                         <div className="font-medium text-gray-900">{logFile.path}</div>
                         <Badge variant="outline" className="mt-1">
@@ -331,16 +342,17 @@ export default function Configuration() {
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-medium">Code Analysis Configuration</h3>
                   <Switch
-                    checked={form.watch("codeAnalysisEnabled")}
-                    onCheckedChange={(checked) => form.setValue("codeAnalysisEnabled", checked)}
+                    checked={form.watch('codeAnalysisEnabled')}
+                    onCheckedChange={(checked) => form.setValue('codeAnalysisEnabled', checked)}
                   />
                 </div>
                 <p className="text-sm text-gray-500">
-                  Enable intelligent code analysis to detect issues, security vulnerabilities, and performance problems in your codebase.
+                  Enable intelligent code analysis to detect issues, security vulnerabilities, and
+                  performance problems in your codebase.
                 </p>
               </CardHeader>
               <CardContent className="space-y-6">
-                {form.watch("codeAnalysisEnabled") && (
+                {form.watch('codeAnalysisEnabled') && (
                   <>
                     {/* Source Directories */}
                     <div className="space-y-4">
@@ -348,13 +360,18 @@ export default function Configuration() {
                       <p className="text-sm text-gray-500">
                         Specify the directories containing source code to analyze
                       </p>
-                      
+
                       {/* Existing Source Directories */}
                       <div className="space-y-3">
                         {sourceDirectories.map((sourceDir, index) => (
-                          <div key={index} className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                          <div
+                            key={index}
+                            className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 p-3 rounded-lg"
+                          >
                             <div className="flex-1">
-                              <div className="font-medium text-gray-900 dark:text-gray-100">{sourceDir.path}</div>
+                              <div className="font-medium text-gray-900 dark:text-gray-100">
+                                {sourceDir.path}
+                              </div>
                             </div>
                             <Button
                               type="button"
@@ -399,7 +416,7 @@ export default function Configuration() {
                           type="number"
                           min="0"
                           max="100"
-                          {...form.register("confidenceThreshold", { valueAsNumber: true })}
+                          {...form.register('confidenceThreshold', { valueAsNumber: true })}
                         />
                         <p className="text-xs text-gray-500">
                           Minimum confidence level for code issue detection (0-100%)
@@ -413,7 +430,7 @@ export default function Configuration() {
 
                       <div className="space-y-2">
                         <Label htmlFor="backupDirectory">Backup Directory</Label>
-                        <Input {...form.register("backupDirectory")} />
+                        <Input {...form.register('backupDirectory')} />
                         <p className="text-xs text-gray-500">
                           Directory where backup files are stored before applying fixes
                         </p>
@@ -429,8 +446,8 @@ export default function Configuration() {
                         </p>
                       </div>
                       <Switch
-                        checked={form.watch("autoFixEnabled")}
-                        onCheckedChange={(checked) => form.setValue("autoFixEnabled", checked)}
+                        checked={form.watch('autoFixEnabled')}
+                        onCheckedChange={(checked) => form.setValue('autoFixEnabled', checked)}
                       />
                     </div>
                   </>
@@ -453,12 +470,9 @@ export default function Configuration() {
                 <RotateCcw className="h-4 w-4 mr-2" />
                 Reset
               </Button>
-              <Button
-                type="submit"
-                disabled={updateConfigMutation.isPending}
-              >
+              <Button type="submit" disabled={updateConfigMutation.isPending}>
                 <Save className="h-4 w-4 mr-2" />
-                {updateConfigMutation.isPending ? "Saving..." : "Save Configuration"}
+                {updateConfigMutation.isPending ? 'Saving...' : 'Save Configuration'}
               </Button>
             </div>
           </form>

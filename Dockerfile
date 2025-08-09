@@ -1,8 +1,8 @@
-# Multi-stage Dockerfile für IMF (Node.js only, Python runs in separate container)
+# Multi-stage Dockerfile für MCP.Guard (Node.js only, Python runs in separate container)
 FROM node:20-alpine AS base
 
-# Installiere nur PostgreSQL Client für DB Zugriff
-RUN apk add --no-cache postgresql-client
+# Installiere PostgreSQL Client und Python für das Framework
+RUN apk add --no-cache postgresql-client python3 py3-pip curl
 
 # Arbeitsverzeichnis
 WORKDIR /app
@@ -12,7 +12,7 @@ COPY package*.json ./
 COPY tsconfig.json ./
 COPY vite.config.ts ./
 COPY vitest.config.ts ./
-COPY imf-test-manager-1.0.0.tgz ./
+COPY mcp-guard-test-manager-1.0.0.tgz ./
 
 # Dependencies installieren
 RUN npm install --omit=dev && npm cache clean --force

@@ -1,105 +1,187 @@
-import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, boolean, timestamp, jsonb, real } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
-import { z } from "zod";
+import { sql } from 'drizzle-orm';
+import {
+  pgTable,
+  text,
+  varchar,
+  integer,
+  boolean,
+  timestamp,
+  jsonb,
+  real,
+} from 'drizzle-orm/pg-core';
+import { createInsertSchema } from 'drizzle-zod';
+import { z } from 'zod';
 
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+// ============================================================================
+// TEST PROFILES (for Test Manager / DSL editor)
+// ============================================================================
+
+export const testProfiles = pgTable('test_profiles', {
+  id: varchar('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  name: text('name').notNull(),
+  version: text('version').default('1.0.0'),
+  description: text('description').default(''),
+  createdAt: timestamp('created_at')
+    .default(sql`now()`)
+    .notNull(),
+  updatedAt: timestamp('updated_at')
+    .default(sql`now()`)
+    .notNull(),
+  // JSONB columns store profile sections without strict typing at DB level
+  sourceConfig: jsonb('source_config').default({}),
+  scenarios: jsonb('scenarios').default([]),
+  expectations: jsonb('expectations').default({}),
+  generationRules: jsonb('generation_rules').default({}),
+  expectedData: jsonb('expected_data'),
 });
 
-export const problems = pgTable("problems", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  type: text("type").notNull(),
-  severity: text("severity").notNull(), // LOW, MEDIUM, HIGH, CRITICAL
-  description: text("description").notNull(),
-  timestamp: timestamp("timestamp").notNull(),
-  metadata: jsonb("metadata").default({}),
-  resolved: boolean("resolved").default(false),
-  resolvedAt: timestamp("resolved_at"),
+// ============================================================================
+// GENERATED TEST DATA (persistent cache of generation results)
+// ============================================================================
+
+export const generatedTestData = pgTable('generated_test_data', {
+  id: varchar('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  profileId: varchar('profile_id').notNull(),
+  generatedAt: timestamp('generated_at')
+    .default(sql`now()`)
+    .notNull(),
+  success: boolean('success').default(true).notNull(),
+  executionTime: integer('execution_time').notNull(),
+  // Raw counts
+  logEntries: integer('log_entries').default(0).notNull(),
+  codeProblems: integer('code_problems').default(0).notNull(),
+  metricPoints: integer('metric_points').default(0).notNull(),
+  dataSizeBytes: integer('data_size_bytes').default(0).notNull(),
+  // Aggregated / metadata JSON (profile snapshot, errors list, extra stats)
+  metadata: jsonb('metadata').default({}),
+  errors: jsonb('errors').default([]),
 });
 
-export const metrics = pgTable("metrics", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  timestamp: timestamp("timestamp").notNull(),
-  cpuUsage: real("cpu_usage"),
-  memoryUsage: real("memory_usage"),
-  diskUsage: real("disk_usage"),
-  loadAverage: real("load_average"),
-  networkConnections: integer("network_connections"),
-  processes: integer("processes"),
-  metadata: jsonb("metadata").default({}),
+export const insertTestProfileSchema = createInsertSchema(testProfiles).omit({});
+export type InsertTestProfile = z.infer<typeof insertTestProfileSchema>;
+export type TestProfile = typeof testProfiles.$inferSelect;
+
+export const users = pgTable('users', {
+  id: varchar('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  username: text('username').notNull().unique(),
+  password: text('password').notNull(),
 });
 
-export const logEntries = pgTable("log_entries", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  timestamp: timestamp("timestamp").notNull(),
-  level: text("level").notNull(),
-  message: text("message").notNull(),
-  source: text("source").notNull(),
-  rawLine: text("raw_line"),
-  metadata: jsonb("metadata").default({}),
+export const problems = pgTable('problems', {
+  id: varchar('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  type: text('type').notNull(),
+  severity: text('severity').notNull(), // LOW, MEDIUM, HIGH, CRITICAL
+  description: text('description').notNull(),
+  timestamp: timestamp('timestamp').notNull(),
+  metadata: jsonb('metadata').default({}),
+  resolved: boolean('resolved').default(false),
+  resolvedAt: timestamp('resolved_at'),
 });
 
-export const plugins = pgTable("plugins", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull().unique(),
-  version: text("version").notNull(),
-  type: text("type").notNull(), // collector, detector, remediator
-  status: text("status").notNull(), // running, stopped, error
-  config: jsonb("config").default({}),
-  lastUpdate: timestamp("last_update").notNull(),
+export const metrics = pgTable('metrics', {
+  id: varchar('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  timestamp: timestamp('timestamp').notNull(),
+  cpuUsage: real('cpu_usage'),
+  memoryUsage: real('memory_usage'),
+  diskUsage: real('disk_usage'),
+  loadAverage: real('load_average'),
+  networkConnections: integer('network_connections'),
+  processes: integer('processes'),
+  metadata: jsonb('metadata').default({}),
 });
 
-export const frameworkConfig = pgTable("framework_config", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  serverType: text("server_type").default("generic"),
-  monitoringInterval: integer("monitoring_interval").default(30),
-  learningEnabled: boolean("learning_enabled").default(true),
-  autoRemediation: boolean("auto_remediation").default(true),
-  logLevel: text("log_level").default("INFO"),
-  dataDir: text("data_dir").default("./data"),
-  logFiles: jsonb("log_files").default([]),
+export const logEntries = pgTable('log_entries', {
+  id: varchar('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  timestamp: timestamp('timestamp').notNull(),
+  level: text('level').notNull(),
+  message: text('message').notNull(),
+  source: text('source').notNull(),
+  rawLine: text('raw_line'),
+  metadata: jsonb('metadata').default({}),
+});
+
+export const plugins = pgTable('plugins', {
+  id: varchar('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  name: text('name').notNull().unique(),
+  version: text('version').notNull(),
+  type: text('type').notNull(), // collector, detector, remediator
+  status: text('status').notNull(), // running, stopped, error
+  config: jsonb('config').default({}),
+  lastUpdate: timestamp('last_update').notNull(),
+});
+
+export const frameworkConfig = pgTable('framework_config', {
+  id: varchar('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  serverType: text('server_type').default('generic'),
+  monitoringInterval: integer('monitoring_interval').default(30),
+  learningEnabled: boolean('learning_enabled').default(true),
+  autoRemediation: boolean('auto_remediation').default(true),
+  logLevel: text('log_level').default('INFO'),
+  dataDir: text('data_dir').default('./data'),
+  logFiles: jsonb('log_files').default([]),
   // Code Analysis Configuration
-  codeAnalysisEnabled: boolean("code_analysis_enabled").default(false),
-  sourceDirectories: jsonb("source_directories").default([]),
-  autoFixEnabled: boolean("auto_fix_enabled").default(false),
-  confidenceThreshold: integer("confidence_threshold").default(70), // stored as percentage (0-100)
-  backupDirectory: text("backup_directory").default("./backups"),
-  
+  codeAnalysisEnabled: boolean('code_analysis_enabled').default(false),
+  sourceDirectories: jsonb('source_directories').default([]),
+  autoFixEnabled: boolean('auto_fix_enabled').default(false),
+  confidenceThreshold: integer('confidence_threshold').default(70), // stored as percentage (0-100)
+  backupDirectory: text('backup_directory').default('./backups'),
+
   // AI Learning Configuration
-  aiLearningEnabled: boolean("ai_learning_enabled").default(false),
-  aiModelDir: text("ai_model_dir").default("./ai_models"),
-  aiMinConfidence: integer("ai_min_confidence").default(75), // stored as percentage (0-100)
-  aiMaxRiskScore: integer("ai_max_risk_score").default(30), // stored as percentage (0-100)
-  aiMinSuccessProbability: integer("ai_min_success_probability").default(80), // stored as percentage (0-100)
-  aiMaxDeploymentsPerHour: integer("ai_max_deployments_per_hour").default(2),
-  aiRequireApproval: boolean("ai_require_approval").default(true),
-  aiLearningRate: integer("ai_learning_rate").default(10), // stored as percentage (0-100)
-  aiRetrainFrequency: integer("ai_retrain_frequency").default(50),
-  
+  aiLearningEnabled: boolean('ai_learning_enabled').default(false),
+  aiModelDir: text('ai_model_dir').default('./ai_models'),
+  aiMinConfidence: integer('ai_min_confidence').default(75), // stored as percentage (0-100)
+  aiMaxRiskScore: integer('ai_max_risk_score').default(30), // stored as percentage (0-100)
+  aiMinSuccessProbability: integer('ai_min_success_probability').default(80), // stored as percentage (0-100)
+  aiMaxDeploymentsPerHour: integer('ai_max_deployments_per_hour').default(2),
+  aiRequireApproval: boolean('ai_require_approval').default(true),
+  aiLearningRate: integer('ai_learning_rate').default(10), // stored as percentage (0-100)
+  aiRetrainFrequency: integer('ai_retrain_frequency').default(50),
+
   // Deployment Configuration
-  deploymentEnabled: boolean("deployment_enabled").default(false),
-  gitRepoPath: text("git_repo_path").default("."),
-  useDocker: boolean("use_docker").default(true),
-  useKubernetes: boolean("use_kubernetes").default(false),
-  deploymentStrategies: jsonb("deployment_strategies").default({"low_risk": "direct_deployment", "medium_risk": "canary_deployment", "high_risk": "blue_green_deployment"}),
-  testCommands: jsonb("test_commands").default(["python -m pytest tests/ -v"]),
-  dockerImageName: text("docker_image_name").default("mcp-server"),
-  k8sDeploymentName: text("k8s_deployment_name").default("mcp-server-deployment"),
-  k8sNamespace: text("k8s_namespace").default("production"),
-  restartCommand: text("restart_command").default("sudo systemctl restart mcp-server"),
-  rollbackTimeout: integer("rollback_timeout").default(300),
-  
+  deploymentEnabled: boolean('deployment_enabled').default(false),
+  gitRepoPath: text('git_repo_path').default('.'),
+  useDocker: boolean('use_docker').default(true),
+  useKubernetes: boolean('use_kubernetes').default(false),
+  deploymentStrategies: jsonb('deployment_strategies').default({
+    low_risk: 'direct_deployment',
+    medium_risk: 'canary_deployment',
+    high_risk: 'blue_green_deployment',
+  }),
+  testCommands: jsonb('test_commands').default(['python -m pytest tests/ -v']),
+  dockerImageName: text('docker_image_name').default('mcp-server'),
+  k8sDeploymentName: text('k8s_deployment_name').default('mcp-server-deployment'),
+  k8sNamespace: text('k8s_namespace').default('production'),
+  restartCommand: text('restart_command').default('sudo systemctl restart mcp-server'),
+  rollbackTimeout: integer('rollback_timeout').default(300),
+
   // Safety and Monitoring Configuration
-  businessHoursRestriction: boolean("business_hours_restriction").default(true),
-  maxConcurrentDeployments: integer("max_concurrent_deployments").default(1),
-  monitoringPeriod: integer("monitoring_period").default(600),
-  autoRollbackTriggers: jsonb("auto_rollback_triggers").default({"error_rate_increase": 0.5, "response_time_increase": 1.0, "availability_drop": 0.05}),
-  emergencyContacts: jsonb("emergency_contacts").default(["devops@company.com"]),
-  
-  updatedAt: timestamp("updated_at").notNull(),
+  businessHoursRestriction: boolean('business_hours_restriction').default(true),
+  maxConcurrentDeployments: integer('max_concurrent_deployments').default(1),
+  monitoringPeriod: integer('monitoring_period').default(600),
+  autoRollbackTriggers: jsonb('auto_rollback_triggers').default({
+    error_rate_increase: 0.5,
+    response_time_increase: 1.0,
+    availability_drop: 0.05,
+  }),
+  emergencyContacts: jsonb('emergency_contacts').default(['devops@company.com']),
+
+  updatedAt: timestamp('updated_at').notNull(),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -149,31 +231,35 @@ export type InsertFrameworkConfig = z.infer<typeof insertFrameworkConfigSchema>;
 export type FrameworkConfig = typeof frameworkConfig.$inferSelect;
 
 // Code Analysis types
-export const codeIssues = pgTable("code_issues", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  issueType: text("issue_type").notNull(), // syntax_error, logic_error, security_issue, performance_issue
-  severity: text("severity").notNull(), // LOW, MEDIUM, HIGH, CRITICAL
-  description: text("description").notNull(),
-  filePath: text("file_path").notNull(),
-  lineNumber: integer("line_number"),
-  functionName: text("function_name"),
-  confidence: integer("confidence").notNull(), // 0-100
-  suggestedFix: text("suggested_fix"),
-  fixApplied: boolean("fix_applied").default(false),
-  timestamp: timestamp("timestamp").notNull(),
-  metadata: jsonb("metadata").default({}),
+export const codeIssues = pgTable('code_issues', {
+  id: varchar('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  issueType: text('issue_type').notNull(), // syntax_error, logic_error, security_issue, performance_issue
+  severity: text('severity').notNull(), // LOW, MEDIUM, HIGH, CRITICAL
+  description: text('description').notNull(),
+  filePath: text('file_path').notNull(),
+  lineNumber: integer('line_number'),
+  functionName: text('function_name'),
+  confidence: integer('confidence').notNull(), // 0-100
+  suggestedFix: text('suggested_fix'),
+  fixApplied: boolean('fix_applied').default(false),
+  timestamp: timestamp('timestamp').notNull(),
+  metadata: jsonb('metadata').default({}),
 });
 
-export const codeAnalysisRuns = pgTable("code_analysis_runs", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  timestamp: timestamp("timestamp").notNull(),
-  sourceDirectories: jsonb("source_directories").notNull(),
-  filesAnalyzed: integer("files_analyzed").notNull(),
-  issuesFound: integer("issues_found").notNull(),
-  fixesApplied: integer("fixes_applied").default(0),
-  status: text("status").notNull(), // running, completed, failed
-  duration: integer("duration_ms"), // in milliseconds
-  metadata: jsonb("metadata").default({}),
+export const codeAnalysisRuns = pgTable('code_analysis_runs', {
+  id: varchar('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  timestamp: timestamp('timestamp').notNull(),
+  sourceDirectories: jsonb('source_directories').notNull(),
+  filesAnalyzed: integer('files_analyzed').notNull(),
+  issuesFound: integer('issues_found').notNull(),
+  fixesApplied: integer('fixes_applied').default(0),
+  status: text('status').notNull(), // running, completed, failed
+  duration: integer('duration_ms'), // in milliseconds
+  metadata: jsonb('metadata').default({}),
 });
 
 // Insert schemas for new tables
@@ -255,61 +341,69 @@ export interface CodeFixSuggestion {
 }
 
 // AI Learning and Deployment tables
-export const aiInterventions = pgTable("ai_interventions", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  problemType: text("problem_type").notNull(),
-  issueDescription: text("issue_description").notNull(),
-  solutionApplied: text("solution_applied").notNull(),
-  confidence: integer("confidence").notNull(), // 0-100
-  riskScore: integer("risk_score").notNull(), // 0-100
-  outcome: text("outcome").notNull(), // success, failure, partial
-  timestamp: timestamp("timestamp").notNull(),
-  deploymentId: varchar("deployment_id"),
-  codeIssueId: varchar("code_issue_id"),
-  metadata: jsonb("metadata").default({}),
+export const aiInterventions = pgTable('ai_interventions', {
+  id: varchar('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  problemType: text('problem_type').notNull(),
+  issueDescription: text('issue_description').notNull(),
+  solutionApplied: text('solution_applied').notNull(),
+  confidence: integer('confidence').notNull(), // 0-100
+  riskScore: integer('risk_score').notNull(), // 0-100
+  outcome: text('outcome').notNull(), // success, failure, partial
+  timestamp: timestamp('timestamp').notNull(),
+  deploymentId: varchar('deployment_id'),
+  codeIssueId: varchar('code_issue_id'),
+  metadata: jsonb('metadata').default({}),
 });
 
-export const deployments = pgTable("deployments", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  type: text("type").notNull(), // ai_fix, manual_fix, rollback
-  strategy: text("strategy").notNull(), // direct_deployment, canary_deployment, blue_green_deployment
-  status: text("status").notNull(), // pending, in_progress, completed, failed, rolled_back
-  initiatedBy: text("initiated_by").notNull(), // ai_system, user_manual
-  commitHash: text("commit_hash"),
-  description: text("description").notNull(),
-  filesChanged: jsonb("files_changed").default([]),
-  testResults: jsonb("test_results").default({}),
-  rollbackCommitHash: text("rollback_commit_hash"),
-  startTime: timestamp("start_time").notNull(),
-  endTime: timestamp("end_time"),
-  duration: integer("duration_ms"), // in milliseconds
-  metadata: jsonb("metadata").default({}),
+export const deployments = pgTable('deployments', {
+  id: varchar('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  type: text('type').notNull(), // ai_fix, manual_fix, rollback
+  strategy: text('strategy').notNull(), // direct_deployment, canary_deployment, blue_green_deployment
+  status: text('status').notNull(), // pending, in_progress, completed, failed, rolled_back
+  initiatedBy: text('initiated_by').notNull(), // ai_system, user_manual
+  commitHash: text('commit_hash'),
+  description: text('description').notNull(),
+  filesChanged: jsonb('files_changed').default([]),
+  testResults: jsonb('test_results').default({}),
+  rollbackCommitHash: text('rollback_commit_hash'),
+  startTime: timestamp('start_time').notNull(),
+  endTime: timestamp('end_time'),
+  duration: integer('duration_ms'), // in milliseconds
+  metadata: jsonb('metadata').default({}),
 });
 
-export const aiModels = pgTable("ai_models", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull(),
-  version: text("version").notNull(),
-  problemType: text("problem_type").notNull(),
-  modelPath: text("model_path").notNull(),
-  accuracy: integer("accuracy"), // 0-100
-  trainingDataSize: integer("training_data_size"),
-  lastTrained: timestamp("last_trained").notNull(),
-  isActive: boolean("is_active").default(true),
-  metadata: jsonb("metadata").default({}),
+export const aiModels = pgTable('ai_models', {
+  id: varchar('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  name: text('name').notNull(),
+  version: text('version').notNull(),
+  problemType: text('problem_type').notNull(),
+  modelPath: text('model_path').notNull(),
+  accuracy: integer('accuracy'), // 0-100
+  trainingDataSize: integer('training_data_size'),
+  lastTrained: timestamp('last_trained').notNull(),
+  isActive: boolean('is_active').default(true),
+  metadata: jsonb('metadata').default({}),
 });
 
-export const deploymentMetrics = pgTable("deployment_metrics", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  deploymentId: varchar("deployment_id").notNull(),
-  timestamp: timestamp("timestamp").notNull(),
-  errorRate: integer("error_rate"), // stored as percentage * 100 (e.g., 0.05% = 5)
-  responseTime: integer("response_time_ms"),
-  availability: integer("availability"), // stored as percentage (0-100)
-  cpuUsage: integer("cpu_usage"),
-  memoryUsage: integer("memory_usage"),
-  requestCount: integer("request_count"),
-  metadata: jsonb("metadata").default({}),
+export const deploymentMetrics = pgTable('deployment_metrics', {
+  id: varchar('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  deploymentId: varchar('deployment_id').notNull(),
+  timestamp: timestamp('timestamp').notNull(),
+  errorRate: integer('error_rate'), // stored as percentage * 100 (e.g., 0.05% = 5)
+  responseTime: integer('response_time_ms'),
+  availability: integer('availability'), // stored as percentage (0-100)
+  cpuUsage: integer('cpu_usage'),
+  memoryUsage: integer('memory_usage'),
+  requestCount: integer('request_count'),
+  metadata: jsonb('metadata').default({}),
 });
 
 // Insert schemas for new tables
@@ -407,65 +501,69 @@ export interface DeploymentSummary {
 // MCP SERVER TABLES
 // ============================================================================
 
-export const mcpServers = pgTable("mcp_servers", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  serverId: text("server_id").notNull().unique(),
-  name: text("name").notNull(),
-  host: text("host").notNull(),
-  port: integer("port").notNull(),
-  protocol: text("protocol").notNull(), // http, https, websocket
-  status: text("status").notNull(), // running, stopped, unknown
-  
+export const mcpServers = pgTable('mcp_servers', {
+  id: varchar('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  serverId: text('server_id').notNull().unique(),
+  name: text('name').notNull(),
+  host: text('host').notNull(),
+  port: integer('port').notNull(),
+  protocol: text('protocol').notNull(), // http, https, websocket
+  status: text('status').notNull(), // running, stopped, unknown
+
   // Process information
-  pid: integer("pid"),
-  processName: text("process_name"),
-  commandLine: text("command_line"),
-  workingDirectory: text("working_directory"),
-  
+  pid: integer('pid'),
+  processName: text('process_name'),
+  commandLine: text('command_line'),
+  workingDirectory: text('working_directory'),
+
   // Code location
-  executablePath: text("executable_path"),
-  sourceDirectory: text("source_directory"),
-  configFile: text("config_file"),
-  logFiles: text("log_files").array(),
-  
+  executablePath: text('executable_path'),
+  sourceDirectory: text('source_directory'),
+  configFile: text('config_file'),
+  logFiles: text('log_files').array(),
+
   // Runtime information
-  version: text("version"),
-  capabilities: text("capabilities").array(),
-  healthEndpoint: text("health_endpoint"),
-  metricsEndpoint: text("metrics_endpoint"),
-  
+  version: text('version'),
+  capabilities: text('capabilities').array(),
+  healthEndpoint: text('health_endpoint'),
+  metricsEndpoint: text('metrics_endpoint'),
+
   // Container information (if containerized)
-  containerId: text("container_id"),
-  containerName: text("container_name"),
-  imageName: text("image_name"),
-  
+  containerId: text('container_id'),
+  containerName: text('container_name'),
+  imageName: text('image_name'),
+
   // Discovery metadata
-  discoveryMethod: text("discovery_method").notNull(),
-  discoveredAt: timestamp("discovered_at").notNull(),
-  lastSeen: timestamp("last_seen").notNull(),
-  
-  metadata: jsonb("metadata").default({}),
+  discoveryMethod: text('discovery_method').notNull(),
+  discoveredAt: timestamp('discovered_at').notNull(),
+  lastSeen: timestamp('last_seen').notNull(),
+
+  metadata: jsonb('metadata').default({}),
 });
 
-export const mcpServerMetrics = pgTable("mcp_server_metrics", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  serverId: text("server_id").notNull(),
-  timestamp: timestamp("timestamp").notNull(),
-  
+export const mcpServerMetrics = pgTable('mcp_server_metrics', {
+  id: varchar('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  serverId: text('server_id').notNull(),
+  timestamp: timestamp('timestamp').notNull(),
+
   // Basic metrics
-  responseTime: integer("response_time"), // milliseconds
-  uptime: integer("uptime"), // seconds
-  requestCount: integer("request_count"),
-  errorCount: integer("error_count"),
-  
+  responseTime: integer('response_time'), // milliseconds
+  uptime: integer('uptime'), // seconds
+  requestCount: integer('request_count'),
+  errorCount: integer('error_count'),
+
   // Process metrics
-  processCpuPercent: integer("process_cpu_percent"), // percentage
-  processMemoryMb: integer("process_memory_mb"),
-  processThreads: integer("process_threads"),
-  processOpenFiles: integer("process_open_files"),
-  processConnections: integer("process_connections"),
-  
-  metadata: jsonb("metadata").default({}),
+  processCpuPercent: integer('process_cpu_percent'), // percentage
+  processMemoryMb: integer('process_memory_mb'),
+  processThreads: integer('process_threads'),
+  processOpenFiles: integer('process_open_files'),
+  processConnections: integer('process_connections'),
+
+  metadata: jsonb('metadata').default({}),
 });
 
 // MCP Server schemas and types

@@ -21,20 +21,30 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     onClose,
     onError,
     reconnectInterval = 5000,
-    maxReconnectAttempts = 5
+    maxReconnectAttempts = 3, // Reduce max attempts to prevent resource exhaustion
   } = options;
 
   const ws = useRef<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('disconnected');
+  const [connectionStatus, setConnectionStatus] = useState<
+    'connecting' | 'connected' | 'disconnected' | 'error'
+  >('disconnected');
   const reconnectAttempts = useRef(0);
   const reconnectTimeoutId = useRef<NodeJS.Timeout | null>(null);
 
   const connect = useCallback(() => {
+    // Prevent multiple simultaneous connection attempts
+    if (
+      ws.current &&
+      (ws.current.readyState === WebSocket.CONNECTING || ws.current.readyState === WebSocket.OPEN)
+    ) {
+      return;
+    }
+
     try {
-      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const wsUrl = `${protocol}//${window.location.host}/ws`;
-      
+
       setConnectionStatus('connecting');
       ws.current = new WebSocket(wsUrl);
 
@@ -71,9 +81,15 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
       ws.current.onerror = (error) => {
         setConnectionStatus('error');
+        console.error('WebSocket connection failed:', error);
         onError?.(error);
-      };
 
+        // Clean up the connection on error
+        if (ws.current) {
+          ws.current.close();
+          ws.current = null;
+        }
+      };
     } catch (error) {
       setConnectionStatus('error');
       console.error('Failed to create WebSocket connection:', error);
@@ -85,12 +101,12 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
       clearTimeout(reconnectTimeoutId.current);
       reconnectTimeoutId.current = null;
     }
-    
+
     if (ws.current) {
       ws.current.close();
       ws.current = null;
     }
-    
+
     setIsConnected(false);
     setConnectionStatus('disconnected');
     reconnectAttempts.current = 0;
@@ -110,13 +126,13 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     return () => {
       disconnect();
     };
-  }, [connect, disconnect]);
+  }, []); // Empty dependency array to prevent reconnections
 
   return {
     isConnected,
     connectionStatus,
     sendMessage,
     connect,
-    disconnect
+    disconnect,
   };
 }

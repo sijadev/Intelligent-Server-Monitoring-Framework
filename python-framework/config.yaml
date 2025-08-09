@@ -1,19 +1,14 @@
-# Intelligent Monitoring Framework Configuration
 server_type: generic
-monitoring_interval: 120
-learning_enabled: false
-auto_remediation: true
-log_level: DEBUG
+monitoring_interval: 30
+learning_enabled: true
+auto_remediation: false
+log_level: INFO
 data_dir: /tmp/imf
-
-# Log files to monitor
 log_files:
-  - path: "/var/log/system.log"
-    type: "system"
-  - path: "/var/log/app.log"
-    type: "application"
-
-# Plugin configuration
+  - path: /var/log/system.log
+    type: system
+  - path: /var/log/app.log
+    type: application
 plugins:
   collectors:
     - log_file_collector
@@ -23,8 +18,6 @@ plugins:
     - threshold_detector
   remediators:
     - system_remediation
-
-# Threshold configuration
 thresholds:
   cpu_usage:
     warning: 80

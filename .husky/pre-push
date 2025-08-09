@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ "${SKIP_PREPUSH:-}" == "1" ]]; then
+	echo "[pre-push] Skipped via SKIP_PREPUSH=1"
+	exit 0
+fi
+
+echo "[pre-push] Node $(node -v)"
+echo "[1/2] Prettier format check (scoped)"
+npx prettier --check "server/**/*.ts" "client/src/**/*.tsx" "tests/**/*.ts" || {
+	echo "[pre-push] Formatting issues found. Run: npm run format"; exit 1; }
+echo "[pre-push] Prettier OK."
+
+if [[ "${SKIP_API_TESTS:-}" == "1" ]]; then
+	echo "[pre-push] Skipping API contract test via SKIP_API_TESTS=1"
+	exit 0
+fi
+
+echo "[2/2] API contract test (tests/api-paths.test.ts)"
+# Run only the fast API paths test (lightweight mode via setup files)
+npx vitest run tests/api-paths.test.ts --reporter=dot || {
+	echo "[pre-push] API contract test failed"; exit 1; }
+echo "[pre-push] API contract test passed."
+

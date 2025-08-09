@@ -6,20 +6,10 @@
   "createdAt": "2025-08-05T20:07:33.084Z",
   "updatedAt": "2025-08-05T20:07:33.084Z",
   "sourceConfig": {
-    "directories": [
-      "./src",
-      "./server"
-    ],
-    "languages": [
-      "typescript",
-      "javascript"
-    ],
+    "directories": ["./src", "./server"],
+    "languages": ["typescript", "javascript"],
     "complexity": "high",
-    "excludePatterns": [
-      "node_modules",
-      "dist",
-      "*.log"
-    ]
+    "excludePatterns": ["node_modules", "dist", "*.log"]
   },
   "scenarios": [
     {
@@ -28,19 +18,9 @@
       "type": "stress",
       "duration": 300,
       "enabled": true,
-      "problemTypes": [
-        "type_mismatch",
-        "syntax_error",
-        "memory_leak",
-        "api_timeout"
-      ],
+      "problemTypes": ["type_mismatch", "syntax_error", "memory_leak", "api_timeout"],
       "codeInjection": {
-        "errorTypes": [
-          "type_mismatch",
-          "syntax_error",
-          "memory_leak",
-          "api_timeout"
-        ],
+        "errorTypes": ["type_mismatch", "syntax_error", "memory_leak", "api_timeout"],
         "frequency": 0.2,
         "complexity": "high"
       },

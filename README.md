@@ -1,12 +1,14 @@
+# MCP.Guard (Intelligent Server Monitoring Framework – ISMF)
+
 ![images](https://github.com/user-attachments/assets/e371ae0c-bccd-4ad6-aa39-91b34bccdbcd)
+![Project Preview](https://github.com/user-attachments/assets/3ff7c8bd-cf0b-4f8b-b633-27c83a6c0f3d)
 
-# MCP.Guard - "Your tests just got smarter than your competition"
-
-MCP.Guard is the new way of testing where test profiles including test-specific data are created through use case definition, and these can be combined into a complete workflow. Non-functional tests are supported by intelligent monitoring with AI support. Long log file analysis is a thing of the past! Today, the affected code area is displayed for quick review, and thanks to intelligent learning, it can also be optionally fixed. What good is the best solution if the server environment crashes? We help you keep everything under control - with forecasts and warnings.
+MCP.Guard (aka the Intelligent Server Monitoring Framework / ISMF) is a comprehensive full‑stack platform unifying: (1) smart test profile workflows (combine use‑case defined test profiles with contextual data), (2) intelligent non‑functional monitoring & anomaly detection with AI assistance, and (3) real‑time infrastructure & MCP server observability. Long log file analysis is replaced by focused, code‑area level insights; issues can optionally be auto‑remediated or proposed as fixes through intelligent learning. Robust forecasting & early warnings help prevent outages—so your tests (and your infrastructure) stay a step ahead.
 
 ## 🚀 Features
 
 ### Core Monitoring
+
 - **Real-time System Metrics**: CPU, memory, disk usage, load average, network connections
 - **Advanced Plugin System**: 8+ built-in plugins with collectors, detectors, and remediators
 - **Problem Detection**: Automated issue identification with severity classification
@@ -14,6 +16,7 @@ MCP.Guard is the new way of testing where test profiles including test-specific 
 - **Performance Analytics**: Trend analysis and performance optimization suggestions
 
 ### Plugin Ecosystem
+
 - **System Metrics Collector**: Core system monitoring (CPU, Memory, Disk)
 - **Network Monitor**: Network interface and traffic analysis
 - **Process Monitor**: Process tracking and resource usage analysis
@@ -24,12 +27,14 @@ MCP.Guard is the new way of testing where test profiles including test-specific 
 - **Auto-Remediator**: Automated problem resolution capabilities
 
 ### MCP Server Monitoring
+
 - **Automatic Discovery**: Multiple discovery methods (process scan, port scan, Docker, config files)
 - **Real-time Monitoring**: Live metrics collection and status tracking
 - **Server Management**: Complete CRUD operations for MCP server configuration
 - **Dashboard Analytics**: Comprehensive overview with aggregated statistics
 
 ### Technical Features
+
 - **WebSocket Real-time Updates**: Live dashboard updates
 - **PostgreSQL Database**: Robust data persistence with Drizzle ORM
 - **Type Safety**: Full TypeScript coverage with shared schemas
@@ -39,11 +44,13 @@ MCP.Guard is the new way of testing where test profiles including test-specific 
 ## 📋 Prerequisites
 
 ### Local Development
+
 - **Node.js 18+** (for backend and frontend)
 - **Python 3.11+** (for monitoring plugins)
 - **PostgreSQL** (built-in Replit database or external)
 
 ### Docker Development (Empfohlen)
+
 - **Docker** (latest version)
 - **Docker Compose** (v2.0+)
 
@@ -59,10 +66,11 @@ chmod +x ./docker/setup.sh
 ```
 
 **Verfügbare Services:**
-- **IMF App**: http://localhost:3000
-- **Vite Dev**: http://localhost:5173  
-- **pgAdmin**: http://localhost:8080
-- **Redis Commander**: http://localhost:8081
+
+- **MCP.Guard App**: [http://localhost:3000](http://localhost:3000)
+- **Vite Dev**: [http://localhost:5173](http://localhost:5173)
+- **pgAdmin**: [http://localhost:8080](http://localhost:8080)
+- **Redis Commander**: [http://localhost:8081](http://localhost:8081)
 
 Siehe [Docker Documentation](./docker/README.md) für Details.
 
@@ -117,7 +125,8 @@ PORT=3000
 
 ### 4. PostgreSQL Setup (Choose One)
 
-**Option A: Local PostgreSQL Installation**
+#### Option A: Local PostgreSQL Installation
+
 ```bash
 # macOS with Homebrew
 brew install postgresql
@@ -130,7 +139,8 @@ createdb imf_database
 psql imf_database -c "SELECT version();"
 ```
 
-**Option B: Docker PostgreSQL**
+#### Option B: Docker PostgreSQL
+
 ```bash
 # Start PostgreSQL container
 docker run --name imf-postgres \
@@ -153,6 +163,7 @@ npm run dev
 ```
 
 This command starts:
+
 - **Express.js backend** on port 3000 (or configured PORT)
 - **Vite development server** for the React frontend
 - **WebSocket server** for real-time updates
@@ -161,20 +172,23 @@ This command starts:
 
 ### Plugin System Activation
 
-The IMF automatically starts with the following plugins:
+MCP.Guard automatically starts with the following plugins:
 
 **Collector Plugins** (Data Collection):
+
 - ⚙️ `system_metrics_collector` - CPU, Memory, Disk monitoring
 - 🌐 `network_monitor` - Network interfaces and traffic
 - 📊 `process_monitor` - Process tracking and analysis
 - 📝 `log_file_monitor` - System and application logs
 
 **Detector Plugins** (Problem Detection):
+
 - 🚨 `threshold_detector` - Configurable threshold monitoring
 - 📈 `performance_analyzer` - Performance trend analysis
 - 🔒 `security_monitor` - Security anomaly detection
 
 **Remediator Plugins** (Auto-Healing):
+
 - 🔧 `auto_remediator` - Automated problem resolution
 
 ### Manual Plugin Configuration
@@ -237,18 +251,21 @@ npm start
 The system supports different monitoring levels:
 
 **Enhanced Mode** (Default):
+
 ```bash
 # Uses enhanced_main.py with all 8 plugins
 npm run dev
 ```
 
 **Simple Mode** (Minimal resource usage):
+
 ```bash
 # Edit server/services/python-monitor.ts
 # Change to 'simple_main.py' for basic monitoring only
 ```
 
 **Custom Mode** (Your own plugins):
+
 ```bash
 # Add custom plugins to python-framework/
 # Register in python-framework/enhanced_main.py
@@ -297,7 +314,7 @@ node test-simple.js
 
 ## 📊 Application Structure
 
-```
+```text
 ├── client/                 # React frontend
 │   ├── src/
 │   │   ├── components/     # Reusable UI components
@@ -359,17 +376,20 @@ socket.onmessage = (event) => {
 ## 🎯 Usage Guide
 
 ### 1. Main Dashboard
+
 - View system overview and key metrics
 - Monitor active problems and recent logs
 - Access navigation to specialized dashboards
 
 ### 2. MCP Dashboard
+
 - **Overview Tab**: Aggregated MCP server statistics
 - **Servers Tab**: Manage individual MCP servers
 - **Metrics Tab**: View historical performance data
 - **Discovery Tab**: Configure automatic server discovery
 
 ### 3. System Monitoring
+
 - Real-time metrics visualization
 - Problem detection and alerts
 - Log analysis and filtering
@@ -394,11 +414,23 @@ socket.onmessage = (event) => {
 
 ## 🔧 Plugin Development & Management
 
+Ausgelagert nach: [docs/plugin-development.md](./docs/plugin-development.md)
+
+Kurzübersicht (Details im verlinkten Dokument):
+
+- Collector, Detector, Remediator Architektur
+- 8 eingebaute Plugins
+- API & UI Verwaltung
+- Konfigurationsdatei Beispiele
+
+➡️ Vollständige Beispiele & Code Snippets siehe ausgelagertes Dokument.
+
 ### Built-in Plugin Architecture
 
-The IMF comes with 8 built-in plugins organized by type:
+MCP.Guard comes with 8 built-in plugins organized by type:
 
 **Collector Plugins** (Data Gathering):
+
 ```python
 # System Metrics Collector
 async def collect_system_metrics():
@@ -417,6 +449,7 @@ async def collect_network_metrics():
 ```
 
 **Detector Plugins** (Problem Detection):
+
 ```python
 # Threshold Detector
 async def detect_threshold_problems(metrics):
@@ -431,6 +464,7 @@ async def detect_threshold_problems(metrics):
 ```
 
 **Remediator Plugins** (Auto-Healing):
+
 ```python
 # Auto-Remediator
 async def auto_remediate_problems(problems):
@@ -451,13 +485,13 @@ class CustomMonitorPlugin:
         self.name = "custom_monitor"
         self.version = "1.0.0"
         self.type = "collector"
-    
+
     async def collect_metrics(self):
         return {
             'customMetric': self.get_custom_data(),
             'timestamp': datetime.now()
         }
-    
+
     def get_custom_data(self):
         # Your custom monitoring logic
         return 42
@@ -546,7 +580,7 @@ network_monitoring:
   interfaces: ["eth0", "wlan0"]
   traffic_threshold_mb: 1000
 
-# Process monitoring  
+# Process monitoring
 process_monitoring:
   enabled: true
   track_top_processes: 10
@@ -569,18 +603,22 @@ auto_remediation:
 
 ## 📝 Configuration
 
+Ausgelagert nach: [docs/configuration.md](./docs/configuration.md)
+
+Beinhaltet:
+
+- Grundstruktur
+- Schwellenwerte
+- Datenbank & Feature Flags
+- Override Reihenfolge
+
 ### MCP Discovery Configuration
 
 ```json
 {
   "scan_ports": [8000, 8080, 3000, 5000, 9000],
   "scan_hosts": ["localhost", "127.0.0.1"],
-  "discovery_methods": [
-    "process_scan",
-    "port_scan", 
-    "docker_scan",
-    "config_file_scan"
-  ]
+  "discovery_methods": ["process_scan", "port_scan", "docker_scan", "config_file_scan"]
 }
 ```
 
@@ -595,6 +633,14 @@ auto_remediation:
 ```
 
 ## 🐛 Enhanced Troubleshooting Guide
+
+Vollständige Fehlerszenarien ausgelagert: [docs/troubleshooting.md](./docs/troubleshooting.md)
+
+Enthalten:
+
+- Diagnose Strategie
+- Häufige Probleme
+- Tools & Log-Level
 
 ### Quick Diagnostics
 
@@ -711,18 +757,37 @@ top -p $(pgrep -f "enhanced_main.py")
 # Use 'simple_main.py' instead of 'enhanced_main.py'
 ```
 
-#### 6. Port Conflicts
+#### 6. Port Already in Use / Port Conflicts
+
+This occurs when a previous dev server (Node, Vite, Python, or Docker container) did not shut down cleanly. Typical ports:
+
+- 3000 (Express API)
+- 5173 (Vite Dev Server)
+- 3001 (Test MCP Server)
+- 5432 (PostgreSQL)
+
+Resolution:
 
 ```bash
-# Check what's using port 3000
+# 1. Identify the blocking process (replace PORT as needed)
 lsof -i :3000
 
-# Kill conflicting processes
+# 2. Terminate it (force if necessary)
 kill -9 $(lsof -ti:3000)
 
-# Use different port
+# 3. (If Docker) ensure no leftover containers bind the port
+docker ps --format '{{.Ports}} {{.Names}}' | grep 3000 || true
+
+# 4. Retry on an alternate port if you prefer
 PORT=8080 npm run dev
+
+# 5. (Optional) Free common dev ports in one sweep
+for p in 3000 3001 5173; do
+  pid=$(lsof -ti :$p); [ -n "$pid" ] && kill -9 $pid && echo "Freed $p";
+done
 ```
+
+See also Docker-specific guidance in `docker/README.md` under **Port Already in Use**.
 
 ### Plugin-Specific Troubleshooting
 
@@ -806,16 +871,19 @@ If issues persist:
    - Steps to reproduce
    - Log outputs
 3. **System Information**:
-   ```bash
-   # Gather system info for bug reports
-   echo "OS: $(uname -a)"
-   echo "Node: $(node --version)"
-   echo "Python: $(python --version)"
-   echo "PostgreSQL: $(psql --version)"
-   echo "IMF Version: $(grep version package.json)"
-   ```
+
+```bash
+ # Gather system info for bug reports
+ echo "OS: $(uname -a)"
+ echo "Node: $(node --version)"
+ echo "Python: $(python --version)"
+ echo "PostgreSQL: $(psql --version)"
+ echo "MCP.Guard Version: $(grep version package.json)"
+```
 
 ## 🚀 Advanced Usage & Best Practices
+
+Ausgelagert nach: [docs/advanced-usage.md](./docs/advanced-usage.md)
 
 ### Production Deployment
 
@@ -873,8 +941,8 @@ psql imf_database -c "SELECT * FROM pg_stat_activity;"
 ### Monitoring & Alerting
 
 ```bash
-# Set up system monitoring for IMF itself
-# Monitor IMF process
+# Set up system monitoring for MCP.Guard itself
+# Monitor MCP.Guard process
 ps aux | grep enhanced_main.py
 
 # Monitor database connections
@@ -905,12 +973,14 @@ tar -czf config_backup_$(date +%Y%m%d).tar.gz .env python-framework/config.yaml
 
 ## 🤝 Contributing
 
+Ausführliche Richtlinien: [docs/contributing.md](./docs/contributing.md)
+
 ### Development Setup
 
 ```bash
 # Fork and clone the repository
-git clone https://github.com/YOUR_USERNAME/IMF.git
-cd IMF
+git clone https://github.com/YOUR_USERNAME/MCP.Guard.git
+cd MCP.Guard
 
 # Install development dependencies
 npm install
@@ -929,6 +999,7 @@ cd python-framework && python -m pytest tests/
 ### Contributing Guidelines
 
 1. **Create Feature Branch**
+
    ```bash
    git checkout -b feature/awesome-plugin
    ```
@@ -947,17 +1018,18 @@ cd python-framework && python -m pytest tests/
    - Update documentation
 
 4. **Testing Requirements**
+
    ```bash
    # Frontend tests
    npm run test:frontend
-   
+
    # Backend tests
    npm run test:backend
-   
+
    # Python tests
    cd python-framework
    python -m pytest tests/ -v --cov=.
-   
+
    # Integration tests
    npm run test:integration
    ```
@@ -989,7 +1061,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ```text
 MIT License
 
-Copyright (c) 2025 Intelligent Monitoring Framework
+Copyright (c) 2025 MCP.Guard
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -1012,6 +1084,8 @@ SOFTWARE.
 
 ## 🆘 Support & Community
 
+Ausführliche Community Informationen: [docs/community.md](./docs/community.md)
+
 ### Getting Support
 
 - **📚 Documentation**: Check this README and inline code comments
@@ -1021,7 +1095,7 @@ SOFTWARE.
 
 ### Community Resources
 
-- **GitHub Repository**: [https://github.com/username/IMF](https://github.com/username/IMF)
+- **GitHub Repository**: [https://github.com/username/MCP.Guard](https://github.com/username/MCP.Guard)
 - **Issue Tracker**: Report bugs and request features
 - **Wiki**: Additional documentation and tutorials
 - **Discussions**: Community Q&A and ideas
@@ -1061,7 +1135,7 @@ SOFTWARE.
 - The Python psutil maintainers for system monitoring capabilities
 - The React and TypeScript communities for excellent tooling
 - The PostgreSQL team for robust data persistence
-- All contributors who help improve the IMF
+- All contributors who help improve MCP.Guard
 
 ---
 
