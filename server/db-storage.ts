@@ -1,8 +1,19 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from '../shared/schema.js';
+import {
+  testProfiles,
+  problems,
+  plugins,
+  logEntries,
+  metrics as metricsTable,
+  mcpServers,
+  mcpServerMetrics,
+} from '../shared/schema.js';
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { MemStorage, type IStorage } from './storage';
-import { eq, desc, and, isNull, gte } from 'drizzle-orm';
+import { eq, desc, and, gte } from 'drizzle-orm';
 import type {
   User,
   InsertUser,
@@ -17,7 +28,6 @@ import type {
   FrameworkConfig,
   InsertFrameworkConfig,
   DashboardData,
-  SystemStatus,
   LogFilterOptions,
   CodeIssue,
   InsertCodeIssue,
@@ -47,6 +57,22 @@ export class DatabaseStorage implements IStorage {
   private memStorageFallback: MemStorage;
   // Track already-logged fallback signatures to avoid log spam
   private loggedFallbackErrors: Set<string> = new Set();
+  // Offline / mirror sync state
+  private offlineMode = false; // true when DB operations failing
+  private offlineOps: OfflineOperation[] = []; // queued ops while offline
+  private reconnectTimer: NodeJS.Timeout | null = null;
+  private mirrorPrimed = false;
+
+  // Entities we currently mirror (incrementally extendable)
+  private readonly mirroredEntities = [
+    'test_profile',
+    'problem',
+    'metrics',
+    'log_entry',
+    'plugin',
+    'mcp_server',
+    'mcp_server_metrics',
+  ] as const;
 
   constructor(connectionUrl: string) {
     try {
@@ -63,9 +89,261 @@ export class DatabaseStorage implements IStorage {
       this.ensureTablesReady().catch((e) =>
         console.warn('⚠️ Table readiness check failed (non-blocking):', e.message || e),
       );
+      // Prime mirror (best effort) and schedule periodic reconnect attempts
+      this.primeMirror().catch((e) =>
+        console.warn('⚠️ Mirror priming failed (will retry when reconnected):', e.message || e),
+      );
+      this.startReconnectLoop();
     } catch (error) {
       console.error('❌ Failed to initialize DatabaseStorage:', error);
       throw error;
+    }
+  }
+
+  // =============================================================
+  // Offline Mirror + Sync
+  // =============================================================
+  private async primeMirror(): Promise<void> {
+    // Load DB snapshot into in-memory mirror for offline continuity
+    try {
+      // Test simple query first
+      await this.connection`SELECT 1`;
+      // Load datasets we mirror; each in isolated try so partial success allowed
+      const loaders: Array<Promise<void>> = [];
+      loaders.push(
+        (async () => {
+          try {
+            const rows = await this.db.select().from(testProfiles);
+            for (const r of rows) {
+              await this.memStorageFallback.createTestProfile({
+                id: r.id,
+                name: r.name,
+                version: r.version,
+                description: r.description,
+                createdAt: r.createdAt,
+                updatedAt: r.updatedAt,
+                sourceConfig: r.sourceConfig ?? {},
+                scenarios: r.scenarios ?? [],
+                expectations: r.expectations ?? {},
+                generationRules: r.generationRules ?? {},
+                expectedData: r.expectedData ?? null,
+              });
+            }
+          } catch {
+            // ignore priming failures for this collection
+          }
+        })(),
+      );
+      loaders.push(
+        (async () => {
+          try {
+            const rows = await this.db.select().from(problems);
+            for (const r of rows) {
+              await this.memStorageFallback.createProblem({
+                description: r.description,
+                type: r.type,
+                severity: r.severity,
+                timestamp: r.timestamp,
+                metadata: r.metadata ?? {},
+              });
+            }
+          } catch {
+            // ignore priming failures for this collection
+          }
+        })(),
+      );
+      loaders.push(
+        (async () => {
+          try {
+            const rows = await this.db.select().from(plugins);
+            for (const r of rows) {
+              await this.memStorageFallback.createPlugin({
+                name: r.name,
+                version: r.version,
+                type: r.type,
+                status: r.status,
+                config: r.config ?? {},
+              });
+            }
+          } catch {
+            // ignore priming failures for this collection
+          }
+        })(),
+      );
+      await Promise.all(loaders);
+      this.mirrorPrimed = true;
+      this.offlineMode = false;
+      // Clear any residual queued ops (they will be from previous runtime only)
+      this.offlineOps = [];
+      console.log('🪞 In-memory mirror primed.');
+    } catch (e) {
+      this.offlineMode = true; // Treat as offline until successful
+      throw e;
+    }
+  }
+
+  private startReconnectLoop() {
+    if (this.reconnectTimer) return;
+    this.reconnectTimer = setInterval(() => {
+      if (!this.offlineMode) return; // Only attempt when offline
+      this.attemptResync().catch(() => {});
+    }, 5000);
+  }
+
+  // Public inspection helpers (used by health checks / diagnostics)
+  isOffline(): boolean {
+    return this.offlineMode;
+  }
+
+  getOfflineQueueLength(): number {
+    return this.offlineOps.length;
+  }
+
+  getMirrorPrimed(): boolean {
+    return this.mirrorPrimed;
+  }
+
+  // ---- Test Support (non-production use) ----
+  /**
+   * Force a resync attempt (used in tests). No effect in healthy online mode.
+   */
+  async triggerResync(): Promise<void> {
+    await this.attemptResync();
+  }
+
+  /**
+   * Snapshot of queued offline operations (read-only clone) for assertions.
+   */
+  getOfflineOpsSnapshot(): ReadonlyArray<OfflineOperation> {
+    return [...this.offlineOps];
+  }
+
+  private stopReconnectLoop() {
+    if (this.reconnectTimer) {
+      clearInterval(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+  }
+
+  private recordOfflineOp(op: OfflineOperation) {
+    if (!this.mirroredEntities.includes(op.entity)) return;
+    this.offlineOps.push({
+      ...op,
+      timestamp: new Date(),
+      id: op.id ?? op.data?.id ?? op.data?.name,
+    });
+  }
+
+  private async attemptResync(): Promise<void> {
+    try {
+      await this.connection`SELECT 1`;
+      if (!this.offlineMode) return; // Already synced by another path
+      console.log('🔁 Database reachable again. Replaying', this.offlineOps.length, 'offline ops');
+      // Replay ops in FIFO order
+      for (const op of this.offlineOps) {
+        try {
+          await this.replayOperation(op);
+        } catch (e) {
+          const msg = (e as unknown as { message?: string })?.message || String(e);
+          console.warn('⚠️ Failed to replay op', op.entity, op.type, op.id, msg);
+        }
+      }
+      this.offlineOps = [];
+      this.offlineMode = false;
+      console.log('✅ Offline operations synchronized.');
+      // Optionally re-prime mirror to account for server-side changes during outage
+      await this.primeMirror().catch(() => {});
+    } catch {
+      // Still offline
+    }
+  }
+
+  private async replayOperation(op: OfflineOperation): Promise<void> {
+    switch (op.entity) {
+      case 'test_profile':
+        if (op.type === 'create') {
+          try {
+            await this.db.insert(testProfiles).values(op.data);
+          } catch {
+            /* duplicate or other */
+          }
+        } else if (op.type === 'update' && op.id) {
+          await this.db
+            .update(testProfiles)
+            .set({ ...op.data, updatedAt: new Date() })
+            .where(eq(testProfiles.id, op.id));
+        } else if (op.type === 'delete' && op.id) {
+          await this.db.delete(testProfiles).where(eq(testProfiles.id, op.id));
+        }
+        break;
+      case 'problem':
+        if (op.type === 'create') {
+          try {
+            await this.db.insert(problems).values(op.data);
+          } catch {
+            /* ignore */
+          }
+        } else if (op.type === 'update' && op.id) {
+          await this.db.update(problems).set(op.data).where(eq(problems.id, op.id));
+        }
+        break;
+      case 'metrics':
+        if (op.type === 'create') {
+          try {
+            await this.db.insert(metricsTable).values(op.data);
+          } catch {
+            /* ignore */
+          }
+        }
+        break;
+      case 'log_entry':
+        if (op.type === 'create') {
+          try {
+            await this.db.insert(logEntries).values(op.data);
+          } catch {
+            /* ignore */
+          }
+        }
+        break;
+      case 'plugin':
+        if (op.type === 'create') {
+          try {
+            await this.db.insert(plugins).values(op.data);
+          } catch {
+            /* ignore */
+          }
+        } else if (op.type === 'update') {
+          const identifier = op.id ? eq(plugins.id, op.id) : eq(plugins.name, op.data?.name);
+          await this.db
+            .update(plugins)
+            .set({ ...op.data, lastUpdate: new Date() })
+            .where(identifier);
+        } else if (op.type === 'delete' && op.id) {
+          await this.db.delete(plugins).where(eq(plugins.id, op.id));
+        }
+        break;
+      case 'mcp_server':
+        if (op.type === 'create') {
+          try {
+            await this.db.insert(mcpServers).values(op.data);
+          } catch {
+            /* ignore */
+          }
+        } else if (op.type === 'update' && op.id) {
+          await this.db.update(mcpServers).set(op.data).where(eq(mcpServers.serverId, op.id));
+        } else if (op.type === 'delete' && op.id) {
+          await this.db.delete(mcpServers).where(eq(mcpServers.serverId, op.id));
+        }
+        break;
+      case 'mcp_server_metrics':
+        if (op.type === 'create') {
+          try {
+            await this.db.insert(mcpServerMetrics).values(op.data);
+          } catch {
+            /* ignore */
+          }
+        }
+        break;
     }
   }
 
@@ -98,18 +376,29 @@ export class DatabaseStorage implements IStorage {
   private async executeWithFallback<T>(
     operation: () => Promise<T>,
     fallbackOperation?: () => Promise<T>,
+    offlineDescriptor?: Omit<OfflineOperation, 'timestamp'>,
   ): Promise<T> {
     try {
-      return await operation();
+      const result = await operation();
+      // If previously offline, attempt resync (will no-op if already done)
+      if (this.offlineMode) {
+        this.offlineMode = false;
+        // Trigger async attempt to flush queue if any left (should be none)
+        this.attemptResync().catch(() => {});
+      }
+      return result;
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
-      const signature = msg.replace(/relation \"(.*?)\" does not exist/g, 'relation <missing>');
+      const signature = msg.replace(/relation "(.*?)" does not exist/g, 'relation <missing>');
       if (!this.loggedFallbackErrors.has(signature)) {
         this.loggedFallbackErrors.add(signature);
         console.warn('🔄 Database operation failed, using fallback:', msg);
       }
+      this.offlineMode = true;
       if (fallbackOperation) {
-        return await fallbackOperation();
+        const fallbackResult = await fallbackOperation();
+        if (offlineDescriptor) this.recordOfflineOp(offlineDescriptor as OfflineOperation);
+        return fallbackResult;
       }
       throw error;
     }
@@ -174,6 +463,7 @@ export class DatabaseStorage implements IStorage {
         return result[0];
       },
       () => this.memStorageFallback.createTestProfile(profile),
+      { entity: 'test_profile', type: 'create', id: profile.id, data: profile },
     );
   }
 
@@ -254,6 +544,7 @@ export class DatabaseStorage implements IStorage {
         return result[0];
       },
       () => this.memStorageFallback.updateTestProfile(id, updates),
+      { entity: 'test_profile', type: 'update', id, data: updates },
     );
   }
 
@@ -267,6 +558,7 @@ export class DatabaseStorage implements IStorage {
         return result.length > 0;
       },
       () => this.memStorageFallback.deleteTestProfile(id),
+      { entity: 'test_profile', type: 'delete', id },
     );
   }
 
@@ -337,6 +629,7 @@ export class DatabaseStorage implements IStorage {
         return result[0];
       },
       () => this.memStorageFallback.createProblem(problem),
+      { entity: 'problem', type: 'create', data: problem },
     );
   }
 
@@ -351,6 +644,7 @@ export class DatabaseStorage implements IStorage {
         return result[0];
       },
       () => this.memStorageFallback.resolveProblem(id),
+      { entity: 'problem', type: 'update', id, data: { resolved: true } },
     );
   }
 
@@ -396,6 +690,7 @@ export class DatabaseStorage implements IStorage {
         return result[0];
       },
       () => this.memStorageFallback.createMetrics(metrics),
+      { entity: 'metrics', type: 'create', data: metrics },
     );
   }
 
@@ -446,6 +741,7 @@ export class DatabaseStorage implements IStorage {
         return result[0];
       },
       () => this.memStorageFallback.createLogEntry(logEntry),
+      { entity: 'log_entry', type: 'create', data: logEntry },
     );
   }
 
@@ -503,6 +799,7 @@ export class DatabaseStorage implements IStorage {
         }
       },
       () => this.memStorageFallback.createOrUpdatePlugin(plugin),
+      { entity: 'plugin', type: 'update', id: (plugin as any).id, data: plugin },
     );
   }
 
@@ -520,6 +817,7 @@ export class DatabaseStorage implements IStorage {
         return result[0];
       },
       () => this.memStorageFallback.createPlugin(plugin),
+      { entity: 'plugin', type: 'create', data: plugin },
     );
   }
 
@@ -534,6 +832,7 @@ export class DatabaseStorage implements IStorage {
         return result[0];
       },
       () => this.memStorageFallback.updatePlugin(id, plugin),
+      { entity: 'plugin', type: 'update', id, data: plugin },
     );
   }
 
@@ -547,6 +846,7 @@ export class DatabaseStorage implements IStorage {
         return result[0];
       },
       () => this.memStorageFallback.deletePlugin(id),
+      { entity: 'plugin', type: 'delete', id },
     );
   }
 
@@ -718,7 +1018,6 @@ export class DatabaseStorage implements IStorage {
   async createMcpServerMetrics(metrics: InsertMCPServerMetrics): Promise<MCPServerMetrics> {
     return this.memStorageFallback.createMcpServerMetrics(metrics);
   }
-
   async getMcpServerDashboardData(): Promise<MCPServerDashboardData> {
     return this.memStorageFallback.getMcpServerDashboardData();
   }
@@ -730,4 +1029,20 @@ export class DatabaseStorage implements IStorage {
   async getDashboardData(): Promise<DashboardData> {
     return this.memStorageFallback.getDashboardData();
   }
+}
+
+// Offline operation descriptor (placed outside class)
+interface OfflineOperation {
+  entity:
+    | 'test_profile'
+    | 'problem'
+    | 'metrics'
+    | 'log_entry'
+    | 'plugin'
+    | 'mcp_server'
+    | 'mcp_server_metrics';
+  type: 'create' | 'update' | 'delete';
+  id?: string;
+  data?: any;
+  timestamp: Date;
 }

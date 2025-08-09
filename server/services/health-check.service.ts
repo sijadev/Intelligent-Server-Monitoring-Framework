@@ -8,6 +8,7 @@ import net from 'net';
 import { pythonMonitorService } from './python-monitor';
 import { logAggregator } from './log-aggregator';
 import { ErrorHandler } from '../utils/error-handler';
+import { storage } from '../storage-init';
 
 export interface HealthCheckResult {
   service: string;
@@ -112,6 +113,25 @@ export class HealthCheckService {
       const url = new URL(databaseUrl);
       const isReachable = await this.testTCPConnection(url.hostname, parseInt(url.port) || 5432);
 
+      // Optional mirror / offline info if DatabaseStorage instance
+      let offlineMeta: Record<string, unknown> = {};
+      try {
+        const dbMaybe = storage as unknown as {
+          isOffline?: () => boolean;
+          getOfflineQueueLength?: () => number;
+          getMirrorPrimed?: () => boolean;
+        };
+        if (typeof dbMaybe.isOffline === 'function') {
+          offlineMeta = {
+            offlineMode: dbMaybe.isOffline(),
+            offlineQueue: dbMaybe.getOfflineQueueLength?.() ?? 0,
+            mirrorPrimed: dbMaybe.getMirrorPrimed?.() ?? false,
+          };
+        }
+      } catch {
+        // ignore optional metadata errors
+      }
+
       return {
         service: 'database',
         status: isReachable ? 'healthy' : 'unhealthy',
@@ -121,6 +141,7 @@ export class HealthCheckService {
           host: url.hostname,
           port: url.port,
           database: url.pathname?.slice(1) || 'unknown',
+          ...offlineMeta,
         },
       };
     } catch (error) {
