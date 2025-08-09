@@ -1,115 +1,17 @@
 import { beforeAll, afterAll, describe, test, expect } from 'vitest';
-import { spawn, type ChildProcess } from 'child_process';
+import { startTestServer } from './utils/test-server';
 
-const TEST_PORT = process.env.TEST_PORT || '3060';
-const BASE = `http://127.0.0.1:${TEST_PORT}`;
-
-let server: ChildProcess | null = null;
-async function terminateServer(proc: ChildProcess) {
-  return new Promise<void>((resolve) => {
-    let resolved = false;
-    const done = () => {
-      if (!resolved) {
-        resolved = true;
-        resolve();
-      }
-    };
-    proc.once('exit', done);
-    proc.once('close', done);
-    // Send SIGTERM first
-    proc.kill('SIGTERM');
-    // Fallback SIGKILL after timeout
-    setTimeout(() => {
-      if (!resolved && !proc.killed) {
-        proc.kill('SIGKILL');
-      }
-    }, 1500);
-    // Absolute hard timeout
-    setTimeout(done, 2500);
-  });
-}
-
-async function sleep(ms: number) {
-  return new Promise((r) => setTimeout(r, ms));
-}
-async function waitReady(maxMs = 20000) {
-  const start = Date.now();
-  while (Date.now() - start < maxMs) {
-    try {
-      const live = await fetch(`${BASE}/api/health/live`);
-      if (live.status === 200) return;
-      const res = await fetch(`${BASE}/api/health`);
-      if (res.status === 200 || res.status === 503) return;
-    } catch {
-      // ignore until server ready
-    }
-    await sleep(250);
-  }
-  throw new Error('server not ready');
-}
+let close: (() => Promise<void>) | null = null;
+let BASE: string;
 
 beforeAll(async () => {
-  // If already running on TEST_PORT, don't start a new one
-  const alreadyUp = await (async () => {
-    try {
-      return (await fetch(`${BASE}/api/health/live`)).status === 200;
-    } catch {
-      return false;
-    }
-  })();
-
-  if (!alreadyUp) {
-    console.log('[api-paths] starting server...');
-    server = spawn('npm', ['run', 'dev'], {
-      cwd: '/Users/simonjanke/Projects/IMF',
-      stdio: 'pipe',
-      env: { ...process.env, PORT: TEST_PORT, NODE_ENV: 'test' },
-    });
-
-    let resolved = false;
-    await new Promise<void>((resolve) => {
-      const deadline = Date.now() + 20000;
-      const check = async () => {
-        if (resolved) return;
-        try {
-          const live = await fetch(`${BASE}/api/health/live`);
-          if (live.status === 200) {
-            resolved = true;
-            resolve();
-            return;
-          }
-        } catch {
-          // ignore fetch race
-        }
-        if (Date.now() > deadline) {
-          resolve();
-          return;
-        }
-        setTimeout(check, 250);
-      };
-      server!.stdout?.on('data', (buf) => {
-        const s = buf.toString();
-        if (!resolved && s.includes('serving on port')) {
-          resolved = true;
-          resolve();
-        }
-      });
-      server!.stderr?.on('data', (buf) => {
-        const s = buf.toString();
-        if (s.trim()) console.error('[server]', s.trim());
-      });
-      void check();
-    });
-  }
-
-  await waitReady();
-  console.log('[api-paths] server is ready');
+  const s = await startTestServer();
+  close = s.close;
+  BASE = s.baseUrl;
 });
 
 afterAll(async () => {
-  if (server) {
-    await terminateServer(server);
-  }
+  if (close) await close();
 });
 
 // Minimal contract: 2xx/503 and JSON with expected shape for key endpoints
@@ -144,6 +46,6 @@ describe('API paths contract', () => {
           throw new Error(`${ep.path} did not return valid JSON`);
         });
       }
-    });
+    }, 20000);
   }
 });

@@ -12,8 +12,19 @@ export async function startTestServer() {
   const httpServer = await registerRoutes(app);
   // Attach error middleware last
   app.use(errorMiddleware);
+
+  // Listen on ephemeral port
+  await new Promise<void>((resolve) => {
+    httpServer.listen(0, '127.0.0.1', () => resolve());
+  });
+  const address = httpServer.address();
+  if (!address || typeof address === 'string') {
+    throw new Error('Could not determine server address');
+  }
+  const baseUrl = `http://127.0.0.1:${address.port}`;
+
   return {
-    app,
+    baseUrl,
     async close() {
       await new Promise<void>((resolve) => httpServer.close(() => resolve()));
     },
