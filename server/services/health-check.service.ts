@@ -120,12 +120,20 @@ export class HealthCheckService {
           isOffline?: () => boolean;
           getOfflineQueueLength?: () => number;
           getMirrorPrimed?: () => boolean;
+          getOfflineConflictsSnapshot?: () => ReadonlyArray<{
+            conflictType: string;
+            resolvedAt: Date;
+          }>;
         };
         if (typeof dbMaybe.isOffline === 'function') {
+          const conflicts = dbMaybe.getOfflineConflictsSnapshot?.() || [];
           offlineMeta = {
             offlineMode: dbMaybe.isOffline(),
             offlineQueue: dbMaybe.getOfflineQueueLength?.() ?? 0,
             mirrorPrimed: dbMaybe.getMirrorPrimed?.() ?? false,
+            conflictCount: conflicts.length,
+            lastConflictType: conflicts.at(-1)?.conflictType || null,
+            lastConflictResolvedAt: conflicts.at(-1)?.resolvedAt || null,
           };
         }
       } catch {

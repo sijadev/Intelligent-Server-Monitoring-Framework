@@ -176,6 +176,31 @@ router.get('/offline-conflicts', async (_req, res) => {
   }
 });
 
+// Manually trigger a replay attempt (forces immediate resync try)
+router.post('/offline-queue/replay', async (_req, res) => {
+  try {
+    const dbMaybe = storage as unknown as {
+      triggerResync?: () => Promise<void>;
+      isOffline?: () => boolean;
+      getOfflineQueueLength?: () => number;
+    };
+    if (typeof dbMaybe.triggerResync !== 'function') {
+      return res.status(400).json({ message: 'Replay not supported for current storage backend' });
+    }
+    await dbMaybe.triggerResync();
+    res.json({
+      message: 'Replay triggered',
+      offline: dbMaybe.isOffline?.() ?? false,
+      remaining: dbMaybe.getOfflineQueueLength?.() ?? 0,
+    });
+  } catch (e) {
+    res.status(500).json({
+      message: 'Failed to trigger replay',
+      error: e instanceof Error ? e.message : String(e),
+    });
+  }
+});
+
 // Configuration endpoints
 router.get('/config', async (req, res) => {
   try {
