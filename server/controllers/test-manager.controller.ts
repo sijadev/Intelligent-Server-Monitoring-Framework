@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
 import { getTestManagerService } from '../services/test-manager.service';
 import type { TestManagerService } from '../services/test-manager.service';
+import { config } from '../config';
 
 export class TestManagerController {
-  private testManagerService: TestManagerService;
+  private testManagerService: TestManagerService | null;
 
   private getErrorMessage(error: unknown): string {
     return error instanceof Error ? error.message : String(error);
@@ -13,14 +14,18 @@ export class TestManagerController {
     try {
       this.testManagerService = getTestManagerService();
     } catch (error) {
-      console.warn('Test Manager Service not available:', this.getErrorMessage(error));
-      this.testManagerService = null as any;
+      if (!config.IMF_LIGHTWEIGHT_TEST) {
+        console.warn('Test Manager Service not available:', this.getErrorMessage(error));
+      }
+      this.testManagerService = null;
     }
   }
 
   private checkServiceAvailable(res: Response): boolean {
     if (!this.testManagerService) {
-      console.log('❌ Test Manager Service not available');
+      if (!config.IMF_LIGHTWEIGHT_TEST) {
+        console.log('❌ Test Manager Service not available');
+      }
       res.status(503).json({
         error: 'Test Manager Service not available',
         message: 'Test Manager Service is not initialized or not available',
@@ -35,7 +40,7 @@ export class TestManagerController {
     if (!this.checkServiceAvailable(res)) return;
 
     try {
-      const profiles = await this.testManagerService.getProfiles();
+      const profiles = await this.testManagerService!.getProfiles();
       res.json({ profiles });
     } catch (error) {
       console.error('Error fetching profiles:', error);
@@ -51,7 +56,7 @@ export class TestManagerController {
 
     try {
       const { profileId } = req.params;
-      const profile = await this.testManagerService.getProfile(profileId);
+      const profile = await this.testManagerService!.getProfile(profileId);
 
       if (!profile) {
         return res.status(404).json({
@@ -76,7 +81,7 @@ export class TestManagerController {
     try {
       console.log('📝 Creating profile with data:', JSON.stringify(req.body, null, 2));
       const profileData = req.body;
-      const profile = await this.testManagerService.createProfile(profileData);
+      const profile = await this.testManagerService!.createProfile(profileData);
 
       console.log('✅ Profile created successfully:', profile.id);
       const response = {
@@ -104,7 +109,7 @@ export class TestManagerController {
       const { profileId } = req.params;
       const updates = req.body;
 
-      const profile = await this.testManagerService.updateProfile(profileId, updates);
+      const profile = await this.testManagerService!.updateProfile(profileId, updates);
 
       res.json({
         profile,
@@ -132,7 +137,7 @@ export class TestManagerController {
 
     try {
       const { profileId } = req.params;
-      const deleted = await this.testManagerService.deleteProfile(profileId);
+      const deleted = await this.testManagerService!.deleteProfile(profileId);
 
       if (!deleted) {
         return res.status(404).json({
@@ -162,7 +167,7 @@ export class TestManagerController {
       const { profileId } = req.params;
 
       // Verify profile exists
-      const profile = await this.testManagerService.getProfile(profileId);
+      const profile = await this.testManagerService!.getProfile(profileId);
       if (!profile) {
         return res.status(404).json({
           error: 'Profile not found',
@@ -171,7 +176,7 @@ export class TestManagerController {
       }
 
       // Start generation (this is async and may take time)
-      const result = await this.testManagerService.generateTestData(profileId);
+      const result = await this.testManagerService!.generateTestData(profileId);
 
       res.json({
         result,
@@ -209,7 +214,10 @@ export class TestManagerController {
       const parsedLimit = limit
         ? Math.min(100, Math.max(1, parseInt(limit as string, 10) || 0))
         : undefined;
-      const data = await this.testManagerService.getGeneratedData(profileId as string, parsedLimit);
+      const data = await this.testManagerService!.getGeneratedData(
+        profileId as string,
+        parsedLimit,
+      );
 
       res.json({
         data,
@@ -230,7 +238,7 @@ export class TestManagerController {
     if (!this.checkServiceAvailable(res)) return;
 
     try {
-      const status = this.testManagerService.getStatus();
+      const status = this.testManagerService!.getStatus();
       res.json({ status });
     } catch (error) {
       console.error('Error fetching test manager status:', error);
@@ -245,7 +253,7 @@ export class TestManagerController {
     if (!this.checkServiceAvailable(res)) return;
 
     try {
-      const health = this.testManagerService.getHealthStatus();
+      const health = this.testManagerService!.getHealthStatus();
       const statusCode = health.healthy ? 200 : 503;
 
       res.status(statusCode).json({ health });
