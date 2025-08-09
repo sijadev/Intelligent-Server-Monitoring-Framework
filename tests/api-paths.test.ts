@@ -5,6 +5,29 @@ const TEST_PORT = process.env.TEST_PORT || '3060';
 const BASE = `http://127.0.0.1:${TEST_PORT}`;
 
 let server: ChildProcess | null = null;
+async function terminateServer(proc: ChildProcess) {
+  return new Promise<void>((resolve) => {
+    let resolved = false;
+    const done = () => {
+      if (!resolved) {
+        resolved = true;
+        resolve();
+      }
+    };
+    proc.once('exit', done);
+    proc.once('close', done);
+    // Send SIGTERM first
+    proc.kill('SIGTERM');
+    // Fallback SIGKILL after timeout
+    setTimeout(() => {
+      if (!resolved && !proc.killed) {
+        proc.kill('SIGKILL');
+      }
+    }, 1500);
+    // Absolute hard timeout
+    setTimeout(done, 2500);
+  });
+}
 
 async function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
@@ -17,7 +40,9 @@ async function waitReady(maxMs = 20000) {
       if (live.status === 200) return;
       const res = await fetch(`${BASE}/api/health`);
       if (res.status === 200 || res.status === 503) return;
-    } catch {}
+    } catch {
+      // ignore until server ready
+    }
     await sleep(250);
   }
   throw new Error('server not ready');
@@ -53,7 +78,9 @@ beforeAll(async () => {
             resolve();
             return;
           }
-        } catch {}
+        } catch {
+          // ignore fetch race
+        }
         if (Date.now() > deadline) {
           resolve();
           return;
@@ -80,10 +107,9 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  if (!server) return;
-  server.kill('SIGTERM');
-  await sleep(600);
-  if (!server.killed) server.kill('SIGKILL');
+  if (server) {
+    await terminateServer(server);
+  }
 });
 
 // Minimal contract: 2xx/503 and JSON with expected shape for key endpoints
