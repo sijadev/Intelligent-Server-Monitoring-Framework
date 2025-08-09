@@ -1,9 +1,13 @@
-# MCP.Guard (Intelligent Server Monitoring Framework – ISMF)
+# MCP.Guard
 
 ![images](https://github.com/user-attachments/assets/e371ae0c-bccd-4ad6-aa39-91b34bccdbcd)
-![Project Preview](https://github.com/user-attachments/assets/3ff7c8bd-cf0b-4f8b-b633-27c83a6c0f3d)
 
-MCP.Guard (aka the Intelligent Server Monitoring Framework / ISMF) is a comprehensive full‑stack platform unifying: (1) smart test profile workflows (combine use‑case defined test profiles with contextual data), (2) intelligent non‑functional monitoring & anomaly detection with AI assistance, and (3) real‑time infrastructure & MCP server observability. Long log file analysis is replaced by focused, code‑area level insights; issues can optionally be auto‑remediated or proposed as fixes through intelligent learning. Robust forecasting & early warnings help prevent outages—so your tests (and your infrastructure) stay a step ahead.
+MCP.Guard is a comprehensive full‑stack platform unifying: 
+(1) smart test profile workflows (combine use‑case defined test profiles with contextual data), 
+(2) intelligent non‑functional monitoring & anomaly detection with AI assistance, and 
+(3) real‑time infrastructure & MCP server observability. Long log file analysis is replaced by focused, c
+ode‑area level insights; issues can optionally be auto‑remediated or proposed as fixes through intelligent learning. 
+Robust forecasting & early warnings help prevent outages—so your tests (and your infrastructure) stay a step ahead.
 
 ## 🚀 Features
 
