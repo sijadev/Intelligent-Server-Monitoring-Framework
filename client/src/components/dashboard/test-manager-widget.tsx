@@ -82,6 +82,7 @@ export function TestManagerWidget() {
   });
   const profiles = allProfiles.slice(0, 5);
   const [showAllProfiles, setShowAllProfiles] = useState(false);
+  const [profilesCollapsed, setProfilesCollapsed] = useState(true); // default collapsed
   const profilesListClass =
     allProfiles.length > 5 ? 'max-h-56 overflow-y-auto pr-1 space-y-2' : 'space-y-2';
 
@@ -169,63 +170,86 @@ export function TestManagerWidget() {
         </CardContent>
       </Card>
 
-      {/* Recent Profiles */}
+      {/* Recent Profiles (collapsible, default collapsed) */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-medium">Recent Test Profiles</CardTitle>
-          <CardDescription>Latest test configurations</CardDescription>
+        <CardHeader className="flex flex-row items-start justify-between space-y-0">
+          <div>
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <button
+                type="button"
+                aria-expanded={!profilesCollapsed}
+                aria-controls="recent-profiles-content"
+                onClick={() => setProfilesCollapsed((c) => !c)}
+                className="inline-flex items-center justify-center h-5 w-5 rounded border text-xs hover:bg-muted transition"
+              >
+                {profilesCollapsed ? '+' : '–'}
+              </button>
+              Recent Test Profiles
+              <span className="text-xs font-normal text-muted-foreground">
+                ({allProfiles.length})
+              </span>
+            </CardTitle>
+            <CardDescription>Latest test configurations</CardDescription>
+          </div>
+          {profilesCollapsed && allProfiles.length > 0 && (
+            <Button variant="outline" size="sm" onClick={() => setProfilesCollapsed(false)}>
+              Expand
+            </Button>
+          )}
         </CardHeader>
-        <CardContent>
-          {profiles.length === 0 ? (
-            <div className="text-center py-4">
-              <TestTube className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-              <p className="text-sm text-muted-foreground">No profiles created yet</p>
-              <Link href="/test-manager">
-                <Button size="sm" variant="outline" className="mt-2">
-                  Create First Profile
-                </Button>
-              </Link>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <div className={profilesListClass}>
-                {profiles.map((profile: TestProfile) => (
-                  <div
-                    key={profile.id}
-                    className="flex items-center justify-between p-2 border rounded"
-                  >
-                    <div>
-                      <div className="font-medium text-sm">{profile.name}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {getScenarioCount(profile)} scenarios • {getLanguages(profile)}
-                      </div>
-                    </div>
-                    <Badge variant="outline" className="text-xs">
-                      {getComplexity(profile)}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                {allProfiles.length > 5 && (
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    className="flex-1"
-                    onClick={() => setShowAllProfiles(true)}
-                  >
-                    Show All ({allProfiles.length})
-                  </Button>
-                )}
-                <Link href="/test-manager" className="flex-1">
-                  <Button size="sm" variant="outline" className="w-full mt-0">
-                    Open Manager
+        {!profilesCollapsed && (
+          <CardContent id="recent-profiles-content">
+            {profiles.length === 0 ? (
+              <div className="text-center py-4">
+                <TestTube className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground">No profiles created yet</p>
+                <Link href="/test-manager">
+                  <Button size="sm" variant="outline" className="mt-2">
+                    Create First Profile
                   </Button>
                 </Link>
               </div>
-            </div>
-          )}
-        </CardContent>
+            ) : (
+              <div className="space-y-2">
+                <div className={profilesListClass}>
+                  {profiles.map((profile: TestProfile) => (
+                    <div
+                      key={profile.id}
+                      className="flex items-center justify-between p-2 border rounded"
+                    >
+                      <div>
+                        <div className="font-medium text-sm">{profile.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {getScenarioCount(profile)} scenarios • {getLanguages(profile)}
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="text-xs">
+                        {getComplexity(profile)}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  {allProfiles.length > 5 && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="flex-1"
+                      onClick={() => setShowAllProfiles(true)}
+                    >
+                      Show All ({allProfiles.length})
+                    </Button>
+                  )}
+                  <Link href="/test-manager" className="flex-1">
+                    <Button size="sm" variant="outline" className="w-full mt-0">
+                      Open Manager
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        )}
       </Card>
 
       <Dialog open={showAllProfiles} onOpenChange={setShowAllProfiles}>
