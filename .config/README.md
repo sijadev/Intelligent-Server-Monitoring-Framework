@@ -79,7 +79,7 @@ async initialize() {
     await this.realInitialization();
   } catch (error) {
     if (useGracefulFallback()) {
-      console.log('⚠️ My Service using real fallback implementation');
+  console.log('My Service using real fallback implementation');
       this.fallbackImplementation = new MyServiceFallback();
       return;
     }

@@ -41,7 +41,7 @@
 - **Real-time Log Stream**: Live-Logs mit Pause/Clear Buttons
 - **WebSocket Connection**: 167-168 aktive Verbindungen
 
-## ⚠️ **Identifizierte Probleme**
+## **Identifizierte Probleme**
 
 ### **1. Hauptproblem: Datenbankschema-Fehler**
 

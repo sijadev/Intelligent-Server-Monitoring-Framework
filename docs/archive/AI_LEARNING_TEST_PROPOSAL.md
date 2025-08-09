@@ -349,7 +349,7 @@ Nach Implementierung haben wir:
 - **Regression-Schutz** für zukünftige Entwicklungen
 - **Dokumentierte AI-Capabilities** für Stakeholder
 
-## ⚠️ Risiken & Mitigation
+## Risiken & Mitigation
 
 ### Risiken
 

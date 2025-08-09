@@ -376,7 +376,7 @@ Der generierte HTML-Report enthält:
 ### **Report-Interpretation**
 
 - **Grün (✅)**: Test erfolgreich, System funktioniert wie erwartet
-- **Gelb (⚠️)**: Test teilweise erfolgreich, Optimierung möglich
+- **Gelb**: Test teilweise erfolgreich, Optimierung möglich
 - **Rot (❌)**: Test fehlgeschlagen, Aufmerksamkeit erforderlich
 
 ### **Trend-Analyse**

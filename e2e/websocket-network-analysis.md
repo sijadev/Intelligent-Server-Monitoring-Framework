@@ -41,7 +41,7 @@ Client IPs: Hauptsächlich 172.22.0.5 (Playwright Container)
 
 ## 🔒 **Sicherheits-Analyse**
 
-### ⚠️ **Potentielle Sichtbarkeit:**
+### **Potentielle Sichtbarkeit:**
 
 **JA, folgende können WebSocket-Traffic sehen:**
 
@@ -142,6 +142,6 @@ networks:
 **JA**, alle Container im Docker-Netzwerk können die WebSocket-Verbindungen sehen. Das ist:
 
 - ✅ **Gut für E2E Testing** (beabsichtigt)
-- ⚠️ **Zu beachten für Produktion** (Security-Maßnahmen empfohlen)
+- **Zu beachten für Produktion** (Security-Maßnahmen empfohlen)
 
 Die aktuelle Konfiguration ist **optimal für Development und Testing**! 🚀
