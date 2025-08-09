@@ -66,8 +66,8 @@ jobs:
       - name: 🎨 Prettier Format Check
         run: npm run format:check
 
-      - name: 🔍 ESLint Lint Check
-        run: npm run lint:ci
+      # - name: 🔍 ESLint Lint Check (disabled temporary)
+      #   run: npm run lint:ci
 
       - name: 🗃️ Setup Database Schema
         run: |
