@@ -35,6 +35,7 @@ export default [
       parserOptions: {
         project: false,
       },
+      parser: ts.parser,
     },
     plugins: {
       react,
