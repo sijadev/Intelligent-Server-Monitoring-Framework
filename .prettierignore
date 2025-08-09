@@ -9,6 +9,9 @@ e2e/test-logs/
 client/dist/
 node_modules/
 
+# Lint artifacts
+eslint-report.json
+
 # Test workspace outputs
 test-workspace/output/
 
