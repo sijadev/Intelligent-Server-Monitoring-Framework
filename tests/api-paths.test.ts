@@ -44,9 +44,14 @@ describe('API paths contract', () => {
       expect(ep.ok).toContain(res.status);
       const ct = res.headers.get('content-type') || '';
       if (ct.includes('application/json')) {
-        await res.json().catch(() => {
-          throw new Error(`${ep.path} did not return valid JSON`);
-        });
+        const body = await res.text();
+        if (body.trim() !== '') {
+          try {
+            JSON.parse(body);
+          } catch {
+            throw new Error(`${ep.path} invalid JSON: ${body.slice(0, 200)}`);
+          }
+        }
       }
     }, 20000);
   }
