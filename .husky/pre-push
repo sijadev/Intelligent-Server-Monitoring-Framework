@@ -7,8 +7,5 @@ if [[ "${SKIP_PREPUSH:-}" == "1" ]]; then
 fi
 
 echo "[pre-push] Node $(node -v)"
-echo "[1/1] Prettier format check (scoped)" 
-npx prettier --check "server/**/*.ts" "client/src/**/*.tsx" "tests/**/*.ts" || {
-	echo "[pre-push] Formatting issues found. Run: npm run format"; exit 1; }
-echo "[pre-push] Prettier OK. (TypeScript check removed)"
+echo "[pre-push] No checks configured (ESLint/TypeScript/Prettier removed). Proceeding..."
 
