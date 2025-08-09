@@ -9,6 +9,7 @@ import {
   metrics as metricsTable,
   mcpServers,
   mcpServerMetrics,
+  generatedTestData,
 } from '../shared/schema.js';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -49,6 +50,8 @@ import type {
   MCPServerDashboardData,
   TestProfile as DBTestProfile,
   InsertTestProfile as DBInsertTestProfile,
+  InsertGeneratedTestData,
+  GeneratedTestData,
 } from '../shared/schema.js';
 
 export class DatabaseStorage implements IStorage {
@@ -352,8 +355,8 @@ export class DatabaseStorage implements IStorage {
       // Probe for critical tables; if missing, log concise hint once
       const result = await this.connection`
         SELECT to_regclass('public.test_profiles') as tp, to_regclass('public.generated_test_data') as gtd;
-      `;
-      const row: any = result[0];
+  `;
+      const row = result[0] as { tp: string | null; gtd: string | null } | undefined;
       if ((!row?.tp || !row?.gtd) && !process.env.TEST_SUPPRESS_DB_WARNINGS) {
         const key = 'missing:test_profiles:generated_test_data';
         if (!this.loggedFallbackErrors.has(key)) {
@@ -470,38 +473,35 @@ export class DatabaseStorage implements IStorage {
   // =====================
   // Generated Test Data
   // =====================
-  async createGeneratedTestData(entry: any): Promise<any> {
+  async createGeneratedTestData(entry: InsertGeneratedTestData): Promise<GeneratedTestData> {
     return this.executeWithFallback(
       async () => {
         // Do NOT pass id so DEFAULT gen_random_uuid() applies
-        const payload: any = {
+        const payload: InsertGeneratedTestData = {
           profileId: entry.profileId,
           generatedAt: entry.generatedAt ? new Date(entry.generatedAt) : new Date(),
           success: entry.success ?? true,
-          executionTime: typeof entry.executionTime === 'number' ? entry.executionTime : 0,
-          logEntries: typeof entry.logEntries === 'number' ? entry.logEntries : 0,
-          codeProblems: typeof entry.codeProblems === 'number' ? entry.codeProblems : 0,
-          metricPoints: typeof entry.metricPoints === 'number' ? entry.metricPoints : 0,
-          dataSizeBytes: typeof entry.dataSizeBytes === 'number' ? entry.dataSizeBytes : 0,
+          executionTime: entry.executionTime ?? 0,
+          logEntries: entry.logEntries ?? 0,
+          codeProblems: entry.codeProblems ?? 0,
+          metricPoints: entry.metricPoints ?? 0,
+          dataSizeBytes: entry.dataSizeBytes ?? 0,
           metadata: entry.metadata || {},
           errors: entry.errors || [],
         };
-        const inserted = await this.db
-          .insert((schema as any).generatedTestData)
-          .values(payload)
-          .returning();
-        return inserted[0];
+        const inserted = await this.db.insert(generatedTestData).values(payload).returning();
+        return inserted[0] as GeneratedTestData;
       },
-      () => this.memStorageFallback.createGeneratedTestData(entry),
+      () => this.memStorageFallback.createGeneratedTestData(entry as any),
     );
   }
 
   async listGeneratedTestData(
     options: { profileId?: string; limit?: number } = {},
-  ): Promise<any[]> {
+  ): Promise<GeneratedTestData[]> {
     return this.executeWithFallback(
       async () => {
-        const tbl = (schema as any).generatedTestData;
+        const tbl = generatedTestData;
         if (options.profileId) {
           if (options.limit) {
             return await this.db

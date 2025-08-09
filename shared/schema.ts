@@ -60,6 +60,11 @@ export const generatedTestData = pgTable('generated_test_data', {
   metadata: jsonb('metadata').default({}),
   errors: jsonb('errors').default([]),
 });
+export const insertGeneratedTestDataSchema = createInsertSchema(generatedTestData).omit({
+  id: true,
+});
+export type InsertGeneratedTestData = z.infer<typeof insertGeneratedTestDataSchema>;
+export type GeneratedTestData = typeof generatedTestData.$inferSelect;
 
 export const insertTestProfileSchema = createInsertSchema(testProfiles).omit({});
 export type InsertTestProfile = z.infer<typeof insertTestProfileSchema>;
