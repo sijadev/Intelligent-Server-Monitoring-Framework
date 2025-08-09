@@ -127,8 +127,7 @@ jobs:
       # - name: 🎨 Prettier Format Check (disabled)
       #   run: npm run format:check
 
-      # - name: 🔍 ESLint Lint Check (disabled for lightweight separate workflow)
-      #   run: npm run lint:ci
+      # ESLint step intentionally removed (no dedicated lightweight workflow active)
 
       - name: 🗃️ Setup Database Schema
         run: |
