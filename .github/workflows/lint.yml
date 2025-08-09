@@ -1,0 +1,29 @@
+name: Lightweight Lint
+
+on:
+  pull_request:
+    branches: [main, develop, Development]
+  push:
+    branches: [develop, Development]
+
+concurrency:
+  group: lint-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install (production + dev needed for eslint)
+        run: npm ci --omit=optional
+      - name: Run ESLint (lightweight scope)
+        run: npx eslint server client/src tests --ext .ts,.tsx --max-warnings=0
+      - name: Upload eslint report (if needed)
+        if: failure()
+        run: npx eslint server client/src tests --ext .ts,.tsx -f json > eslint-report.json || true
