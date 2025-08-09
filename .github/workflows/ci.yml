@@ -114,19 +114,25 @@ jobs:
       # COMPREHENSIVE TEST SUITE
       - name: 🧪 Run Unit Tests
         run: |
-          echo "🔬 Running Unit Tests..."
+          echo "🔬 Running Unit Tests (updated paths)..."
           mkdir -p test-results/unit
-          npx vitest run server/test/basic-storage.test.ts server/test/config.test.ts server/test/services.test.ts \
+          # Running representative fast core tests from existing 'tests/' directory
+          npx vitest run \
+            tests/system-health.test.ts \
+            tests/database.test.ts \
+            tests/critical-path.test.ts \
             --reporter=json --outputFile=test-results/unit/unit-test-results.json
           echo "✅ Unit tests completed"
         env:
           DATABASE_URL: ${{ env.DATABASE_URL }}
 
-      - name: 📡 Run API Tests
+      - name: � Run API Tests
         run: |
-          echo "🌐 Running API Tests..."
+          echo "🌐 Running API Tests (updated paths)..."
           mkdir -p test-results/api
-          npx vitest run server/test/mcp-api-ci.test.ts \
+          npx vitest run \
+            tests/api-paths.test.ts \
+            tests/api-contract.test.ts \
             --reporter=json --outputFile=test-results/api/api-test-results.json
           echo "✅ API tests completed"
         env:
@@ -134,11 +140,13 @@ jobs:
           NODE_ENV: test
           DATABASE_URL: ${{ env.DATABASE_URL }}
 
-      - name: 🔗 Run Integration Tests
+      - name: � Run Integration Tests
         run: |
-          echo "🔗 Running Integration/Smoke Tests..."
+          echo "� Running Integration/Smoke Tests (updated paths)..."
           mkdir -p test-results/integration
-          npx vitest run server/test/smoke-ci.test.ts \
+          npx vitest run \
+            tests/profile-factory.integration.test.ts \
+            tests/smoke.test.ts \
             --reporter=json --outputFile=test-results/integration/integration-test-results.json
           echo "✅ Integration tests completed"
         env:
@@ -149,79 +157,8 @@ jobs:
           GITHUB_ACTIONS: true
           TEST_MCP_SERVER_URL: http://localhost:3001
 
-      - name: 📊 Generate Test Data for Advanced Tests
-        run: |
-          echo "📊 Generating test data for Real Data and ML tests..."
-
-          # Check for Test Manager CLI
-          if command -v imf-test-manager &> /dev/null; then
-            echo "✅ IMF Test Manager CLI found"
-            imf-test-manager --version
-          else
-            echo "📦 Using CI fallback data generation (Test Manager CLI not available in CI)"
-          fi
-
-          # Generate CI Test Profiles and Data
-          if [ -f .github/workflows/ci-setup-test-data.sh ]; then
-            chmod +x .github/workflows/ci-setup-test-data.sh
-            ./.github/workflows/ci-setup-test-data.sh
-          else
-            echo "⚠️ CI setup script not found, tests will use inline generation"
-          fi
-          echo "✅ Test data generation completed"
-
-      - name: 🔬 Run Real Data Tests
-        run: |
-          echo "🎯 Running Real Data Tests..."
-          mkdir -p test-results/real-data
-
-          # Set environment variables for GitHub CI
-          export GITHUB_ACTIONS=true
-          export CI=true
-          export IMF_TEST_WORKSPACE=./test-workspace
-
-          # Run available real-data tests
-          echo "🤖 Running AI Learning Engine Test..."  
-          npx vitest run server/test/ai-learning-engine-real-data.test.ts \
-            --reporter=json --outputFile=test-results/real-data/ai-learning-results.json || true
-            
-          echo "🔗 Running MCP Integration Test..."
-          npx vitest run server/test/mcp-integration-real-data.test.ts \
-            --reporter=json --outputFile=test-results/real-data/mcp-integration-results.json || true
-            
-          echo "📚 Running ML Continuous Learning Test..."
-          npx vitest run server/test/long-term/mcp-monitoring-continuous-learning.test.ts \
-            --reporter=json --outputFile=test-results/real-data/ml-continuous-learning-results.json || true
-            
-          echo "✅ Real Data tests completed"
-        env:
-          DATABASE_URL: ${{ env.DATABASE_URL }}
-          REDIS_URL: redis://localhost:6380
-          PYTHON_PATH: python3
-          IMF_TEST_WORKSPACE: ./test-workspace
-          TEST_MCP_SERVER_URL: http://localhost:3001
-
-      - name: 🧠 Run ML Tests & Documentation
-        run: |
-          echo "🎯 Running ML Tests..."
-          mkdir -p test-results/ml
-
-          # Run ML Test Suite - MUST PASS
-          echo "📚 Running Continuous Learning Tests..."
-          npx vitest run server/test/long-term/mcp-monitoring-continuous-learning-simple.test.ts \
-            --reporter=json --outputFile=test-results/ml/ml-continuous-learning-results.json
-            
-          # Run Intelligent Monitoring Tests - MUST PASS  
-          echo "🧠 Running Intelligent Monitoring Tests..."
-          npx vitest run server/test/intelligent-mcp-monitoring.test.ts \
-            --reporter=json --outputFile=test-results/ml/intelligent-monitoring-results.json
-            
-          echo "✅ ML tests completed"
-        env:
-          DATABASE_URL: ${{ env.DATABASE_URL }}
-          REDIS_URL: redis://localhost:6380
-          PYTHON_PATH: python3
-          TEST_MCP_SERVER_URL: http://localhost:3001
+      # Removed Real Data & ML test phases referencing non-existent files.
+      # (Re-add when corresponding test specs are introduced under tests/.)
 
       - name: 🐍 Run Python Framework Tests
         run: |
