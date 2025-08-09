@@ -29,7 +29,7 @@ await storage.saveAIProgress(progress);
 **Alte AI-Enhanced Tests:**
 
 ```typescript
-// server/test/long-term/ai-enhanced-continuous-monitoring.test.ts
+<!-- (Deprecated long-term test path removed) -->
 async function loadAIProgress(): Promise<any[]> {
   try {
     const metricsPath = path.join(
@@ -47,7 +47,7 @@ async function loadAIProgress(): Promise<any[]> {
 **Neue Tenant-Aware Tests:**
 
 ```typescript
-// server/test/long-term/ai-enhanced-continuous-monitoring-tenant-aware.test.ts
+<!-- (Deprecated long-term test path removed) -->
 const mcpServer1Storage = TenantAwareStorageFactory.create('memory', {
   serverId: 'mcp-server-dashboard',
   projectId: 'imf-monitoring',
@@ -97,10 +97,9 @@ const storage = new ProductionAIStorage({
 - name: 🔬 Run Real Data Tests
   run: |
     # Original tests (backward compatibility)
-    npx vitest run server/test/long-term/ai-enhanced-continuous-monitoring.test.ts
-
-    # New tenant-aware tests (production validation)
-    npx vitest run server/test/long-term/ai-enhanced-continuous-monitoring-tenant-aware.test.ts
+  # deprecated long-term test removed
+  # New tenant-aware tests (production validation)
+  # deprecated long-term test removed
   env:
     GITHUB_ACTIONS: true
     CI: true

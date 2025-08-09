@@ -261,7 +261,7 @@ private validateSharingPermission(
 ### Step 4: Tests aktualisieren
 
 ```typescript
-// server/test/long-term/ai-enhanced-continuous-monitoring-tenant-aware.test.ts
+<!-- (Deprecated long-term test path removed) -->
 
 async function testCrossTenantModelSharing(
   data: GeneratedTestData[],
@@ -332,7 +332,7 @@ Target models: 0 (can't see shared model)
 Sharing result: ❌ Failed
 ```
 
-### After (funktionierend):
+### After (funktionierend)
 
 ```bash
 Source models: 1 (own model)

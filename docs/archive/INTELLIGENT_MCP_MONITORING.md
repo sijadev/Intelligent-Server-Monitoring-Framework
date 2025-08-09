@@ -36,27 +36,33 @@ Das Intelligent Monitoring Framework (IMF) wurde erfolgreich erweitert um ein vo
 
 ### 📊 5. End-to-End Workflow
 
+`````bash
+````bash
 ```
-Monitor → Detect → Predict → Fix → Validate → Learn
-   ↓        ↓        ↓       ↓       ↓        ↓
- MCP     Code      ML    Auto-   Health   Model
-Server   Issues   Model   Fix   Check   Training
-```
+`````
 
-## 🏗️ Systemarchitektur
+MCP Code ML Auto- Health Model
+Server Issues Model Fix Check Training
+
+`````bash
+````bash
+```
+`````
 
 ### Python Framework Components
 
+````bash
 ```
-python-framework/
-├── intelligent_mcp_code_monitor.py    # 🎯 Hauptsystem
-├── mcp_monitoring_plugin.py           # 📡 MCP Discovery
-├── code_analysis_plugin.py            # 🔍 Code Analysis
-├── real_ai_learning_system.py         # 🧠 ML System
-└── demo_mcp_monitoring.py             # 🎬 Demo
-```
+````
 
-### TypeScript Test Integration
+├── mcp_monitoring_plugin.py # 📡 MCP Discovery
+├── code_analysis_plugin.py # 🔍 Code Analysis
+├── real_ai_learning_system.py # 🧠 ML System
+└── demo_mcp_monitoring.py # 🎬 Demo
+
+````bash
+```
+````
 
 ```
 server/test/
@@ -152,7 +158,7 @@ python3 demo_mcp_monitoring.py
 npm test -- server/test/intelligent-mcp-monitoring.test.ts
 
 # ML/AI Tests
-npm test -- server/test/long-term/ai-learning-validation.test.ts
+# (Deprecated long-term test removed)
 ```
 
 ### 3. ML Training testen

@@ -36,7 +36,7 @@
     "docker:logs": "docker-compose logs -f",
     "docker:clean": "docker-compose down --volumes --remove-orphans",
     "db:migrate:sql": "bash scripts/apply-migrations.sh",
-    "test:ai-storage": "vitest run server/test/enhanced-cross-tenant-sharing.test.ts server/test/long-term/ai-enhanced-continuous-monitoring-tenant-aware.test.ts",
+    "test:ai-storage": "vitest run server/test/enhanced-cross-tenant-sharing.test.ts",
     "test:all-with-docker": "./scripts/run-all-tests-with-docker.sh",
     "python:start": "cd python-framework && python api_integration.py",
     "python:install": "cd python-framework && pip install -r requirements.txt",
