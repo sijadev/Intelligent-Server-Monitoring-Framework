@@ -5,24 +5,24 @@
 
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { DrizzleRepository, RepositoryFactory } from './base.repository';
-import { 
-  problems, 
-  metrics, 
-  logEntries, 
-  plugins, 
+import {
+  problems,
+  metrics,
+  logEntries,
+  plugins,
   frameworkConfig,
   codeIssues,
   codeAnalysisRuns,
   aiInterventions,
   deployments,
   mcpServers,
-  mcpServerMetrics
-} from '@shared/schema';
-import { 
-  Problem, 
-  Metrics, 
-  LogEntry, 
-  Plugin, 
+  mcpServerMetrics,
+} from '../../shared/schema.js';
+import {
+  Problem,
+  Metrics,
+  LogEntry,
+  Plugin,
   FrameworkConfig,
   CodeIssue,
   CodeAnalysisRun,
@@ -40,8 +40,8 @@ import {
   InsertAiIntervention,
   InsertDeployment,
   InsertMCPServer,
-  InsertMCPServerMetrics
-} from '@shared/schema';
+  InsertMCPServerMetrics,
+} from '../../shared/schema.js';
 import { QueryOptions, ILoggerService } from '../interfaces/service.interfaces';
 import { eq, desc, and, gte, lte, like, or, sql } from 'drizzle-orm';
 
@@ -100,13 +100,13 @@ export class ProblemRepository extends DrizzleRepository<Problem, string> {
     return this.executeQuery(async () => {
       const results = await this.db
         .update(problems)
-        .set({ 
-          resolved: true, 
-          resolvedAt: new Date() 
+        .set({
+          resolved: true,
+          resolvedAt: new Date(),
         })
         .where(eq(problems.id, id))
         .returning();
-      
+
       return results[0] || null;
     }, `resolve(${id})`);
   }
@@ -119,12 +119,7 @@ export class ProblemRepository extends DrizzleRepository<Problem, string> {
       return await this.db
         .select()
         .from(problems)
-        .where(
-          and(
-            gte(problems.timestamp, startDate),
-            lte(problems.timestamp, endDate)
-          )
-        )
+        .where(and(gte(problems.timestamp, startDate), lte(problems.timestamp, endDate)))
         .orderBy(desc(problems.timestamp));
     }, 'findInDateRange');
   }
@@ -142,34 +137,40 @@ export class ProblemRepository extends DrizzleRepository<Problem, string> {
     return this.executeQuery(async () => {
       const [totalResult, activeResult, resolvedResult] = await Promise.all([
         this.db.select({ count: sql<number>`count(*)` }).from(problems),
-        this.db.select({ count: sql<number>`count(*)` }).from(problems).where(eq(problems.resolved, false)),
-        this.db.select({ count: sql<number>`count(*)` }).from(problems).where(eq(problems.resolved, true)),
+        this.db
+          .select({ count: sql<number>`count(*)` })
+          .from(problems)
+          .where(eq(problems.resolved, false)),
+        this.db
+          .select({ count: sql<number>`count(*)` })
+          .from(problems)
+          .where(eq(problems.resolved, true)),
       ]);
 
       const [severityStats, typeStats] = await Promise.all([
         this.db
-          .select({ 
-            severity: problems.severity, 
-            count: sql<number>`count(*)` 
+          .select({
+            severity: problems.severity,
+            count: sql<number>`count(*)`,
           })
           .from(problems)
           .groupBy(problems.severity),
         this.db
-          .select({ 
-            type: problems.type, 
-            count: sql<number>`count(*)` 
+          .select({
+            type: problems.type,
+            count: sql<number>`count(*)`,
           })
           .from(problems)
-          .groupBy(problems.type)
+          .groupBy(problems.type),
       ]);
 
       const bySeverity: Record<string, number> = {};
-      severityStats.forEach(stat => {
+      severityStats.forEach((stat) => {
         bySeverity[stat.severity] = stat.count;
       });
 
       const byType: Record<string, number> = {};
-      typeStats.forEach(stat => {
+      typeStats.forEach((stat) => {
         byType[stat.type] = stat.count;
       });
 
@@ -178,7 +179,7 @@ export class ProblemRepository extends DrizzleRepository<Problem, string> {
         active: activeResult[0]?.count || 0,
         resolved: resolvedResult[0]?.count || 0,
         bySeverity,
-        byType
+        byType,
       };
     }, 'getStatistics');
   }
@@ -203,7 +204,7 @@ export class MetricsRepository extends DrizzleRepository<Metrics, string> {
         .from(metrics)
         .orderBy(desc(metrics.timestamp))
         .limit(1);
-      
+
       return results[0] || null;
     }, 'getLatest');
   }
@@ -216,12 +217,7 @@ export class MetricsRepository extends DrizzleRepository<Metrics, string> {
       return await this.db
         .select()
         .from(metrics)
-        .where(
-          and(
-            gte(metrics.timestamp, startTime),
-            lte(metrics.timestamp, endTime)
-          )
-        )
+        .where(and(gte(metrics.timestamp, startTime), lte(metrics.timestamp, endTime)))
         .orderBy(desc(metrics.timestamp));
     }, 'getInTimeRange');
   }
@@ -229,7 +225,10 @@ export class MetricsRepository extends DrizzleRepository<Metrics, string> {
   /**
    * Get average metrics for time period
    */
-  async getAverages(startTime: Date, endTime: Date): Promise<{
+  async getAverages(
+    startTime: Date,
+    endTime: Date,
+  ): Promise<{
     avgCpuUsage: number;
     avgMemoryUsage: number;
     avgDiskUsage: number;
@@ -241,15 +240,10 @@ export class MetricsRepository extends DrizzleRepository<Metrics, string> {
           avgCpuUsage: sql<number>`AVG(${metrics.cpuUsage})`,
           avgMemoryUsage: sql<number>`AVG(${metrics.memoryUsage})`,
           avgDiskUsage: sql<number>`AVG(${metrics.diskUsage})`,
-          avgLoadAverage: sql<number>`AVG(${metrics.loadAverage})`
+          avgLoadAverage: sql<number>`AVG(${metrics.loadAverage})`,
         })
         .from(metrics)
-        .where(
-          and(
-            gte(metrics.timestamp, startTime),
-            lte(metrics.timestamp, endTime)
-          )
-        );
+        .where(and(gte(metrics.timestamp, startTime), lte(metrics.timestamp, endTime)));
 
       return result[0] || null;
     }, 'getAverages');
@@ -327,12 +321,14 @@ export class LogEntryRepository extends DrizzleRepository<LogEntry, string> {
   /**
    * Get recent logs with filtering
    */
-  async getRecent(options: {
-    level?: string;
-    source?: string;
-    limit?: number;
-    since?: Date;
-  } = {}): Promise<LogEntry[]> {
+  async getRecent(
+    options: {
+      level?: string;
+      source?: string;
+      limit?: number;
+      since?: Date;
+    } = {},
+  ): Promise<LogEntry[]> {
     return this.executeQuery(async () => {
       let query = this.db.select().from(logEntries);
 
@@ -422,12 +418,8 @@ export class PluginRepository extends DrizzleRepository<Plugin, string> {
    */
   async findByName(name: string): Promise<Plugin | null> {
     return this.executeQuery(async () => {
-      const results = await this.db
-        .select()
-        .from(plugins)
-        .where(eq(plugins.name, name))
-        .limit(1);
-      
+      const results = await this.db.select().from(plugins).where(eq(plugins.name, name)).limit(1);
+
       return results[0] || null;
     }, `findByName(${name})`);
   }
@@ -439,13 +431,13 @@ export class PluginRepository extends DrizzleRepository<Plugin, string> {
     return this.executeQuery(async () => {
       const results = await this.db
         .update(plugins)
-        .set({ 
-          status, 
-          lastUpdate: new Date() 
+        .set({
+          status,
+          lastUpdate: new Date(),
         })
         .where(eq(plugins.id, id))
         .returning();
-      
+
       return results[0] || null;
     }, `updateStatus(${id}, ${status})`);
   }
@@ -464,10 +456,7 @@ export class DomainRepositories {
   public readonly logEntries: LogEntryRepository;
   public readonly plugins: PluginRepository;
 
-  constructor(
-    db: PostgresJsDatabase<any>,
-    logger?: ILoggerService
-  ) {
+  constructor(db: PostgresJsDatabase<any>, logger?: ILoggerService) {
     this.problems = new ProblemRepository(db, logger);
     this.metrics = new MetricsRepository(db, logger);
     this.logEntries = new LogEntryRepository(db, logger);
@@ -484,16 +473,18 @@ export class DomainRepositories {
   /**
    * Cleanup old data from all repositories
    */
-  async cleanup(options: {
-    metricsKeepDays?: number;
-    logsKeepDays?: number;
-  } = {}): Promise<{
+  async cleanup(
+    options: {
+      metricsKeepDays?: number;
+      logsKeepDays?: number;
+    } = {},
+  ): Promise<{
     metricsDeleted: number;
     logsDeleted: number;
   }> {
     const [metricsDeleted, logsDeleted] = await Promise.all([
       this.metrics.cleanup(options.metricsKeepDays),
-      this.logEntries.cleanup(options.logsKeepDays)
+      this.logEntries.cleanup(options.logsKeepDays),
     ]);
 
     return { metricsDeleted, logsDeleted };
@@ -512,14 +503,14 @@ export class DomainRepositories {
       this.problems.getStatistics(),
       this.metrics.count(),
       this.logEntries.count(),
-      this.plugins.count()
+      this.plugins.count(),
     ]);
 
     return {
       problems: problemStats,
       totalMetrics: metricsCount,
       totalLogs: logsCount,
-      totalPlugins: pluginsCount
+      totalPlugins: pluginsCount,
     };
   }
 }

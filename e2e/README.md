@@ -69,21 +69,25 @@ cp .env.example .env
 ### 3. Run Tests
 
 **Local Testing** (MCP.Guard app running on localhost:3000):
+
 ```bash
 npm test
 ```
 
 **Docker Testing** (Full containerized environment):
+
 ```bash
 npm run test:docker
 ```
 
 **Interactive Mode**:
+
 ```bash
 npm run test:ui
 ```
 
 **Debug Mode**:
+
 ```bash
 npm run test:debug
 ```
@@ -91,6 +95,7 @@ npm run test:debug
 ## 🧪 Test Categories
 
 ### 1. Dashboard Tests (`01-dashboard.spec.ts`)
+
 - ✅ Dashboard loading and rendering
 - ✅ Status cards functionality
 - ✅ Navigation between sections
@@ -99,6 +104,7 @@ npm run test:debug
 - ✅ Error handling
 
 ### 2. Problems Management (`02-problems.spec.ts`)
+
 - ✅ Problems list display
 - ✅ Filtering and searching
 - ✅ Problem resolution workflow
@@ -107,6 +113,7 @@ npm run test:debug
 - ✅ Empty state handling
 
 ### 3. Navigation & Routing (`03-navigation.spec.ts`)
+
 - ✅ Sidebar navigation
 - ✅ Direct URL access
 - ✅ Browser back/forward
@@ -114,6 +121,7 @@ npm run test:debug
 - ✅ Route persistence
 
 ### 4. API Integration (`04-api-integration.spec.ts`)
+
 - ✅ Health check endpoints
 - ✅ CRUD operations
 - ✅ Error response handling
@@ -121,6 +129,7 @@ npm run test:debug
 - ✅ CORS configuration
 
 ### 5. End-to-End Workflows (`05-end-to-end.spec.ts`)
+
 - ✅ Complete user journeys
 - ✅ Cross-page data consistency
 - ✅ Error recovery
@@ -144,6 +153,7 @@ docker-compose down -v
 ```
 
 ### Docker Components:
+
 - **MCP.Guard Application**: Full application stack
 - **PostgreSQL**: Test database
 - **Redis**: Caching layer
@@ -153,14 +163,14 @@ docker-compose down -v
 
 ### Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `BASE_URL` | `http://localhost:3000` | Application URL |
-| `CI` | `false` | CI environment flag |
-| `HEADLESS` | `true` | Run browsers in headless mode |
-| `WORKERS` | `4` | Parallel test workers |
-| `RETRIES` | `2` | Test retry attempts |
-| `TEST_TIMEOUT` | `30000` | Test timeout in ms |
+| Variable       | Default                 | Description                   |
+| -------------- | ----------------------- | ----------------------------- |
+| `BASE_URL`     | `http://localhost:3000` | Application URL               |
+| `CI`           | `false`                 | CI environment flag           |
+| `HEADLESS`     | `true`                  | Run browsers in headless mode |
+| `WORKERS`      | `4`                     | Parallel test workers         |
+| `RETRIES`      | `2`                     | Test retry attempts           |
+| `TEST_TIMEOUT` | `30000`                 | Test timeout in ms            |
 
 ### Browser Configuration
 
@@ -171,22 +181,25 @@ projects: [
   { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
   { name: 'webkit', use: { ...devices['Desktop Safari'] } },
   { name: 'Mobile Chrome', use: { ...devices['Pixel 5'] } },
-]
+];
 ```
 
 ## 📊 Reports and Results
 
 ### HTML Report
+
 ```bash
 npm run test:report
 ```
 
 ### Screenshots and Videos
+
 - Automatic capture on test failure
 - Stored in `test-results/` directory
 - Configurable retention policy
 
 ### CI Integration
+
 - JUnit XML reports
 - GitHub Actions artifacts
 - Slack notifications (optional)
@@ -227,7 +240,7 @@ test.describe('My Feature', () => {
     const myPage = new MyPage(page);
     await myPage.goto('/my-page');
     await myPage.performAction();
-    
+
     await expect(myPage.myElement).toBeVisible();
   });
 });
@@ -236,6 +249,7 @@ test.describe('My Feature', () => {
 ## 🚀 Advanced Features
 
 ### Visual Regression Testing
+
 ```bash
 # Generate baseline screenshots
 npx playwright test --update-snapshots
@@ -245,6 +259,7 @@ npx playwright test
 ```
 
 ### Performance Testing
+
 ```typescript
 test('should load quickly', async ({ page }) => {
   const startTime = Date.now();
@@ -255,14 +270,15 @@ test('should load quickly', async ({ page }) => {
 ```
 
 ### Accessibility Testing
+
 ```typescript
 test('should be accessible', async ({ page }) => {
   await page.goto('/');
-  
+
   // Check for ARIA labels
   const buttons = await page.locator('button').count();
   const labeledButtons = await page.locator('button[aria-label], button[aria-labelledby]').count();
-  
+
   expect(labeledButtons / buttons).toBeGreaterThan(0.8);
 });
 ```
@@ -293,17 +309,20 @@ git commit -m "Fix responsive layout [mobile-e2e]"
 ## 🛠️ Maintenance
 
 ### Update Browsers
+
 ```bash
 npx playwright install
 ```
 
 ### Clear Test Cache
+
 ```bash
 rm -rf test-results/
 rm -rf playwright-report/
 ```
 
 ### Debug Failed Tests
+
 ```bash
 npm run test:debug -- --grep "specific test"
 ```
@@ -332,23 +351,27 @@ npm run test:debug -- --grep "specific test"
 ### Common Issues
 
 **Tests fail to start:**
+
 - Check if MCP.Guard application is running
 - Verify database connectivity
 - Check port availability
 
 **Browser installation issues:**
+
 ```bash
 npx playwright install --force
 sudo npx playwright install-deps
 ```
 
 **Docker issues:**
+
 ```bash
 docker-compose down -v
 docker system prune -f
 ```
 
 **Flaky tests:**
+
 - Increase timeout values
 - Add explicit waits
 - Check for race conditions

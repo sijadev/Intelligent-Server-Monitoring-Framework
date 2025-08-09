@@ -15,7 +15,7 @@ import { EventEmitter } from 'events';
 export interface IService {
   readonly name: string;
   readonly version: string;
-  
+
   initialize(): Promise<void>;
   cleanup(): Promise<void>;
   getHealthStatus(): ServiceHealthStatus;
@@ -87,7 +87,7 @@ export interface ITransaction {
 }
 
 // ============================================================================
-// MONITORING INTERFACES  
+// MONITORING INTERFACES
 // ============================================================================
 
 /**
@@ -261,7 +261,7 @@ export interface LogFilter {
 export interface IPlugin extends IService {
   readonly type: 'collector' | 'detector' | 'remediator' | 'notifier';
   readonly dependencies: string[];
-  
+
   configure(config: PluginConfig): Promise<void>;
   execute(context: PluginContext): Promise<PluginResult>;
 }

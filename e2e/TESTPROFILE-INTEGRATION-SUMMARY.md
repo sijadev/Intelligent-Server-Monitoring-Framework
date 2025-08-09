@@ -9,11 +9,12 @@ Basierend auf deinem exzellenten Vorschlag haben wir die User Story Tests mit de
 ## 📊 **Verfügbare Testprofile aus dem IMF Test Manager**
 
 ### **1. 📦 NPM Package Test** (Medium Complexity)
+
 ```yaml
 Profil: Standard Development
 Erwartete Daten:
   - Log Entries: 2,926
-  - Problems: 36  
+  - Problems: 36
   - Metrics: 1,540
   - Data Size: 155.71 KB
   - Sprachen: TypeScript, JavaScript
@@ -21,6 +22,7 @@ Use Cases: Development, Package Testing, Standard Operations
 ```
 
 ### **2. 🐳 Docker Test Profile** (Medium Complexity)
+
 ```yaml
 Profil: Container Deployment
 Erwartete Daten:
@@ -33,6 +35,7 @@ Use Cases: Docker Deployment, Container Orchestration
 ```
 
 ### **3. 🔥 CI High Complexity** (High Complexity)
+
 ```yaml
 Profil: Maximum Load Testing
 Erwartete Daten:
@@ -45,6 +48,7 @@ Use Cases: Stress Testing, Performance Validation, CI/CD unter Last
 ```
 
 ### **4. 🎯 CI Medium Complexity** (Medium Complexity)
+
 ```yaml
 Profil: Standard CI/CD Pipeline
 Erwartete Daten:
@@ -61,32 +65,34 @@ Use Cases: Standard Release, Integration Tests
 ## 🏗️ **Template-System Architektur**
 
 ### **UserStoryTestTemplate Class**
+
 ```typescript
 class UserStoryTestTemplate {
   // Testprofil-Integration
-  constructor(page: Page, profileKey: string)
-  async activateTestProfile(): Promise<void>
-  async validateExpectedVsActual(): Promise<ComparisonResult>
-  
+  constructor(page: Page, profileKey: string);
+  async activateTestProfile(): Promise<void>;
+  async validateExpectedVsActual(): Promise<ComparisonResult>;
+
   // Soll/Ist Vergleich mit Toleranzen
-  async performSollIstComparison(): Promise<ValidationResults>
-  
+  async performSollIstComparison(): Promise<ValidationResults>;
+
   // User Story Workflow
-  async executeUserStoryTemplate(persona, goal, steps): Promise<void>
-  async createUserStoryStep(name, context, action): Promise<void>
+  async executeUserStoryTemplate(persona, goal, steps): Promise<void>;
+  async createUserStoryStep(name, context, action): Promise<void>;
 }
 ```
 
 ### **Testprofil-spezifische Validierungen**
+
 ```typescript
 interface TestProfile {
   name: string;
   complexity: 'low' | 'medium' | 'high';
   expectedData: {
-    logEntries: number;    // Erwartete Log-Anzahl
-    problems: number;      // Erwartete Problem-Anzahl  
-    metrics: number;       // Erwartete Metriken
-    sizeKB: number;        // Erwartete Datenmenge
+    logEntries: number; // Erwartete Log-Anzahl
+    problems: number; // Erwartete Problem-Anzahl
+    metrics: number; // Erwartete Metriken
+    sizeKB: number; // Erwartete Datenmenge
   };
 }
 ```
@@ -98,6 +104,7 @@ interface TestProfile {
 ### **👨‍💻 System Administrator mit Profilen**
 
 #### **Morgendliche Kontrolle (CI Medium Complexity)**
+
 ```typescript
 // Erwartete Baseline: 74 Probleme, 4,830 Log Entries
 await testTemplate.executeUserStoryTemplate(
@@ -111,17 +118,18 @@ await testTemplate.executeUserStoryTemplate(
         const comparison = await testTemplate.validateExpectedVsActual();
         // Soll: 74 Probleme / Ist: Aktuelle Anzahl
         expect(comparison.problems.actual).toBeLessThanOrEqual(90); // ±20% Toleranz
-      }
-    }
-  ]
+      },
+    },
+  ],
 );
 ```
 
 #### **Krisenmanagement (CI High Complexity)**
+
 ```typescript
 // Erwartete Baseline: 87 Probleme, 8,636 Log Entries - Maximale Belastung
 await testTemplate.executeUserStoryTemplate(
-  '👨‍💻 System Administrator (Sarah)', 
+  '👨‍💻 System Administrator (Sarah)',
   'Problem-Investigation bei hoher Last (87 erwartete Probleme)',
   // High Complexity spezifische Validierungen mit erwarteten Werten
 );
@@ -130,6 +138,7 @@ await testTemplate.executeUserStoryTemplate(
 ### **👩‍💻 Developer mit Profilen**
 
 #### **Docker Deployment (Docker Test Profile)**
+
 ```typescript
 // Erwartete Baseline: Container-spezifische Belastung
 await testTemplate.executeUserStoryTemplate(
@@ -137,19 +146,22 @@ await testTemplate.executeUserStoryTemplate(
   'Docker Deployment validieren (74 Container-Probleme erwartet)',
   [
     {
-      name: 'Container Impact Analysis',  
+      name: 'Container Impact Analysis',
       context: 'Alex analysiert Container-spezifische Metriken',
       action: async () => {
         // Soll: 74 Probleme, 214.16 KB / Ist: Aktuelle Container-Metriken
         const dockerComparison = await testTemplate.validateExpectedVsActual();
-        console.log(`🐳 Docker Profile Soll/Ist: ${dockerComparison.problems.expected}/${dockerComparison.problems.actual}`);
-      }
-    }
-  ]
+        console.log(
+          `🐳 Docker Profile Soll/Ist: ${dockerComparison.problems.expected}/${dockerComparison.problems.actual}`,
+        );
+      },
+    },
+  ],
 );
 ```
 
 #### **Code Quality Analysis (NPM Package Profile)**
+
 ```typescript
 // Erwartete Baseline: Development-freundliche Werte
 await testTemplate.executeUserStoryTemplate(
@@ -162,6 +174,7 @@ await testTemplate.executeUserStoryTemplate(
 ### **🚀 DevOps Engineer mit Profilen**
 
 #### **CI/CD Pipeline unter Maximallast (CI High Complexity)**
+
 ```typescript
 // Erwartete Baseline: 8,636 Logs, 87 Probleme, 4,495 Metriken, 235.79 KB
 await testTemplate.executeUserStoryTemplate(
@@ -173,7 +186,7 @@ await testTemplate.executeUserStoryTemplate(
       context: 'Marcus bewertet ob System CI High Complexity verträgt',
       action: async () => {
         const loadTest = await testTemplate.validateExpectedVsActual();
-        
+
         // Deployment-Ampel basierend auf Soll/Ist Vergleich
         if (loadTest.overallMatch) {
           console.log('🟢 DEPLOYMENT FREIGEGEBEN - Entspricht CI High Profil');
@@ -182,9 +195,9 @@ await testTemplate.executeUserStoryTemplate(
         } else {
           console.log('🔴 DEPLOYMENT STOPP - Über CI High Complexity Grenze');
         }
-      }
-    }
-  ]
+      },
+    },
+  ],
 );
 ```
 
@@ -195,6 +208,7 @@ await testTemplate.executeUserStoryTemplate(
 ### **✅ 1. Realitätsnahe Soll/Ist Vergleiche**
 
 **Vorher**: Nur grundlegende Funktionalität getestet
+
 ```typescript
 // Alter Ansatz
 const problems = await dashboardPage.getActiveProblemsCount();
@@ -202,10 +216,13 @@ expect(problems).toBeGreaterThanOrEqual(0);
 ```
 
 **Nachher**: Spezifische Erwartungen basierend auf Testprofilen
+
 ```typescript
 // Neuer Ansatz mit Testprofilen
 const comparison = await testTemplate.validateExpectedVsActual();
-console.log(`Docker Profile Soll/Ist: ${comparison.problems.expected}/${comparison.problems.actual}`);
+console.log(
+  `Docker Profile Soll/Ist: ${comparison.problems.expected}/${comparison.problems.actual}`,
+);
 expect(comparison.problems.actual).toBeLessThanOrEqual(comparison.problems.expected * 1.2); // 20% Toleranz
 ```
 
@@ -214,9 +231,10 @@ expect(comparison.problems.actual).toBeLessThanOrEqual(comparison.problems.expec
 **NPM Package Testing**: Entwickler-freundliche Baseline (36 Probleme)  
 **Docker Deployment**: Container-spezifische Belastung (74 Probleme)  
 **CI High Complexity**: Stress-Test Szenario (87 Probleme)  
-**CI Medium**: Standard Production Load (74 Probleme)  
+**CI Medium**: Standard Production Load (74 Probleme)
 
 ### **✅ 3. Intelligente Toleranzen**
+
 ```typescript
 private isWithinTolerance(actual: number, expected: number, tolerance: number): boolean {
   if (expected === 0) return actual <= 5; // Für 0 erwartete Werte
@@ -226,14 +244,15 @@ private isWithinTolerance(actual: number, expected: number, tolerance: number): 
 ```
 
 ### **✅ 4. Profil-spezifische Assertions**
+
 ```typescript
 // Performance Validation basierend auf Komplexität
 switch (complexity) {
-  case 'high': 
+  case 'high':
     expect(responseTime).toBeLessThan(10000); // 10s für High Complexity
     break;
   case 'medium':
-    expect(responseTime).toBeLessThan(5000);  // 5s für Medium
+    expect(responseTime).toBeLessThan(5000); // 5s für Medium
     break;
 }
 ```
@@ -243,6 +262,7 @@ switch (complexity) {
 ## 📈 **Template-basierte Test-Execution**
 
 ### **Beispiel: CI High Complexity Workflow**
+
 ```typescript
 const testTemplate = new UserStoryTestTemplate(page, 'ci-high-complexity');
 
@@ -260,7 +280,7 @@ await testTemplate.performProfileSpecificAssertions();
 
 // Ergebnis:
 // ✅ Log Entries: 8636/8500 (MATCH)
-// ❌ Problems: 87/120 (OVER EXPECTED) 
+// ❌ Problems: 87/120 (OVER EXPECTED)
 // ✅ Metrics: 4495/4400 (WITHIN TOLERANCE)
 // 🟡 Overall: ENHANCED MONITORING RECOMMENDED
 ```
@@ -270,18 +290,21 @@ await testTemplate.performProfileSpecificAssertions();
 ## 🏆 **Ergebnisse und Impact**
 
 ### **📊 Messbare Verbesserungen**
+
 - **Realitätsbezug**: 400% höher durch echte Testdaten
 - **Validierungstiefe**: Soll/Ist Vergleiche statt nur Existenz-Prüfungen
 - **Use Case Abdeckung**: Spezifische Profile für jeden Anwendungsfall
 - **Toleranz-Management**: Intelligente Bewertung statt harter Grenzen
 
 ### **🎯 Business Value**
+
 - **DevOps**: Deployment-Entscheidungen basierend auf Testprofil-Compliance
-- **Development**: Code Quality Assessment mit erwarteten Baselines  
+- **Development**: Code Quality Assessment mit erwarteten Baselines
 - **Operations**: System Health Bewertung gegen realistische Benchmarks
 - **Management**: Objektive Metriken für System Performance
 
 ### **🔮 Zukunft**
+
 - **Weitere Testprofile**: Neue Profile für spezielle Use Cases
 - **Machine Learning**: Automatische Profil-Optimierung basierend auf historischen Daten
 - **Dynamic Baselines**: Adaptive Erwartungen basierend auf System-Evolution
@@ -296,6 +319,6 @@ Die **Testprofil-Integration revolutioniert die User Story Tests** durch:
 ✅ **Soll/Ist Vergleiche** mit intelligenten Toleranzen  
 ✅ **Use Case-spezifische Validierung** für jeden Persona  
 ✅ **Template-System** für wiederverwendbare Test-Patterns  
-✅ **Objektive Metriken** für Business-Entscheidungen  
+✅ **Objektive Metriken** für Business-Entscheidungen
 
 **Das Ergebnis**: E2E Tests, die nicht nur Funktionalität prüfen, sondern **realistische System-Performance gegen bekannte Benchmarks validieren**! 🚀

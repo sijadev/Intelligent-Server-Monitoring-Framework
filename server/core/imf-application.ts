@@ -6,14 +6,14 @@
 import { EventEmitter } from 'events';
 import { serviceRegistry, ServiceRegistry } from './service-registry';
 import { DomainRepositories } from '../repositories/domain.repositories';
-import { 
+import {
   IService,
-  IStorageService, 
+  IStorageService,
   IPythonFrameworkService,
   ITestManagerService,
   ILoggerService,
   IConfigurationProvider,
-  ServiceHealthStatus
+  ServiceHealthStatus,
 } from '../interfaces/service.interfaces';
 
 // ============================================================================
@@ -75,25 +75,24 @@ export class IMFApplication extends EventEmitter {
     try {
       console.log('🚀 Starting IMF Application v' + this.version);
       this.startTime = new Date();
-      
+
       // Initialize service registry
       await this.registry.initialize();
-      
+
       // Get service references
       await this.loadServiceReferences();
-      
+
       // Initialize repositories
       await this.initializeRepositories();
-      
+
       // Start health monitoring
       this.startHealthMonitoring();
-      
+
       // Register graceful shutdown handlers
       this.registerShutdownHandlers();
-      
+
       console.log('✅ IMF Application initialized successfully');
       this.emit('initialized');
-      
     } catch (error) {
       console.error('❌ Failed to initialize IMF Application:', error);
       this.emit('error', error);
@@ -110,22 +109,21 @@ export class IMFApplication extends EventEmitter {
     }
 
     this.shutdownInProgress = true;
-    
+
     try {
       console.log('🛑 Shutting down IMF Application...');
-      
+
       // Stop health monitoring
       if (this.healthCheckTimer) {
         clearInterval(this.healthCheckTimer);
         this.healthCheckTimer = undefined;
       }
-      
+
       // Shutdown service registry (which shutdowns all services)
       await this.registry.shutdown();
-      
+
       console.log('✅ IMF Application shutdown completed');
       this.emit('shutdown');
-      
     } catch (error) {
       console.error('❌ Error during IMF Application shutdown:', error);
       this.emit('error', error);
@@ -138,14 +136,14 @@ export class IMFApplication extends EventEmitter {
   async getStatus(): Promise<ApplicationStatus> {
     const now = new Date();
     const serviceHealths = await this.registry.getHealthStatus();
-    
+
     return {
       running: !!this.startTime && !this.shutdownInProgress,
       startTime: this.startTime || now,
       uptime: this.startTime ? now.getTime() - this.startTime.getTime() : 0,
       services: serviceHealths,
       environment: this.config?.get('NODE_ENV', 'unknown') || 'unknown',
-      version: this.version
+      version: this.version,
     };
   }
 
@@ -159,7 +157,7 @@ export class IMFApplication extends EventEmitter {
       logLevel: this.config?.get('LOG_LEVEL', 'INFO') || 'INFO',
       enablePythonFramework: this.config?.get('PYTHON_FRAMEWORK_ENABLED', true) ?? true,
       enableTestManager: this.config?.get('TEST_MANAGER_ENABLED', true) ?? true,
-      healthCheckInterval: 30000 // 30 seconds
+      healthCheckInterval: 30000, // 30 seconds
     };
   }
 
@@ -205,22 +203,23 @@ export class IMFApplication extends EventEmitter {
   }> {
     const [status, systemStats] = await Promise.all([
       this.getStatus(),
-      this.repositories?.getSystemStatistics() || Promise.resolve({
-        problems: { total: 0, active: 0, resolved: 0, bySeverity: {}, byType: {} },
-        totalMetrics: 0,
-        totalLogs: 0,
-        totalPlugins: 0
-      })
+      this.repositories?.getSystemStatistics() ||
+        Promise.resolve({
+          problems: { total: 0, active: 0, resolved: 0, bySeverity: {}, byType: {} },
+          totalMetrics: 0,
+          totalLogs: 0,
+          totalPlugins: 0,
+        }),
     ]);
 
     const serviceHealths = Object.values(status.services);
-    const healthyServices = serviceHealths.filter(h => h.healthy).length;
+    const healthyServices = serviceHealths.filter((h) => h.healthy).length;
 
     return {
       status,
       systemStats,
       serviceCount: serviceHealths.length,
-      healthyServices
+      healthyServices,
     };
   }
 
@@ -229,24 +228,28 @@ export class IMFApplication extends EventEmitter {
    */
   async executeOperation<T>(
     operation: (app: IMFApplication) => Promise<T>,
-    operationName: string
+    operationName: string,
   ): Promise<T> {
     try {
-      await this.logger?.log('DEBUG', 'imf-application', 
-        `Executing operation: ${operationName}`);
-      
+      await this.logger?.log('DEBUG', 'imf-application', `Executing operation: ${operationName}`);
+
       const startTime = Date.now();
       const result = await operation(this);
       const duration = Date.now() - startTime;
-      
-      await this.logger?.log('INFO', 'imf-application',
-        `Operation '${operationName}' completed in ${duration}ms`);
-      
+
+      await this.logger?.log(
+        'INFO',
+        'imf-application',
+        `Operation '${operationName}' completed in ${duration}ms`,
+      );
+
       return result;
     } catch (error) {
-      await this.logger?.log('ERROR', 'imf-application',
+      await this.logger?.log(
+        'ERROR',
+        'imf-application',
         `Operation '${operationName}' failed: ${error.message}`,
-        { error: error.message }
+        { error: error.message },
       );
       throw error;
     }
@@ -275,25 +278,32 @@ export class IMFApplication extends EventEmitter {
     this.config = await this.registry.getService<IConfigurationProvider>('config');
     this.logger = await this.registry.getService<ILoggerService>('logger');
     this.storage = await this.registry.getService<IStorageService>('storage');
-    
+
     // Load optional services based on configuration
     const appConfig = this.getConfiguration();
-    
+
     if (appConfig.enablePythonFramework) {
       try {
-        this.pythonFramework = await this.registry.getService<IPythonFrameworkService>('pythonFramework');
+        this.pythonFramework =
+          await this.registry.getService<IPythonFrameworkService>('pythonFramework');
       } catch (error) {
-        await this.logger?.log('WARN', 'imf-application',
-          `Python Framework service not available: ${error.message}`);
+        await this.logger?.log(
+          'WARN',
+          'imf-application',
+          `Python Framework service not available: ${error.message}`,
+        );
       }
     }
-    
+
     if (appConfig.enableTestManager) {
       try {
         this.testManager = await this.registry.getService<ITestManagerService>('testManager');
       } catch (error) {
-        await this.logger?.log('WARN', 'imf-application',
-          `Test Manager service not available: ${error.message}`);
+        await this.logger?.log(
+          'WARN',
+          'imf-application',
+          `Test Manager service not available: ${error.message}`,
+        );
       }
     }
   }
@@ -306,33 +316,33 @@ export class IMFApplication extends EventEmitter {
     const db = this.storage.getConnection();
     this.repositories = new DomainRepositories(db, this.logger);
     await this.repositories.initialize();
-    
-    await this.logger?.log('INFO', 'imf-application', 
-      'Domain repositories initialized');
+
+    await this.logger?.log('INFO', 'imf-application', 'Domain repositories initialized');
   }
 
   private startHealthMonitoring(): void {
     const config = this.getConfiguration();
-    
+
     this.healthCheckTimer = setInterval(async () => {
       try {
         const healthStatus = await this.performHealthCheck();
-        
+
         const unhealthyServices = Object.entries(healthStatus)
           .filter(([_, status]) => !status.healthy)
           .map(([name, _]) => name);
-        
+
         if (unhealthyServices.length > 0) {
-          await this.logger?.log('WARN', 'imf-application',
-            `Unhealthy services detected: ${unhealthyServices.join(', ')}`);
+          await this.logger?.log(
+            'WARN',
+            'imf-application',
+            `Unhealthy services detected: ${unhealthyServices.join(', ')}`,
+          );
           this.emit('health:warning', unhealthyServices);
         }
-        
+
         this.emit('health:check', healthStatus);
-        
       } catch (error) {
-        await this.logger?.log('ERROR', 'imf-application',
-          `Health check failed: ${error.message}`);
+        await this.logger?.log('ERROR', 'imf-application', `Health check failed: ${error.message}`);
         this.emit('health:error', error);
       }
     }, config.healthCheckInterval);
@@ -341,27 +351,33 @@ export class IMFApplication extends EventEmitter {
   private registerShutdownHandlers(): void {
     // Graceful shutdown on SIGTERM
     process.on('SIGTERM', async () => {
-      await this.logger?.log('INFO', 'imf-application', 
-        'Received SIGTERM, initiating graceful shutdown');
+      await this.logger?.log(
+        'INFO',
+        'imf-application',
+        'Received SIGTERM, initiating graceful shutdown',
+      );
       await this.shutdown();
       process.exit(0);
     });
 
     // Graceful shutdown on SIGINT (Ctrl+C)
     process.on('SIGINT', async () => {
-      await this.logger?.log('INFO', 'imf-application',
-        'Received SIGINT, initiating graceful shutdown');
+      await this.logger?.log(
+        'INFO',
+        'imf-application',
+        'Received SIGINT, initiating graceful shutdown',
+      );
       await this.shutdown();
       process.exit(0);
     });
 
     // Handle uncaught exceptions
     process.on('uncaughtException', async (error) => {
-      await this.logger?.log('ERROR', 'imf-application',
-        `Uncaught exception: ${error.message}`,
-        { error: error.message, stack: error.stack }
-      );
-      
+      await this.logger?.log('ERROR', 'imf-application', `Uncaught exception: ${error.message}`, {
+        error: error.message,
+        stack: error.stack,
+      });
+
       this.emit('error', error);
       await this.shutdown();
       process.exit(1);
@@ -369,9 +385,12 @@ export class IMFApplication extends EventEmitter {
 
     // Handle unhandled promise rejections
     process.on('unhandledRejection', async (reason, promise) => {
-      await this.logger?.log('ERROR', 'imf-application',
-        `Unhandled rejection at: ${promise}, reason: ${reason}`);
-      
+      await this.logger?.log(
+        'ERROR',
+        'imf-application',
+        `Unhandled rejection at: ${promise}, reason: ${reason}`,
+      );
+
       this.emit('error', reason);
     });
   }

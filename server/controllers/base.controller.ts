@@ -1,14 +1,14 @@
 import type { Request, Response } from 'express';
 import { storage } from '../storage-init';
 import { logAggregator } from '../services/log-aggregator';
-import { 
-  ErrorHandler, 
-  createValidationError, 
+import {
+  ErrorHandler,
+  createValidationError,
   createNotFoundError,
   createDatabaseError,
   createServiceError,
   ErrorType,
-  isIMFError
+  isIMFError,
 } from '../utils/error-handler';
 
 export abstract class BaseController {
@@ -19,7 +19,11 @@ export abstract class BaseController {
     ErrorHandler.handle(error, context, res);
   }
 
-  protected handleValidationError(res: Response, message: string = 'Invalid request data', details?: any): void {
+  protected handleValidationError(
+    res: Response,
+    message: string = 'Invalid request data',
+    details?: any,
+  ): void {
     const error = createValidationError(message, details);
     ErrorHandler.handle(error, 'controller-validation', res);
   }
@@ -45,7 +49,7 @@ export abstract class BaseController {
       req.originalUrl,
       200, // Will be updated by middleware
       0, // Will be updated by middleware
-      req.get('User-Agent')
+      req.get('User-Agent'),
     );
   }
 }

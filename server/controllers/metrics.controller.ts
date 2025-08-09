@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { BaseController } from './base.controller';
-import { insertMetricsSchema } from '@shared/schema';
+import { insertMetricsSchema } from '../../shared/schema.js';
 
 export class MetricsController extends BaseController {
   async getMetrics(req: Request, res: Response): Promise<void> {
@@ -28,7 +28,7 @@ export class MetricsController extends BaseController {
       if (req.body.timestamp && typeof req.body.timestamp === 'string') {
         req.body.timestamp = new Date(req.body.timestamp);
       }
-      
+
       const metrics = insertMetricsSchema.parse(req.body);
       const created = await this.storage.createMetrics(metrics);
       res.json(created);

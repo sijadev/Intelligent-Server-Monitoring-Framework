@@ -43,11 +43,7 @@ export class DependencyContainer extends EventEmitter implements IDependencyCont
   /**
    * Register a service with the container
    */
-  register<T>(
-    name: string, 
-    factory: () => T | Promise<T>, 
-    options: DIOptions = {}
-  ): void {
+  register<T>(name: string, factory: () => T | Promise<T>, options: DIOptions = {}): void {
     if (this.services.has(name)) {
       throw new Error(`Service '${name}' is already registered`);
     }
@@ -66,12 +62,12 @@ export class DependencyContainer extends EventEmitter implements IDependencyCont
     };
 
     this.services.set(name, registration);
-    
+
     // Update dependency graph
     this.updateDependencyGraph(name, registration.options.dependencies);
-    
+
     this.emit('service:registered', name, registration);
-    
+
     // If not lazy, initialize immediately
     if (!registration.options.lazy) {
       setImmediate(() => this.resolve<T>(name));
@@ -115,7 +111,7 @@ export class DependencyContainer extends EventEmitter implements IDependencyCont
       resolving: new Set(),
       resolved: new Map(),
     };
-    
+
     return this.resolveWithContext<T>(name, context);
   }
 
@@ -123,12 +119,14 @@ export class DependencyContainer extends EventEmitter implements IDependencyCont
    * Resolve service with circular dependency detection
    */
   private async resolveWithContext<T>(
-    name: string, 
+    name: string,
     context: ResolutionContext,
-    depth = 0
+    depth = 0,
   ): Promise<T> {
     if (depth > this.maxResolutionDepth) {
-      throw new Error(`Maximum resolution depth exceeded for service '${name}'. Possible circular dependency.`);
+      throw new Error(
+        `Maximum resolution depth exceeded for service '${name}'. Possible circular dependency.`,
+      );
     }
 
     // Check if already resolved in this context
@@ -164,9 +162,9 @@ export class DependencyContainer extends EventEmitter implements IDependencyCont
 
       // Create the service instance
       this.emit('service:resolving', name);
-      
+
       let instance = await registration.factory();
-      
+
       // If it's a service, inject dependencies
       if (this.isService(instance)) {
         await this.injectDependencies(instance, dependencies);
@@ -188,7 +186,6 @@ export class DependencyContainer extends EventEmitter implements IDependencyCont
       this.emit('service:resolved', name, instance);
 
       return instance as T;
-
     } finally {
       context.resolving.delete(name);
     }
@@ -220,7 +217,7 @@ export class DependencyContainer extends EventEmitter implements IDependencyCont
    */
   async initializeAll(): Promise<void> {
     const order = this.calculateInitializationOrder();
-    
+
     console.log('🔧 Initializing services in dependency order:', order.join(' -> '));
 
     for (const serviceName of order) {
@@ -241,7 +238,7 @@ export class DependencyContainer extends EventEmitter implements IDependencyCont
    */
   async shutdownAll(): Promise<void> {
     const order = this.calculateInitializationOrder().reverse();
-    
+
     console.log('🛑 Shutting down services:', order.join(' -> '));
 
     for (const serviceName of order) {
@@ -279,18 +276,18 @@ export class DependencyContainer extends EventEmitter implements IDependencyCont
         if (registration.instance && this.isService(registration.instance)) {
           status[name] = registration.instance.getHealthStatus();
         } else {
-          status[name] = { 
-            healthy: true, 
+          status[name] = {
+            healthy: true,
             status: registration.instance ? 'running' : 'not_initialized',
-            lastCheck: new Date()
+            lastCheck: new Date(),
           };
         }
       } catch (error) {
-        status[name] = { 
-          healthy: false, 
+        status[name] = {
+          healthy: false,
           status: 'error',
           error: error.message,
-          lastCheck: new Date()
+          lastCheck: new Date(),
         };
       }
     }
@@ -320,17 +317,17 @@ export class DependencyContainer extends EventEmitter implements IDependencyCont
       if (temp.has(serviceName)) {
         throw new Error(`Circular dependency detected involving: ${serviceName}`);
       }
-      
+
       if (!visited.has(serviceName)) {
         temp.add(serviceName);
-        
+
         const registration = this.services.get(serviceName);
         if (registration) {
           for (const dependency of registration.dependencies) {
             visit(dependency);
           }
         }
-        
+
         temp.delete(serviceName);
         visited.add(serviceName);
         result.push(serviceName);
@@ -354,7 +351,7 @@ export class DependencyContainer extends EventEmitter implements IDependencyCont
         depRegistration.dependents.add(serviceName);
       }
     }
-    
+
     // Clear cached initialization order
     this.initializationOrder = [];
   }
@@ -362,12 +359,15 @@ export class DependencyContainer extends EventEmitter implements IDependencyCont
   /**
    * Inject dependencies into a service instance
    */
-  private async injectDependencies(instance: any, dependencies: Record<string, any>): Promise<void> {
+  private async injectDependencies(
+    instance: any,
+    dependencies: Record<string, any>,
+  ): Promise<void> {
     // If the instance has a setDependencies method, use it
     if (typeof instance.setDependencies === 'function') {
       await instance.setDependencies(dependencies);
     }
-    
+
     // Alternatively, set dependencies directly if the instance expects them
     if (instance.dependencies) {
       Object.assign(instance.dependencies, dependencies);
@@ -378,12 +378,14 @@ export class DependencyContainer extends EventEmitter implements IDependencyCont
    * Type guard to check if an object is a service
    */
   private isService(obj: any): obj is IService {
-    return obj && 
-           typeof obj.name === 'string' &&
-           typeof obj.version === 'string' &&
-           typeof obj.initialize === 'function' &&
-           typeof obj.cleanup === 'function' &&
-           typeof obj.getHealthStatus === 'function';
+    return (
+      obj &&
+      typeof obj.name === 'string' &&
+      typeof obj.version === 'string' &&
+      typeof obj.initialize === 'function' &&
+      typeof obj.cleanup === 'function' &&
+      typeof obj.getHealthStatus === 'function'
+    );
   }
 }
 

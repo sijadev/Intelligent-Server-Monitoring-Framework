@@ -41,7 +41,7 @@ export function safeJsonParse<T>(json: string, defaultValue: T): T {
 
 // Delay function for async operations
 export function delay(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 // Type guard for checking if value is defined
@@ -52,12 +52,12 @@ export function isDefined<T>(value: T | null | undefined): value is T {
 // Clean undefined values from objects
 export function cleanObject<T extends Record<string, any>>(obj: T): Partial<T> {
   const cleaned: Partial<T> = {};
-  
+
   for (const [key, value] of Object.entries(obj)) {
     if (isDefined(value)) {
       cleaned[key as keyof T] = value;
     }
   }
-  
+
   return cleaned;
 }

@@ -1,42 +1,51 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Header } from "@/components/layout/header";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { StatusIndicator } from "@/components/ui/status-indicator";
-import { CheckCircle, AlertCircle, AlertTriangle, Info } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
-import { api } from "@/lib/api";
-import { useToast } from "@/hooks/use-toast";
-import { usePageTitle } from "@/hooks/use-page-title";
-import { cn } from "@/lib/utils";
-import type { Problem } from "@shared/schema";
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Header } from '@/components/layout/header';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { StatusIndicator } from '@/components/ui/status-indicator';
+import { CheckCircle, AlertCircle, AlertTriangle, Info } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { api } from '@/lib/api';
+import { useToast } from '@/hooks/use-toast';
+import { usePageTitle } from '@/hooks/use-page-title';
+import { cn } from '@/lib/utils';
+import type { Problem } from '@shared/schema';
 
 const severityColors = {
-  LOW: "bg-blue-100 text-blue-800",
-  MEDIUM: "bg-orange-100 text-orange-800", 
-  HIGH: "bg-red-100 text-red-800",
-  CRITICAL: "bg-red-100 text-red-800"
+  LOW: 'bg-blue-100 text-blue-800',
+  MEDIUM: 'bg-orange-100 text-orange-800',
+  HIGH: 'bg-red-100 text-red-800',
+  CRITICAL: 'bg-red-100 text-red-800',
 };
 
 const severityStatus = {
   LOW: 'running' as const,
   MEDIUM: 'warning' as const,
   HIGH: 'error' as const,
-  CRITICAL: 'error' as const
+  CRITICAL: 'error' as const,
 };
 
-
 export default function Problems() {
-  usePageTitle("Problems");
+  usePageTitle('Problems');
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [severityFilter, setSeverityFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [severityFilter, setSeverityFilter] = useState<string>('all');
 
-  const { data: problems = [], isLoading, refetch } = useQuery({
+  const {
+    data: problems = [],
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ['/api/problems'],
     queryFn: () => api.getProblems(),
     refetchInterval: 10000, // Refetch every 10 seconds
@@ -55,24 +64,24 @@ export default function Problems() {
       queryClient.invalidateQueries({ queryKey: ['/api/problems/active'] });
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
       toast({
-        title: "Problem Resolved",
-        description: "The problem has been marked as resolved.",
+        title: 'Problem Resolved',
+        description: 'The problem has been marked as resolved.',
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to resolve problem. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to resolve problem. Please try again.',
+        variant: 'destructive',
       });
     },
   });
 
   // Filter problems
-  const filteredProblems = problems.filter(problem => {
-    if (statusFilter === "active" && problem.resolved) return false;
-    if (statusFilter === "resolved" && !problem.resolved) return false;
-    if (severityFilter !== "all" && problem.severity !== severityFilter) return false;
+  const filteredProblems = problems.filter((problem) => {
+    if (statusFilter === 'active' && problem.resolved) return false;
+    if (statusFilter === 'resolved' && !problem.resolved) return false;
+    if (severityFilter !== 'all' && problem.severity !== severityFilter) return false;
     return true;
   });
 
@@ -82,12 +91,8 @@ export default function Problems() {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
-      <Header
-        title="Problems"
-        onRefresh={() => refetch()}
-        isRefreshing={isLoading}
-      />
-      
+      <Header title="Problems" onRefresh={() => refetch()} isRefreshing={isLoading} />
+
       <main className="flex-1 relative overflow-y-auto focus:outline-none">
         <div className="py-6 px-6">
           {/* Summary Cards */}
@@ -115,7 +120,7 @@ export default function Problems() {
                   <div className="ml-5">
                     <p className="text-sm font-medium text-gray-500">Resolved Problems</p>
                     <p className="text-2xl font-semibold text-gray-900">
-                      {problems.filter(p => p.resolved).length}
+                      {problems.filter((p) => p.resolved).length}
                     </p>
                   </div>
                 </div>
@@ -131,7 +136,7 @@ export default function Problems() {
                   <div className="ml-5">
                     <p className="text-sm font-medium text-gray-500">Critical Problems</p>
                     <p className="text-2xl font-semibold text-gray-900">
-                      {problems.filter(p => p.severity === 'CRITICAL' && !p.resolved).length}
+                      {problems.filter((p) => p.severity === 'CRITICAL' && !p.resolved).length}
                     </p>
                   </div>
                 </div>
@@ -180,9 +185,7 @@ export default function Problems() {
                 <h3 className="text-lg font-medium">
                   Problems ({filteredProblems.length} of {problems.length})
                 </h3>
-                <Badge variant="outline">
-                  {isLoading ? "Updating..." : "Live"}
-                </Badge>
+                <Badge variant="outline">{isLoading ? 'Updating...' : 'Live'}</Badge>
               </div>
             </CardHeader>
             <CardContent>
@@ -196,12 +199,14 @@ export default function Problems() {
                 <div className="space-y-4">
                   {filteredProblems.map((problem) => {
                     return (
-                      <div 
+                      <div
                         key={problem.id}
                         data-testid="problem-item"
                         className={cn(
-                          "border rounded-lg p-4 transition-colors",
-                          problem.resolved ? "bg-gray-50 border-gray-200" : "bg-white border-gray-300"
+                          'border rounded-lg p-4 transition-colors',
+                          problem.resolved
+                            ? 'bg-gray-50 border-gray-200'
+                            : 'bg-white border-gray-300',
                         )}
                       >
                         <div className="flex items-start justify-between">
@@ -210,8 +215,10 @@ export default function Problems() {
                               {problem.resolved ? (
                                 <CheckCircle className="h-6 w-6 text-green-500 mt-1" />
                               ) : (
-                                <StatusIndicator 
-                                  status={severityStatus[problem.severity as keyof typeof severityStatus]} 
+                                <StatusIndicator
+                                  status={
+                                    severityStatus[problem.severity as keyof typeof severityStatus]
+                                  }
                                   size="lg"
                                   className="mt-2"
                                 />
@@ -219,15 +226,19 @@ export default function Problems() {
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center space-x-3 mb-2">
-                                <h4 className={cn(
-                                  "text-lg font-medium",
-                                  problem.resolved ? "text-gray-600" : "text-gray-900"
-                                )}>
+                                <h4
+                                  className={cn(
+                                    'text-lg font-medium',
+                                    problem.resolved ? 'text-gray-600' : 'text-gray-900',
+                                  )}
+                                >
                                   {problem.description}
                                 </h4>
-                                <Badge 
+                                <Badge
                                   variant="secondary"
-                                  className={severityColors[problem.severity as keyof typeof severityColors]}
+                                  className={
+                                    severityColors[problem.severity as keyof typeof severityColors]
+                                  }
                                 >
                                   {problem.severity}
                                 </Badge>
@@ -237,43 +248,56 @@ export default function Problems() {
                                   </Badge>
                                 )}
                               </div>
-                              
+
                               <div className="space-y-2">
                                 <p className="text-sm text-gray-600">
                                   <span className="font-medium">Type:</span> {problem.type}
                                 </p>
-                                
+
                                 {(problem.metadata as any)?.sample_messages && (
                                   <div>
-                                    <p className="text-sm font-medium text-gray-600 mb-1">Sample Messages:</p>
+                                    <p className="text-sm font-medium text-gray-600 mb-1">
+                                      Sample Messages:
+                                    </p>
                                     <ul className="text-sm text-gray-500 space-y-1">
-                                      {(problem.metadata as any).sample_messages.slice(0, 2).map((message: string, index: number) => (
-                                        <li key={index} className="truncate">• {message}</li>
-                                      ))}
+                                      {(problem.metadata as any).sample_messages
+                                        .slice(0, 2)
+                                        .map((message: string, index: number) => (
+                                          <li key={index} className="truncate">
+                                            • {message}
+                                          </li>
+                                        ))}
                                     </ul>
                                   </div>
                                 )}
-                                
+
                                 {(problem.metadata as any)?.match_count && (
                                   <p className="text-sm text-gray-600">
-                                    <span className="font-medium">Occurrences:</span> {(problem.metadata as any).match_count}
+                                    <span className="font-medium">Occurrences:</span>{' '}
+                                    {(problem.metadata as any).match_count}
                                   </p>
                                 )}
                               </div>
-                              
+
                               <div className="mt-4 flex items-center space-x-4 text-sm text-gray-500">
                                 <span>
-                                  Detected {formatDistanceToNow(new Date(problem.timestamp), { addSuffix: true })}
+                                  Detected{' '}
+                                  {formatDistanceToNow(new Date(problem.timestamp), {
+                                    addSuffix: true,
+                                  })}
                                 </span>
                                 {problem.resolved && problem.resolvedAt && (
                                   <span>
-                                    Resolved {formatDistanceToNow(new Date(problem.resolvedAt), { addSuffix: true })}
+                                    Resolved{' '}
+                                    {formatDistanceToNow(new Date(problem.resolvedAt), {
+                                      addSuffix: true,
+                                    })}
                                   </span>
                                 )}
                               </div>
                             </div>
                           </div>
-                          
+
                           {!problem.resolved && (
                             <div className="flex-shrink-0">
                               <Button
@@ -283,7 +307,9 @@ export default function Problems() {
                                 onClick={() => handleResolveProblem(problem.id)}
                                 disabled={resolveProblemMutation.isPending}
                               >
-                                {resolveProblemMutation.isPending ? "Resolving..." : "Mark Resolved"}
+                                {resolveProblemMutation.isPending
+                                  ? 'Resolving...'
+                                  : 'Mark Resolved'}
                               </Button>
                             </div>
                           )}

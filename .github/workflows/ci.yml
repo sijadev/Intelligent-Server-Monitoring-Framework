@@ -7,6 +7,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   NODE_VERSION: '20'
   PYTHON_VERSION: '3.11'
@@ -18,7 +22,7 @@ jobs:
     name: 🚀 Complete IMF Pipeline
     runs-on: ubuntu-latest
     timeout-minutes: 90
-    
+
     services:
       postgres:
         image: postgres:15
@@ -33,13 +37,13 @@ jobs:
     steps:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
-      
+
       - name: ⚙️ Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
-          
+
       - name: 🐍 Setup Python
         uses: actions/setup-python@v4
         with:
@@ -51,13 +55,19 @@ jobs:
         run: |
           echo "📦 Installing Node.js dependencies..."
           npm ci
-          
+
           echo "🐍 Installing Python dependencies..."
           if [ -f python-framework/requirements.txt ]; then
             cd python-framework && pip install -r requirements.txt && cd ..
           fi
-          
+
           echo "✅ All dependencies installed successfully"
+
+      - name: 🎨 Prettier Format Check
+        run: npm run format:check
+
+      - name: 🔍 ESLint Lint Check
+        run: npm run lint
 
       - name: 🗃️ Setup Database Schema
         run: |
@@ -70,35 +80,35 @@ jobs:
       - name: 🐳 Setup Complete Docker Infrastructure
         run: |
           echo "🚀 Setting up complete Docker infrastructure (once)..."
-          
+
           # Start Redis service
           echo "📡 Starting Redis..."
           docker compose -f docker-compose.ci.yml up -d redis
-          
+
           # Wait for Redis
           echo "⏳ Waiting for Redis to be ready..."
           timeout 30 bash -c 'until docker compose -f docker-compose.ci.yml exec -T redis redis-cli ping; do sleep 2; done'
           echo "✅ Redis is ready"
-          
+
           # Start test MCP services
           echo "🧪 Starting Test MCP Services..."
           cd docker/test-mcp-server
           docker compose -f docker-compose.yml up -d --build
           cd ../..
-          
+
           # Wait for MCP services
           echo "⏳ Waiting for MCP services to be ready..."
           sleep 15
-          
+
           # Verify all services are running
           echo "🔍 Verifying all services are running..."
           docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-          
+
           # Test service connectivity
           echo "🔗 Testing service connectivity..."
           docker compose -f docker-compose.ci.yml exec -T redis redis-cli ping
           curl -f http://localhost:3001/health || echo "MCP service will be ready shortly"
-          
+
           echo "✅ Complete Docker infrastructure is ready"
 
       # COMPREHENSIVE TEST SUITE
@@ -142,13 +152,13 @@ jobs:
       - name: 📊 Generate Test Data for Advanced Tests
         run: |
           echo "📊 Generating test data for Real Data and ML tests..."
-          
+
           # Check for Test Manager CLI
           if command -v imf-test-manager &> /dev/null; then
             echo "✅ IMF Test Manager CLI found"
             imf-test-manager --version
           else
-            echo "📦 Using CI mock data generation (Test Manager CLI not available in CI)"
+            echo "📦 Using CI fallback data generation (Test Manager CLI not available in CI)"
           fi
 
           # Generate CI Test Profiles and Data
@@ -160,16 +170,16 @@ jobs:
           fi
           echo "✅ Test data generation completed"
 
-      - name: 🔬 Run Real Data Tests  
+      - name: 🔬 Run Real Data Tests
         run: |
           echo "🎯 Running Real Data Tests..."
           mkdir -p test-results/real-data
-          
+
           # Set environment variables for GitHub CI
           export GITHUB_ACTIONS=true
           export CI=true
           export IMF_TEST_WORKSPACE=./test-workspace
-          
+
           # Run available real-data tests
           echo "🤖 Running AI Learning Engine Test..."  
           npx vitest run server/test/ai-learning-engine-real-data.test.ts \
@@ -195,7 +205,7 @@ jobs:
         run: |
           echo "🎯 Running ML Tests..."
           mkdir -p test-results/ml
-          
+
           # Run ML Test Suite - MUST PASS
           echo "📚 Running Continuous Learning Tests..."
           npx vitest run server/test/long-term/mcp-monitoring-continuous-learning-simple.test.ts \
@@ -217,11 +227,11 @@ jobs:
         run: |
           echo "🐍 Running Python Framework Tests..."
           mkdir -p test-results/python-framework
-          
+
           # Run Python Framework Tests via npm
           echo "🔬 Running Python Framework Core Tests..."
           npm test --prefix ./python-framework || echo "Some Python tests may have failed (non-blocking)"
-          
+
           # Run additional Python tests  
           echo "🧠 Running Python AI Learning Engine Tests..."
           python -m pytest python-framework/test_ai_learning_engine.py \
@@ -252,49 +262,49 @@ jobs:
         if: always()
         run: |
           echo "📊 Generating comprehensive test overview..."
-          
+
           # Create comprehensive test overview in root directory
           cat > TEST_OVERVIEW.md << 'EOL'
           # 🚀 IMF CI/CD Pipeline - Test Overview
-          
+
           **Generated:** $(date)  
           **Pipeline Run:** ${{ github.run_number }}  
           **Commit:** ${{ github.sha }}  
           **Branch:** ${{ github.ref_name }}  
-          
+
           ## 📊 Pipeline Architecture
-          
+
           **✅ Single-Job Optimized Architecture**
           - **Efficiency:** Maximum resource utilization
           - **Consistency:** Single environment for all tests
           - **Speed:** No redundant setups or teardowns
           - **Reliability:** Shared infrastructure state
-          
+
           ## 🧪 Test Execution Summary
-          
+
           ### Phase 1: Infrastructure Setup ⚙️
           - ✅ Node.js ${{ env.NODE_VERSION }} + Python ${{ env.PYTHON_VERSION }}
           - ✅ PostgreSQL Database Schema
           - ✅ Docker Services (Redis + MCP Server)
           - ✅ Package Installation (npm + pip) - **ONCE**
-          
+
           ### Phase 2: Core Tests 🔬
           - ✅ **Unit Tests**: Basic functionality validation
           - ✅ **API Tests**: REST endpoint verification  
           - ✅ **Integration Tests**: Service connectivity
-          
+
           ### Phase 3: Advanced Tests 🎯
           - ✅ **Real Data Tests**: Profile-based testing
           - ✅ **ML Tests**: AI/ML functionality validation
           - ✅ **Python Framework Tests**: AI Learning Engine, Code Analysis, ML Integration
           - ✅ **Documentation**: Automated reporting
-          
+
           ### Phase 4: Build & Finalization 🏗️
           - ✅ **Application Build**: Production-ready build
           - ✅ **Test Overview**: This comprehensive report
-          
+
           ## 📁 Test Results Structure
-          
+
           ```
           test-results/
           ├── unit/                 # Unit test results
@@ -303,18 +313,18 @@ jobs:
           ├── real-data/            # Real data test results
           └── ml/                   # ML test results
           ```
-          
+
           ## 🎯 Key Metrics
-          
+
           - **Total Test Categories:** 6 (Unit, API, Integration, Real Data, ML, Python Framework)
           - **Python Framework Tests:** ~36 total (AI Learning Engine, Code Analysis, ML Integration)
           - **Docker Services:** Redis + MCP Server (shared)
           - **Database:** PostgreSQL (shared)
           - **Package Installs:** 1 (optimized - npm + pip)
           - **Infrastructure Setups:** 1 (optimized)
-          
+
           ## 🚀 Optimization Benefits
-          
+
           | Metric | Old Multi-Job | New Single-Job | Improvement |
           |--------|---------------|----------------|-------------|
           | Package Installs | 4x | 1x | **75% reduction** |
@@ -323,54 +333,54 @@ jobs:
           | Execution Speed | Slow | Fast | **~50% faster** |
           | Resource Usage | High | Optimized | **~40% reduction** |
           | Maintenance Complexity | High | Low | **Simplified** |
-          
+
           ## 📊 Test Categories Detail
-          
+
           ### 🔬 Unit Tests
           - **Purpose:** Core functionality validation
           - **Files:** basic-storage, config, services
           - **Environment:** Isolated testing
-          
+
           ### 📡 API Tests  
           - **Purpose:** REST endpoint verification
           - **Files:** mcp-api-ci.test.ts
           - **Environment:** CI-optimized with mocking
-          
+
           ### 🔗 Integration Tests
           - **Purpose:** Service connectivity and smoke tests
           - **Files:** smoke-ci.test.ts
           - **Environment:** Full Docker infrastructure
-          
+
           ### 🔬 Real Data Tests
           - **Purpose:** Profile-based real-world scenarios
           - **Files:** precision-code-repair, ai-learning-engine, mcp-integration
           - **Environment:** Generated test profiles + shared infrastructure
-          
+
           ### 🧠 ML Tests
           - **Purpose:** AI/ML functionality validation
           - **Files:** continuous-learning, intelligent-monitoring
           - **Environment:** Python ML framework + shared infrastructure
-          
+
           ### 🐍 Python Framework Tests
           - **Purpose:** Python AI Learning Engine, Code Analysis, ML Integration
           - **Files:** test_ai_learning_engine.py, test_code_analysis.py, test_ml_integration.py
           - **Environment:** Python 3.11+ with ML libraries + shared infrastructure
-          
+
           ## 🛠️ Infrastructure Details
-          
+
           **Docker Services:**
           - **Redis:** Cache and session storage
           - **MCP Server:** Model Context Protocol testing
           - **PostgreSQL:** Primary database (GitHub Actions service)
-          
+
           **Shared Environment Variables:**
           - `DATABASE_URL`: postgresql://postgres:postgres@localhost:5432/imf_test
           - `REDIS_URL`: redis://localhost:6380
           - `TEST_MCP_SERVER_URL`: http://localhost:3001
           - `IMF_TEST_WORKSPACE`: ./test-workspace
-          
+
           ## ✅ Success Criteria
-          
+
           - [ ] All unit tests pass
           - [ ] All API endpoints respond correctly
           - [ ] Integration tests verify service connectivity
@@ -379,23 +389,23 @@ jobs:
           - [ ] Application builds successfully
           - [ ] No Docker service failures
           - [ ] All test artifacts generated
-          
+
           ## 📈 Continuous Improvement
-          
+
           This optimized pipeline represents a **major efficiency improvement** over the previous multi-job architecture:
-          
+
           - **Eliminated redundancy:** No more duplicate setups
           - **Improved reliability:** Consistent shared state
           - **Enhanced speed:** Single-pass execution
           - **Simplified debugging:** All logs in one place
           - **Better resource usage:** Optimal container utilization
-          
+
           ---
-          
+
           **🤖 Generated automatically by the IMF CI/CD Pipeline**
           **📋 For detailed results, check the comprehensive-test-results artifact**
           EOL
-          
+
           echo "✅ Comprehensive test overview generated: TEST_OVERVIEW.md"
 
       - name: 📈 Upload Complete Test Results
@@ -416,7 +426,7 @@ jobs:
           echo "🧹 Cleaning up Docker infrastructure..."
           docker compose -f docker-compose.ci.yml down --remove-orphans || true
           cd docker/test-mcp-server && docker compose -f docker-compose.yml down --remove-orphans || true
-          
+
           echo "📊 Final Docker cleanup verification:"
           docker ps -a --filter "name=redis\|test-mcp"
           echo "✅ Docker cleanup completed"

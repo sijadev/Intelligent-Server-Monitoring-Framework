@@ -6,20 +6,10 @@
   "createdAt": "2025-08-05T20:07:33.083Z",
   "updatedAt": "2025-08-05T20:07:33.083Z",
   "sourceConfig": {
-    "directories": [
-      "./src",
-      "./server"
-    ],
-    "languages": [
-      "typescript",
-      "javascript"
-    ],
+    "directories": ["./src", "./server"],
+    "languages": ["typescript", "javascript"],
     "complexity": "medium",
-    "excludePatterns": [
-      "node_modules",
-      "dist",
-      "*.log"
-    ]
+    "excludePatterns": ["node_modules", "dist", "*.log"]
   },
   "scenarios": [
     {
@@ -28,17 +18,9 @@
       "type": "performance",
       "duration": 300,
       "enabled": true,
-      "problemTypes": [
-        "type_mismatch",
-        "syntax_error",
-        "null_pointer"
-      ],
+      "problemTypes": ["type_mismatch", "syntax_error", "null_pointer"],
       "codeInjection": {
-        "errorTypes": [
-          "type_mismatch",
-          "syntax_error",
-          "null_pointer"
-        ],
+        "errorTypes": ["type_mismatch", "syntax_error", "null_pointer"],
         "frequency": 0.15,
         "complexity": "medium"
       },

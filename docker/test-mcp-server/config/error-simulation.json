@@ -109,7 +109,7 @@
       "delayMs": 0
     },
     {
-      "name": "broken_prompt", 
+      "name": "broken_prompt",
       "description": "A prompt that always fails",
       "arguments": [],
       "behavior": "error",

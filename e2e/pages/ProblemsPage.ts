@@ -32,10 +32,10 @@ export class ProblemsPage extends BasePage {
    */
   async goto() {
     await super.goto('/problems');
-    
+
     // Wait a bit for title to update
     await this.page.waitForTimeout(1000);
-    
+
     // Check for expected title patterns with more flexibility
     try {
       await expect(this.page).toHaveTitle(/Problems|MCP.Guard.*Problems/);
@@ -43,7 +43,7 @@ export class ProblemsPage extends BasePage {
       // If title doesn't match expected pattern, check if page loaded correctly
       const title = await this.page.title();
       console.log(`Problems page title: ${title}`);
-      
+
       // As long as we're on the problems page (URL check), continue
       const url = this.page.url();
       if (url.includes('/problems')) {
@@ -59,17 +59,17 @@ export class ProblemsPage extends BasePage {
    */
   async verifyProblemsPageLoads() {
     await this.goto();
-    
+
     // Check main components are visible or gracefully handle empty state
-    const hasProblems = await this.problemItems.count() > 0;
-    
+    const hasProblems = (await this.problemItems.count()) > 0;
+
     if (hasProblems) {
       await expect(this.problemsList).toBeVisible();
     } else {
       // Check for empty state message
       const emptyMessage = this.page.locator('text=/no problems|empty|none found/i');
       const isEmptyVisible = await emptyMessage.isVisible();
-      
+
       if (!isEmptyVisible) {
         // If neither problems nor empty state, check for loading
         await this.waitForPageLoad();
@@ -112,19 +112,19 @@ export class ProblemsPage extends BasePage {
    */
   async resolveFirstProblem() {
     const resolveButton = this.resolveButtons.first();
-    
+
     if (await resolveButton.isVisible()) {
       await resolveButton.click();
-      
+
       // Wait for confirmation or toast
       await this.waitForToast('resolved', 10000).catch(() => {
         console.log('No toast notification found, but resolve action completed');
       });
-      
+
       await this.waitForPageLoad();
       return true;
     }
-    
+
     return false;
   }
 
@@ -133,10 +133,10 @@ export class ProblemsPage extends BasePage {
    */
   async viewProblemDetails(index: number = 0) {
     const problemItem = this.problemItems.nth(index);
-    
+
     if (await problemItem.isVisible()) {
       await problemItem.click();
-      
+
       // Wait for details panel to appear
       await this.problemDetails.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {
         console.log('Problem details panel not found or not implemented');
@@ -152,7 +152,7 @@ export class ProblemsPage extends BasePage {
       // Start waiting for download before clicking
       const downloadPromise = this.page.waitForEvent('download');
       await this.exportButton.click();
-      
+
       try {
         const download = await downloadPromise;
         return await download.path();
@@ -161,7 +161,7 @@ export class ProblemsPage extends BasePage {
         return null;
       }
     }
-    
+
     return null;
   }
 
@@ -182,22 +182,22 @@ export class ProblemsPage extends BasePage {
    */
   async verifyProblemItemStructure(index: number = 0) {
     const problemItem = this.problemItems.nth(index);
-    
+
     if (await problemItem.isVisible()) {
       const problemContent = await problemItem.textContent();
-      
+
       // Check for expected fields (adjust based on actual implementation)
       const hasBasicInfo = problemContent && problemContent.length > 0;
-      
+
       return {
         hasContent: hasBasicInfo,
-        content: problemContent?.trim()
+        content: problemContent?.trim(),
       };
     }
-    
+
     return {
       hasContent: false,
-      content: null
+      content: null,
     };
   }
 
@@ -206,45 +206,44 @@ export class ProblemsPage extends BasePage {
    */
   async testProblemsPageFunctionality() {
     console.log('🔍 Testing Problems Page Functionality');
-    
+
     const results = {
       pageLoads: false,
       problemsCount: 0,
       canRefresh: false,
       canSearch: false,
       canFilter: false,
-      canResolve: false
+      canResolve: false,
     };
 
     try {
       // Test page loading
       await this.verifyProblemsPageLoads();
       results.pageLoads = true;
-      
+
       // Count problems
       results.problemsCount = await this.getProblemsCount();
-      
+
       // Test refresh
       await this.refreshProblems();
       results.canRefresh = true;
-      
+
       // Test search if available
       if (await this.searchBox.isVisible()) {
         await this.searchProblems('test');
         results.canSearch = true;
       }
-      
+
       // Test filter if available
       if (await this.severityFilter.isVisible()) {
         await this.filterBySeverity('CRITICAL');
         results.canFilter = true;
       }
-      
+
       // Test resolve if problems exist
       if (results.problemsCount > 0) {
         results.canResolve = await this.resolveFirstProblem();
       }
-      
     } catch (error) {
       console.error('Problems page test failed:', error);
     }

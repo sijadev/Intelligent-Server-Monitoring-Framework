@@ -37,22 +37,22 @@ export abstract class AIProgressStorage {
 // 1. IN-MEMORY STORAGE (Development/Testing)
 export class InMemoryAIProgressStorage extends AIProgressStorage {
   private progress: AIProgress[] = [];
-  
+
   async saveProgress(progress: AIProgress): Promise<void> {
     // Remove old versions of the same model
-    this.progress = this.progress.filter(p => p.model_name !== progress.model_name);
-    this.progress.push({...progress, updated_at: new Date().toISOString()});
+    this.progress = this.progress.filter((p) => p.model_name !== progress.model_name);
+    this.progress.push({ ...progress, updated_at: new Date().toISOString() });
     console.log(`💾 In-Memory: Saved ${progress.model_name}`);
   }
-  
+
   async loadProgress(): Promise<AIProgress[]> {
     return [...this.progress];
   }
-  
+
   async getLatestProgress(modelName: string): Promise<AIProgress | null> {
-    return this.progress.find(p => p.model_name === modelName) || null;
+    return this.progress.find((p) => p.model_name === modelName) || null;
   }
-  
+
   async clearProgress(): Promise<void> {
     this.progress = [];
   }
@@ -61,7 +61,7 @@ export class InMemoryAIProgressStorage extends AIProgressStorage {
 // 2. DATABASE STORAGE (Production Recommended)
 export class DatabaseAIProgressStorage extends AIProgressStorage {
   constructor(private db: any) {} // Database connection
-  
+
   async saveProgress(progress: AIProgress): Promise<void> {
     const query = `
       INSERT INTO ai_progress (
@@ -78,7 +78,7 @@ export class DatabaseAIProgressStorage extends AIProgressStorage {
         metadata = excluded.metadata,
         updated_at = CURRENT_TIMESTAMP
     `;
-    
+
     await this.db.run(query, [
       progress.model_name,
       progress.training_start,
@@ -96,25 +96,25 @@ export class DatabaseAIProgressStorage extends AIProgressStorage {
       progress.model_size_mb,
       JSON.stringify(progress.learning_curve_data),
       JSON.stringify(progress),
-      new Date().toISOString()
+      new Date().toISOString(),
     ]);
-    
+
     console.log(`🗄️  Database: Saved ${progress.model_name}`);
   }
-  
+
   async loadProgress(): Promise<AIProgress[]> {
     const rows = await this.db.all('SELECT metadata FROM ai_progress ORDER BY created_at DESC');
     return rows.map((row: any) => JSON.parse(row.metadata));
   }
-  
+
   async getLatestProgress(modelName: string): Promise<AIProgress | null> {
     const row = await this.db.get(
       'SELECT metadata FROM ai_progress WHERE model_name = ? ORDER BY created_at DESC LIMIT 1',
-      [modelName]
+      [modelName],
     );
     return row ? JSON.parse(row.metadata) : null;
   }
-  
+
   async clearProgress(): Promise<void> {
     await this.db.run('DELETE FROM ai_progress');
   }
@@ -123,52 +123,52 @@ export class DatabaseAIProgressStorage extends AIProgressStorage {
 // 3. REDIS STORAGE (High Performance, Distributed)
 export class RedisAIProgressStorage extends AIProgressStorage {
   constructor(private redis: any) {} // Redis client
-  
+
   private getKey(modelName: string): string {
     return `ai_progress:${modelName}`;
   }
-  
+
   private getAllKey(): string {
     return 'ai_progress:all';
   }
-  
+
   async saveProgress(progress: AIProgress): Promise<void> {
     const key = this.getKey(progress.model_name);
     const allKey = this.getAllKey();
-    
+
     // Use Redis transaction for atomicity
     const multi = this.redis.multi();
     multi.hset(key, {
       data: JSON.stringify(progress),
       updated_at: new Date().toISOString(),
-      model_name: progress.model_name
+      model_name: progress.model_name,
     });
     multi.sadd(allKey, progress.model_name);
     multi.expire(key, 86400 * 30); // 30 days TTL
-    
+
     await multi.exec();
     console.log(`⚡ Redis: Saved ${progress.model_name}`);
   }
-  
+
   async loadProgress(): Promise<AIProgress[]> {
     const modelNames = await this.redis.smembers(this.getAllKey());
     const progress: AIProgress[] = [];
-    
+
     for (const modelName of modelNames) {
       const data = await this.redis.hget(this.getKey(modelName), 'data');
       if (data) {
         progress.push(JSON.parse(data));
       }
     }
-    
+
     return progress;
   }
-  
+
   async getLatestProgress(modelName: string): Promise<AIProgress | null> {
     const data = await this.redis.hget(this.getKey(modelName), 'data');
     return data ? JSON.parse(data) : null;
   }
-  
+
   async clearProgress(): Promise<void> {
     const modelNames = await this.redis.smembers(this.getAllKey());
     if (modelNames.length > 0) {
@@ -182,18 +182,15 @@ export class RedisAIProgressStorage extends AIProgressStorage {
 export class HybridAIProgressStorage extends AIProgressStorage {
   constructor(
     private database: DatabaseAIProgressStorage,
-    private cache: RedisAIProgressStorage
+    private cache: RedisAIProgressStorage,
   ) {}
-  
+
   async saveProgress(progress: AIProgress): Promise<void> {
     // Save to both database and cache
-    await Promise.all([
-      this.database.saveProgress(progress),
-      this.cache.saveProgress(progress)
-    ]);
+    await Promise.all([this.database.saveProgress(progress), this.cache.saveProgress(progress)]);
     console.log(`🔄 Hybrid: Saved ${progress.model_name} to DB + Cache`);
   }
-  
+
   async loadProgress(): Promise<AIProgress[]> {
     // Try cache first, fallback to database
     try {
@@ -205,17 +202,17 @@ export class HybridAIProgressStorage extends AIProgressStorage {
     } catch (error) {
       console.warn('⚠️ Cache unavailable, using database');
     }
-    
+
     const dbData = await this.database.loadProgress();
-    
+
     // Populate cache asynchronously
-    dbData.forEach(progress => {
+    dbData.forEach((progress) => {
       this.cache.saveProgress(progress).catch(console.warn);
     });
-    
+
     return dbData;
   }
-  
+
   async getLatestProgress(modelName: string): Promise<AIProgress | null> {
     // Try cache first
     try {
@@ -224,33 +221,31 @@ export class HybridAIProgressStorage extends AIProgressStorage {
     } catch (error) {
       console.warn('⚠️ Cache miss, querying database');
     }
-    
+
     return await this.database.getLatestProgress(modelName);
   }
-  
+
   async clearProgress(): Promise<void> {
-    await Promise.all([
-      this.database.clearProgress(),
-      this.cache.clearProgress()
-    ]);
+    await Promise.all([this.database.clearProgress(), this.cache.clearProgress()]);
   }
 }
 
 // 5. FILE STORAGE (Current Implementation - for comparison)
 export class FileAIProgressStorage extends AIProgressStorage {
   private filePath: string;
-  
+
   constructor(filePath?: string) {
     super();
-    this.filePath = filePath || path.join(process.cwd(), 'python-framework/ai_models/training_metrics.json');
+    this.filePath =
+      filePath || path.join(process.cwd(), 'python-framework/ai_models/training_metrics.json');
   }
-  
+
   async saveProgress(progress: AIProgress): Promise<void> {
     try {
       const existing = await this.loadProgress();
-      const updated = existing.filter(p => p.model_name !== progress.model_name);
+      const updated = existing.filter((p) => p.model_name !== progress.model_name);
       updated.push(progress);
-      
+
       await writeFile(this.filePath, JSON.stringify(updated, null, 2));
       console.log(`📁 File: Saved ${progress.model_name}`);
     } catch (error) {
@@ -258,7 +253,7 @@ export class FileAIProgressStorage extends AIProgressStorage {
       throw error;
     }
   }
-  
+
   async loadProgress(): Promise<AIProgress[]> {
     try {
       const data = await readFile(this.filePath, 'utf-8');
@@ -268,12 +263,12 @@ export class FileAIProgressStorage extends AIProgressStorage {
       return [];
     }
   }
-  
+
   async getLatestProgress(modelName: string): Promise<AIProgress | null> {
     const all = await this.loadProgress();
-    return all.find(p => p.model_name === modelName) || null;
+    return all.find((p) => p.model_name === modelName) || null;
   }
-  
+
   async clearProgress(): Promise<void> {
     await writeFile(this.filePath, '[]');
   }
@@ -281,26 +276,29 @@ export class FileAIProgressStorage extends AIProgressStorage {
 
 // FACTORY PATTERN - Choose storage based on environment
 export class AIProgressStorageFactory {
-  static create(type: 'memory' | 'database' | 'redis' | 'hybrid' | 'file' = 'file', options?: any): AIProgressStorage {
+  static create(
+    type: 'memory' | 'database' | 'redis' | 'hybrid' | 'file' = 'file',
+    options?: any,
+  ): AIProgressStorage {
     switch (type) {
       case 'memory':
         return new InMemoryAIProgressStorage();
-      
+
       case 'database':
         if (!options?.db) throw new Error('Database connection required');
         return new DatabaseAIProgressStorage(options.db);
-      
+
       case 'redis':
         if (!options?.redis) throw new Error('Redis client required');
         return new RedisAIProgressStorage(options.redis);
-      
+
       case 'hybrid':
         if (!options?.db || !options?.redis) throw new Error('Both database and Redis required');
         return new HybridAIProgressStorage(
           new DatabaseAIProgressStorage(options.db),
-          new RedisAIProgressStorage(options.redis)
+          new RedisAIProgressStorage(options.redis),
         );
-      
+
       case 'file':
       default:
         return new FileAIProgressStorage(options?.filePath);

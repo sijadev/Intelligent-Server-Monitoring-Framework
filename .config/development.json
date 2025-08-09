@@ -2,16 +2,15 @@
   "environment": "development",
   "services": {
     "testManager": {
-      "enabled": false,
-      "mockMode": true,
-      "cliRequired": false,
-      "reason": "CLI dependency not available in local development"
+      "enabled": true,
+      "cliRequired": true,
+      "reason": "Full CLI functionality with complete development environment"
     },
     "pythonFramework": {
       "enabled": true,
-      "autoStart": false,
-      "healthCheckInterval": 60000,
-      "maxRetries": 3
+      "autoStart": true,
+      "healthCheckInterval": 30000,
+      "maxRetries": 5
     },
     "storage": {
       "type": "database",
@@ -33,7 +32,7 @@
   "development": {
     "hotReload": true,
     "debugMode": true,
-    "mockExternalServices": true,
+    "useFallbackImplementations": false,
     "bypassAuthentication": false,
     "enableTestRoutes": true
   },
@@ -49,9 +48,9 @@
     "database": 5432
   },
   "external": {
-    "requirePythonAPI": false,
-    "requireRedis": false,
-    "requireTestManager": false,
-    "gracefulFallback": true
+    "requirePythonAPI": true,
+    "requireRedis": true,
+    "requireTestManager": true,
+    "gracefulFallback": false
   }
 }

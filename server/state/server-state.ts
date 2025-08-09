@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 import { config } from '../config';
-import type { Problem, Metrics, Plugin, LogEntry } from '@shared/schema';
+import type { Problem, Metrics, Plugin, LogEntry } from '../../shared/schema.js';
 
 // Server State Types
 export interface ServerState {
@@ -36,7 +36,7 @@ export interface StateChangeEvent {
 // Centralized State Manager
 class ServerStateManager extends EventEmitter {
   private state: ServerState;
-  
+
   constructor() {
     super();
     this.state = this.getInitialState();
@@ -92,7 +92,7 @@ class ServerStateManager extends EventEmitter {
   setServerStatus(status: ServerState['status']) {
     const oldState = this.state.status;
     this.state.status = status;
-    
+
     if (status === 'running' && !this.state.startTime) {
       this.state.startTime = new Date();
     }
@@ -104,7 +104,7 @@ class ServerStateManager extends EventEmitter {
   setPythonFrameworkStatus(updates: Partial<ServerState['pythonFramework']>) {
     const oldState = { ...this.state.pythonFramework };
     this.state.pythonFramework = { ...this.state.pythonFramework, ...updates };
-    
+
     this.emitStateChange('python', oldState, this.state.pythonFramework);
     this.emit('python:status', this.state.pythonFramework, oldState);
   }
@@ -112,7 +112,7 @@ class ServerStateManager extends EventEmitter {
   setDatabaseStatus(updates: Partial<ServerState['database']>) {
     const oldState = { ...this.state.database };
     this.state.database = { ...this.state.database, ...updates };
-    
+
     this.emitStateChange('database', oldState, this.state.database);
     this.emit('database:status', this.state.database, oldState);
   }
@@ -120,7 +120,7 @@ class ServerStateManager extends EventEmitter {
   updateMetrics(updates: Partial<ServerState['metrics']>) {
     const oldState = { ...this.state.metrics };
     this.state.metrics = { ...this.state.metrics, ...updates };
-    
+
     this.emitStateChange('metrics', oldState, this.state.metrics);
     this.emit('metrics:updated', this.state.metrics);
   }
@@ -167,13 +167,13 @@ class ServerStateManager extends EventEmitter {
   // Graceful Shutdown
   async shutdown(): Promise<void> {
     this.setServerStatus('stopping');
-    
+
     // Emit shutdown event
     this.emit('server:shutdown');
-    
+
     // Wait for cleanup
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
     this.setServerStatus('stopped');
   }
 

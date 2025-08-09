@@ -17,14 +17,17 @@ const getStorageInstance = () => {
   }
 
   initializationAttempted = true;
-  
+
   console.log('🔍 Storage initialization:');
   console.log('  - NODE_ENV:', config.NODE_ENV);
   console.log('  - DATABASE_URL present:', config.DATABASE_URL ? 'YES' : 'NO');
-  
+
   if (config.DATABASE_URL) {
     try {
-      console.log('  - Initializing DatabaseStorage with URL:', config.DATABASE_URL.replace(/\/\/[^@]*@/, '//***:***@'));
+      console.log(
+        '  - Initializing DatabaseStorage with URL:',
+        config.DATABASE_URL.replace(/\/\/[^@]*@/, '//***:***@'),
+      );
       storageInstance = new DatabaseStorage(config.DATABASE_URL);
       console.log('✅ Successfully initialized DatabaseStorage');
       return storageInstance;
@@ -50,5 +53,5 @@ export const storage = new Proxy({} as DatabaseStorage | MemStorage, {
       return value.bind(instance);
     }
     return value;
-  }
+  },
 });

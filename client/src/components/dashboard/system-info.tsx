@@ -1,7 +1,7 @@
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { cn } from "@/lib/utils";
-import type { Metrics } from "@shared/schema";
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { cn } from '@/lib/utils';
+import type { Metrics } from '@shared/schema';
 
 interface SystemInfoProps {
   metrics?: Metrics | null;
@@ -10,27 +10,27 @@ interface SystemInfoProps {
 
 export function SystemInfo({ metrics, uptime }: SystemInfoProps) {
   const getProgressColor = (value: number) => {
-    if (value >= 90) return "bg-red-500";
-    if (value >= 75) return "bg-orange-500";
-    return "bg-primary";
+    if (value >= 90) return 'bg-red-500';
+    if (value >= 75) return 'bg-orange-500';
+    return 'bg-primary';
   };
 
   const systemMetrics = [
     {
-      label: "CPU Usage",
+      label: 'CPU Usage',
       value: metrics?.cpuUsage || 0,
-      unit: "%"
+      unit: '%',
     },
     {
-      label: "Memory Usage", 
+      label: 'Memory Usage',
       value: metrics?.memoryUsage || 0,
-      unit: "%"
+      unit: '%',
     },
     {
-      label: "Disk Usage",
+      label: 'Disk Usage',
       value: metrics?.diskUsage || 0,
-      unit: "%"
-    }
+      unit: '%',
+    },
   ];
 
   return (
@@ -45,21 +45,22 @@ export function SystemInfo({ metrics, uptime }: SystemInfoProps) {
               <div className="flex justify-between mb-2">
                 <span className="text-sm text-gray-500">{metric.label}</span>
                 <span className="text-sm font-medium text-gray-900">
-                  {metric.value}{metric.unit}
+                  {metric.value}
+                  {metric.unit}
                 </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
+                <div
                   className={cn(
-                    "progress-bar", 
+                    'progress-bar',
                     `progress-${Math.round(Math.min(metric.value, 100))}`,
-                    getProgressColor(metric.value)
+                    getProgressColor(metric.value),
                   )}
                 />
               </div>
             </div>
           ))}
-          
+
           {uptime && (
             <div className="pt-4 border-t border-gray-200">
               <div className="flex justify-between text-sm">

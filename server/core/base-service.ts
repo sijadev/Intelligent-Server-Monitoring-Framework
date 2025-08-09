@@ -4,13 +4,13 @@
  */
 
 import { EventEmitter } from 'events';
-import { 
-  IService, 
-  IServiceWithEvents, 
+import {
+  IService,
+  IServiceWithEvents,
   ServiceHealthStatus,
   IRepository,
   QueryOptions,
-  ILoggerService
+  ILoggerService,
 } from '../interfaces/service.interfaces';
 
 // ============================================================================
@@ -28,7 +28,7 @@ export abstract class BaseService extends EventEmitter implements IServiceWithEv
 
   constructor(
     public readonly name: string,
-    public readonly version: string = '1.0.0'
+    public readonly version: string = '1.0.0',
   ) {
     super();
     this.setMaxListeners(50);
@@ -144,7 +144,7 @@ export abstract class BaseService extends EventEmitter implements IServiceWithEv
    */
   protected async executeWithErrorHandling<T>(
     operation: () => Promise<T>,
-    operationName: string
+    operationName: string,
   ): Promise<T> {
     try {
       return await operation();
@@ -168,7 +168,7 @@ export abstract class BaseRepository<T, K = string> implements IRepository<T, K>
 
   constructor(
     protected readonly tableName: string,
-    logger?: ILoggerService
+    logger?: ILoggerService,
   ) {
     this.logger = logger;
   }
@@ -183,30 +183,29 @@ export abstract class BaseRepository<T, K = string> implements IRepository<T, K>
   /**
    * Protected helper for consistent error handling
    */
-  protected async executeQuery<R>(
-    operation: () => Promise<R>,
-    operationName: string
-  ): Promise<R> {
+  protected async executeQuery<R>(operation: () => Promise<R>, operationName: string): Promise<R> {
     const startTime = Date.now();
-    
+
     try {
       const result = await operation();
       const duration = Date.now() - startTime;
-      
-      await this.logger?.log('DEBUG', 'repository', 
-        `${operationName} completed in ${duration}ms`,
-        { table: this.tableName, duration }
-      );
-      
+
+      await this.logger?.log('DEBUG', 'repository', `${operationName} completed in ${duration}ms`, {
+        table: this.tableName,
+        duration,
+      });
+
       return result;
     } catch (error) {
       const duration = Date.now() - startTime;
-      
-      await this.logger?.log('ERROR', 'repository',
+
+      await this.logger?.log(
+        'ERROR',
+        'repository',
         `${operationName} failed after ${duration}ms: ${error.message}`,
-        { table: this.tableName, error: error.message, duration }
+        { table: this.tableName, error: error.message, duration },
       );
-      
+
       throw new Error(`Repository operation '${operationName}' failed: ${error.message}`);
     }
   }
@@ -273,13 +272,13 @@ export abstract class BaseRepository<T, K = string> implements IRepository<T, K>
 
     return {
       clause: clauses.join(' '),
-      params
+      params,
     };
   }
 }
 
 // ============================================================================
-// PERIODIC SERVICE BASE CLASS  
+// PERIODIC SERVICE BASE CLASS
 // ============================================================================
 
 /**
@@ -292,7 +291,7 @@ export abstract class PeriodicService extends BaseService {
   constructor(
     name: string,
     intervalMs: number = 30000, // 30 seconds default
-    version: string = '1.0.0'
+    version: string = '1.0.0',
   ) {
     super(name, version);
     this.intervalMs = intervalMs;
@@ -343,10 +342,9 @@ export abstract class PeriodicService extends BaseService {
     } catch (error) {
       this._lastError = error as Error;
       this.safeEmit('periodic:error', error);
-      await this.logger?.log('ERROR', this.name, 
-        `Periodic task failed: ${error.message}`,
-        { error: error.message }
-      );
+      await this.logger?.log('ERROR', this.name, `Periodic task failed: ${error.message}`, {
+        error: error.message,
+      });
     }
   }
 
@@ -392,7 +390,7 @@ export abstract class ServiceFactory<T extends IService> {
 
     const service = await this.createInstance(name, config);
     await service.initialize();
-    
+
     this.services.set(name, service);
     return service;
   }

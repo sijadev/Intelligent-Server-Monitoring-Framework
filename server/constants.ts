@@ -7,7 +7,7 @@ export const API_ROUTES = {
   LOGS: '/api/logs',
   CONFIG: '/api/config',
   FRAMEWORK: '/api/framework',
-  DEBUG: '/api/debug'
+  DEBUG: '/api/debug',
 } as const;
 
 // HTTP Status Codes
@@ -18,7 +18,7 @@ export const HTTP_STATUS = {
   UNAUTHORIZED: 401,
   FORBIDDEN: 403,
   NOT_FOUND: 404,
-  INTERNAL_SERVER_ERROR: 500
+  INTERNAL_SERVER_ERROR: 500,
 } as const;
 
 // Default Values
@@ -27,14 +27,14 @@ export const DEFAULTS = {
   PROBLEMS_LIMIT: 50,
   LOGS_LIMIT: 1000,
   WEBSOCKET_CLIENT_ID_LENGTH: 9,
-  MAX_LOG_ENTRIES: 1000
+  MAX_LOG_ENTRIES: 1000,
 } as const;
 
 // Plugin States
 export const PLUGIN_STATUS = {
   RUNNING: 'running',
   STOPPED: 'stopped',
-  ERROR: 'error'
+  ERROR: 'error',
 } as const;
 
 // Problem Severities
@@ -42,7 +42,7 @@ export const PROBLEM_SEVERITY = {
   LOW: 'LOW',
   MEDIUM: 'MEDIUM',
   HIGH: 'HIGH',
-  CRITICAL: 'CRITICAL'
+  CRITICAL: 'CRITICAL',
 } as const;
 
 // Log Levels
@@ -50,7 +50,7 @@ export const LOG_LEVELS = {
   DEBUG: 'DEBUG',
   INFO: 'INFO',
   WARN: 'WARN',
-  ERROR: 'ERROR'
+  ERROR: 'ERROR',
 } as const;
 
 // Sources
@@ -61,5 +61,5 @@ export const LOG_SOURCES = {
   WEBSOCKET: 'websocket',
   HTTP: 'http',
   PLUGIN: 'plugin',
-  CONTROLLER: 'controller'
+  CONTROLLER: 'controller',
 } as const;

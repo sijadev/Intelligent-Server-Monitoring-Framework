@@ -7,14 +7,16 @@
 ## 🔍 **Netzwerk-Konfiguration**
 
 ### **Docker Network Setup:**
+
 - **Netzwerk**: `e2e_imf-test-network` (172.22.0.0/16)
 - **Driver**: bridge
 - **Internal**: false (kann mit Host kommunizieren)
 
 ### **Container IP-Adressen:**
+
 ```
 IMF App (WebSocket Server): 172.22.0.4:3000
-PostgreSQL:                172.22.0.3:5432  
+PostgreSQL:                172.22.0.3:5432
 Redis:                     172.22.0.2:6379
 Playwright (E2E Tests):    172.22.0.5
 ```
@@ -31,6 +33,7 @@ Playwright (E2E Tests):    172.22.0.5
 ### 📊 **Aktuelle WebSocket-Verbindungen:**
 
 Aus den E2E-Test-Logs sehen wir:
+
 ```
 Total WebSocket Clients: ~165-183 aktive Verbindungen
 Client IPs: Hauptsächlich 172.22.0.5 (Playwright Container)
@@ -51,15 +54,16 @@ Client IPs: Hauptsächlich 172.22.0.5 (Playwright Container)
 
 ```typescript
 // WebSocket Server Configuration (server/routes.ts)
-const wss = new WebSocketServer({ 
-  server: httpServer, 
+const wss = new WebSocketServer({
+  server: httpServer,
   path: '/ws',
-  maxConnections: 50,           // Begrenzte Verbindungen
-  perMessageDeflate: false      // Keine Komprimierung
+  maxConnections: 50, // Begrenzte Verbindungen
+  perMessageDeflate: false, // Keine Komprimierung
 });
 ```
 
 **Was NICHT geschützt ist:**
+
 - ❌ Keine Authentication
 - ❌ Keine Encryption (nur HTTP, nicht HTTPS/WSS)
 - ❌ Keine Access Control Lists
@@ -68,16 +72,18 @@ const wss = new WebSocketServer({
 ## 📈 **WebSocket-Traffic in E2E Tests**
 
 ### **Was die Tests sehen können:**
+
 ```javascript
 // Alle Nachrichten-Types:
 - problems: Problem-Updates
-- metrics: System-Metriken  
+- metrics: System-Metriken
 - logEntries: Real-time Logs
 - plugins: Plugin-Status
 - status: Framework-Status
 ```
 
 ### **Warum so viele Verbindungen:**
+
 1. **Playwright Tests** erstellen multiple Browser-Instanzen
 2. **Jeder Test** öffnet neue WebSocket-Verbindungen
 3. **Auto-Reconnect** bei Connection-Problemen
@@ -86,6 +92,7 @@ const wss = new WebSocketServer({
 ## 🎯 **Empfehlungen für Produktions-Sicherheit**
 
 ### **Option 1: Authentication hinzufügen**
+
 ```typescript
 // JWT Token für WebSocket-Verbindungen
 wss.on('connection', (ws, req) => {
@@ -98,12 +105,14 @@ wss.on('connection', (ws, req) => {
 ```
 
 ### **Option 2: HTTPS/WSS in Produktion**
+
 ```typescript
-const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 const wsUrl = `${protocol}//${window.location.host}/ws`;
 ```
 
 ### **Option 3: Network Isolation**
+
 ```yaml
 # docker-compose.yml
 services:
@@ -112,14 +121,15 @@ services:
       - internal-only
 networks:
   internal-only:
-    internal: true  # Kein Zugang zum Host
+    internal: true # Kein Zugang zum Host
 ```
 
 ## 🚨 **Aktueller Status in E2E Tests**
 
 **Für Testing-Zwecke ist das PERFEKT:**
+
 - ✅ Tests können alle WebSocket-Nachrichten monitoren
-- ✅ Debugging ist einfach durch volle Sichtbarkeit  
+- ✅ Debugging ist einfach durch volle Sichtbarkeit
 - ✅ E2E Tests validieren Real-time Features
 - ✅ Network-Isolation zwischen Testläufen
 
@@ -130,6 +140,7 @@ networks:
 ## 🎯 **Fazit**
 
 **JA**, alle Container im Docker-Netzwerk können die WebSocket-Verbindungen sehen. Das ist:
+
 - ✅ **Gut für E2E Testing** (beabsichtigt)
 - ⚠️ **Zu beachten für Produktion** (Security-Maßnahmen empfohlen)
 

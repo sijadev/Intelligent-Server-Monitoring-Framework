@@ -53,7 +53,7 @@ export class RequestIdMiddleware implements IMiddleware {
 
   execute(req: Request, res: Response, next: NextFunction): void {
     const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+
     // Add to request context
     (req as any).context = {
       requestId,
@@ -63,7 +63,7 @@ export class RequestIdMiddleware implements IMiddleware {
 
     // Add to response header
     res.setHeader('X-Request-ID', requestId);
-    
+
     next();
   }
 }
@@ -83,7 +83,7 @@ export class RequestLoggingMiddleware implements IMiddleware {
     const originalJson = res.json;
     let responseData: any = undefined;
 
-    res.json = function(body: any) {
+    res.json = function (body: any) {
       responseData = body;
       return originalJson.call(this, body);
     };
@@ -92,7 +92,7 @@ export class RequestLoggingMiddleware implements IMiddleware {
     res.on('finish', () => {
       const duration = Date.now() - startTime;
       const logLine = `📤 [${context.requestId}] ${req.method} ${req.path} ${res.statusCode} in ${duration}ms`;
-      
+
       console.log(logLine);
 
       // Emit event
@@ -120,10 +120,11 @@ export class RateLimitMiddleware implements IMiddleware {
   private limit: number;
   private windowMs: number;
 
-  constructor(limit = 100, windowMs = 60000) { // 100 requests per minute
+  constructor(limit = 100, windowMs = 60000) {
+    // 100 requests per minute
     this.limit = limit;
     this.windowMs = windowMs;
-    
+
     // Cleanup old entries every minute
     setInterval(() => this.cleanup(), 60000);
   }
@@ -131,13 +132,13 @@ export class RateLimitMiddleware implements IMiddleware {
   execute(req: Request, res: Response, next: NextFunction): void {
     const clientIp = req.ip || req.connection.remoteAddress || 'unknown';
     const now = Date.now();
-    
+
     // Get client request history
     const clientRequests = this.requests.get(clientIp) || [];
-    
+
     // Remove old requests outside the window
-    const validRequests = clientRequests.filter(time => now - time < this.windowMs);
-    
+    const validRequests = clientRequests.filter((time) => now - time < this.windowMs);
+
     // Check rate limit
     if (validRequests.length >= this.limit) {
       res.status(429).json({
@@ -198,9 +199,8 @@ export class CorsMiddleware implements IMiddleware {
   name = 'CORS';
 
   execute(req: Request, res: Response, next: NextFunction): void {
-    const allowedOrigins = config.NODE_ENV === 'development' 
-      ? ['http://localhost:3000', 'http://localhost:5173']
-      : []; // Add production origins
+    const allowedOrigins =
+      config.NODE_ENV === 'development' ? ['http://localhost:3000', 'http://localhost:5173'] : []; // Add production origins
 
     const origin = req.headers.origin;
     if (allowedOrigins.includes(origin!)) {
@@ -227,7 +227,7 @@ export class ErrorHandlingMiddleware {
 
   execute(error: any, req: Request, res: Response, next: NextFunction): void {
     const context: RequestContext = (req as any).context;
-    
+
     console.error(`❌ [${context?.requestId || 'unknown'}] Error:`, error);
 
     // Emit error event
@@ -238,9 +238,7 @@ export class ErrorHandlingMiddleware {
 
     // Determine error response
     const status = error.status || error.statusCode || 500;
-    const message = config.NODE_ENV === 'development' 
-      ? error.message 
-      : 'Internal Server Error';
+    const message = config.NODE_ENV === 'development' ? error.message : 'Internal Server Error';
 
     res.status(status).json({
       error: error.name || 'Error',
@@ -254,12 +252,12 @@ export class ErrorHandlingMiddleware {
 // Default Middleware Stack
 export function createDefaultMiddlewareStack(): MiddlewareStack {
   const stack = new MiddlewareStack();
-  
+
   stack.use(new RequestIdMiddleware());
   stack.use(new CorsMiddleware());
   stack.use(new RateLimitMiddleware());
   stack.use(new HealthCheckMiddleware());
   stack.use(new RequestLoggingMiddleware());
-  
+
   return stack;
 }

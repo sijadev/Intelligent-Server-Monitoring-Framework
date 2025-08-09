@@ -3,19 +3,21 @@
 ## 🎯 Migration Overview
 
 ### Von: JSON-Datei Storage (Development Only)
+
 ```typescript
 // ❌ Alt: Nicht produktionstauglich
 await writeFile('training_metrics.json', JSON.stringify(progress));
 ```
 
 ### Zu: Tenant-Aware Production Storage
+
 ```typescript
 // ✅ Neu: Produktionsreif mit Tenant-Isolation
 const storage = TenantAwareStorageFactory.fromMcpServer(
   'mcp-server-1',
-  'project-alpha', 
+  'project-alpha',
   'v2.1.0-abc123',
-  'database'
+  'database',
 );
 await storage.saveAIProgress(progress);
 ```
@@ -25,11 +27,15 @@ await storage.saveAIProgress(progress);
 ### Step 1: Update Test Infrastructure
 
 **Alte AI-Enhanced Tests:**
+
 ```typescript
 // server/test/long-term/ai-enhanced-continuous-monitoring.test.ts
 async function loadAIProgress(): Promise<any[]> {
   try {
-    const metricsPath = path.join(process.cwd(), 'python-framework/ai_models/training_metrics.json');
+    const metricsPath = path.join(
+      process.cwd(),
+      'python-framework/ai_models/training_metrics.json',
+    );
     const metricsData = await readFile(metricsPath, 'utf-8');
     return JSON.parse(metricsData);
   } catch (error) {
@@ -39,6 +45,7 @@ async function loadAIProgress(): Promise<any[]> {
 ```
 
 **Neue Tenant-Aware Tests:**
+
 ```typescript
 // server/test/long-term/ai-enhanced-continuous-monitoring-tenant-aware.test.ts
 const mcpServer1Storage = TenantAwareStorageFactory.create('memory', {
@@ -46,7 +53,7 @@ const mcpServer1Storage = TenantAwareStorageFactory.create('memory', {
   projectId: 'imf-monitoring',
   codebaseHash: crypto.createHash('sha256').update('unique-context').digest('hex'),
   environment: 'ci',
-  organizationId: 'imf-org'
+  organizationId: 'imf-org',
 });
 
 const aiProgress = await mcpServer1Storage.loadAIProgress();
@@ -55,65 +62,70 @@ const aiProgress = await mcpServer1Storage.loadAIProgress();
 ### Step 2: Environment Configuration
 
 **Development (Kompatibilität):**
+
 ```typescript
 // Weiterhin File-based für lokale Entwicklung
 const storage = new ProductionAIStorage({ type: 'file' });
 ```
 
 **CI/Testing (In-Memory):**
+
 ```typescript
 // Schnell, keine Persistierung nötig
 const storage = new ProductionAIStorage({ type: 'memory' });
 ```
 
 **Production (Database + Redis):**
+
 ```typescript
 // Skalierbar, persistent, concurrent-safe
-const storage = new ProductionAIStorage({ 
+const storage = new ProductionAIStorage({
   type: 'hybrid',
   options: {
     connectionString: process.env.DATABASE_URL,
-    redisUrl: process.env.REDIS_URL
-  }
+    redisUrl: process.env.REDIS_URL,
+  },
 });
 ```
 
 ### Step 3: CI Pipeline Integration
 
 **GitHub Actions Update:**
+
 ```yaml
 # .github/workflows/ci.yml
 - name: 🔬 Run Real Data Tests
   run: |
     # Original tests (backward compatibility)
     npx vitest run server/test/long-term/ai-enhanced-continuous-monitoring.test.ts
-    
+
     # New tenant-aware tests (production validation)
     npx vitest run server/test/long-term/ai-enhanced-continuous-monitoring-tenant-aware.test.ts
   env:
     GITHUB_ACTIONS: true
     CI: true
-    AI_STORAGE_TYPE: memory  # CI uses in-memory storage
+    AI_STORAGE_TYPE: memory # CI uses in-memory storage
 ```
 
 ## 🔄 Parallel Migration Strategy
 
 ### Phase 1: Dual-Storage (Compatibility)
+
 ```typescript
 class CompatibilityAIStorage {
   constructor(
     private fileStorage: FileAIProgressStorage,
-    private tenantStorage: TenantAwareAIStorage
+    private tenantStorage: TenantAwareAIStorage,
   ) {}
-  
+
   async saveAIProgress(progress: AIProgress): Promise<void> {
     // Write to both systems during transition
     await Promise.all([
-      this.fileStorage.saveProgress(progress),      // Backward compatibility
-      this.tenantStorage.saveAIProgress(progress)   // New system
+      this.fileStorage.saveProgress(progress), // Backward compatibility
+      this.tenantStorage.saveAIProgress(progress), // New system
     ]);
   }
-  
+
   async loadAIProgress(): Promise<AIProgress[]> {
     try {
       // Try new system first
@@ -124,7 +136,7 @@ class CompatibilityAIStorage {
     } catch (error) {
       console.warn('Tenant storage unavailable, falling back to file');
     }
-    
+
     // Fallback to file system
     return await this.fileStorage.loadProgress();
   }
@@ -132,20 +144,21 @@ class CompatibilityAIStorage {
 ```
 
 ### Phase 2: Data Migration
+
 ```typescript
 async function migrateFromFileToTenantStorage(): Promise<void> {
   const fileStorage = new FileAIProgressStorage();
   const tenantStorage = TenantAwareStorageFactory.fromMcpServer(
     process.env.MCP_SERVER_ID || 'default',
     process.env.PROJECT_ID || 'default',
-    process.env.CODEBASE_HASH || 'unknown'
+    process.env.CODEBASE_HASH || 'unknown',
   );
-  
+
   // Load existing file data
   const existingProgress = await fileStorage.loadProgress();
-  
+
   console.log(`🔄 Migrating ${existingProgress.length} AI models...`);
-  
+
   let migrated = 0;
   for (const progress of existingProgress) {
     try {
@@ -156,36 +169,37 @@ async function migrateFromFileToTenantStorage(): Promise<void> {
       console.error(`❌ Failed to migrate ${progress.model_name}:`, error);
     }
   }
-  
+
   console.log(`📊 Migration complete: ${migrated}/${existingProgress.length} models`);
 }
 ```
 
 ### Phase 3: Validation & Switchover
+
 ```typescript
 // Validate data consistency between systems
 async function validateMigration(): Promise<boolean> {
   const fileData = await fileStorage.loadProgress();
   const tenantData = await tenantStorage.loadAIProgress();
-  
+
   if (fileData.length !== tenantData.length) {
     console.error(`❌ Data count mismatch: file=${fileData.length}, tenant=${tenantData.length}`);
     return false;
   }
-  
+
   for (const fileModel of fileData) {
-    const tenantModel = tenantData.find(t => t.model_name === fileModel.model_name);
+    const tenantModel = tenantData.find((t) => t.model_name === fileModel.model_name);
     if (!tenantModel) {
       console.error(`❌ Missing model in tenant storage: ${fileModel.model_name}`);
       return false;
     }
-    
+
     if (Math.abs(fileModel.mse - tenantModel.mse) > 0.001) {
       console.error(`❌ Data mismatch for ${fileModel.model_name}: mse differs`);
       return false;
     }
   }
-  
+
   console.log('✅ Migration validation successful');
   return true;
 }
@@ -194,6 +208,7 @@ async function validateMigration(): Promise<boolean> {
 ## 🏢 Production Deployment
 
 ### Database Setup (PostgreSQL)
+
 ```sql
 -- Create tenant-aware AI progress table
 CREATE TABLE ai_progress_tenant (
@@ -203,17 +218,17 @@ CREATE TABLE ai_progress_tenant (
     tenant_context JSONB NOT NULL,
     access_permissions TEXT[],
     created_by VARCHAR(255),
-    
+
     -- AI model data
     mse FLOAT NOT NULL,
     training_samples INTEGER,
     validation_samples INTEGER,
     cross_validation_score FLOAT,
     metadata JSONB,
-    
+
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
+
     -- Ensure uniqueness per tenant
     UNIQUE(isolation_key, model_name)
 );
@@ -231,6 +246,7 @@ CREATE POLICY tenant_isolation_policy ON ai_progress_tenant
 ```
 
 ### Docker Compose for Development
+
 ```yaml
 version: '3.8'
 services:
@@ -244,7 +260,7 @@ services:
     depends_on:
       - postgres
       - redis
-    
+
   postgres:
     image: postgres:15
     environment:
@@ -253,7 +269,7 @@ services:
       POSTGRES_PASSWORD: password
     volumes:
       - ./docs/ai-storage-migration-guide.md:/docker-entrypoint-initdb.d/init.sql
-    
+
   redis:
     image: redis:7-alpine
     volumes:
@@ -265,6 +281,7 @@ volumes:
 ```
 
 ### Kubernetes Production Deployment
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -281,37 +298,38 @@ spec:
         app: imf-ai
     spec:
       containers:
-      - name: imf-app
-        image: imf:latest
-        env:
-        - name: AI_STORAGE_TYPE
-          value: "hybrid"
-        - name: DATABASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: imf-secrets
-              key: database-url
-        - name: REDIS_URL
-          valueFrom:
-            secretKeyRef:
-              name: imf-secrets
-              key: redis-url
-        # Tenant context from ConfigMap
-        - name: MCP_SERVER_ID
-          valueFrom:
-            configMapKeyRef:
-              name: tenant-config
-              key: server-id
-        - name: PROJECT_ID
-          valueFrom:
-            configMapKeyRef:
-              name: tenant-config
-              key: project-id
+        - name: imf-app
+          image: imf:latest
+          env:
+            - name: AI_STORAGE_TYPE
+              value: 'hybrid'
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: imf-secrets
+                  key: database-url
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: imf-secrets
+                  key: redis-url
+            # Tenant context from ConfigMap
+            - name: MCP_SERVER_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: tenant-config
+                  key: server-id
+            - name: PROJECT_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: tenant-config
+                  key: project-id
 ```
 
 ## 📊 Testing & Validation
 
 ### Automated Test Suite
+
 ```bash
 # Run all AI storage tests
 npm run test:ai-storage
@@ -327,33 +345,34 @@ npm run validate:migration
 ```
 
 ### Monitoring & Alerting
+
 ```typescript
 // Health check endpoint
 app.get('/health/ai-storage', async (req, res) => {
   const storage = getTenantAwareStorage(req);
   const healthy = await storage.healthCheck();
   const stats = await storage.getTenantStats();
-  
+
   res.status(healthy ? 200 : 500).json({
     healthy,
     tenant_key: stats.isolationKey,
     model_count: stats.totalModels,
     storage_type: 'tenant-aware',
-    migration_complete: true
+    migration_complete: true,
   });
 });
 ```
 
 ## 🎯 Migration Timeline
 
-| Phase | Duration | Status | Description |
-|-------|----------|--------|-------------|
-| **Prep** | 1 day | ✅ Done | Implement tenant-aware storage classes |
-| **Testing** | 2 days | ✅ Done | Create comprehensive test suite |
-| **CI Integration** | 1 day | ✅ Done | Update GitHub Actions pipeline |
-| **Migration Tool** | 1 day | 📋 Pending | Build data migration utilities |
-| **Production Deploy** | 1 day | 📋 Pending | Deploy to production environment |
-| **Validation** | 2 days | 📋 Pending | Monitor and validate production behavior |
+| Phase                 | Duration | Status     | Description                              |
+| --------------------- | -------- | ---------- | ---------------------------------------- |
+| **Prep**              | 1 day    | ✅ Done    | Implement tenant-aware storage classes   |
+| **Testing**           | 2 days   | ✅ Done    | Create comprehensive test suite          |
+| **CI Integration**    | 1 day    | ✅ Done    | Update GitHub Actions pipeline           |
+| **Migration Tool**    | 1 day    | 📋 Pending | Build data migration utilities           |
+| **Production Deploy** | 1 day    | 📋 Pending | Deploy to production environment         |
+| **Validation**        | 2 days   | 📋 Pending | Monitor and validate production behavior |
 
 ## ✅ Success Criteria
 

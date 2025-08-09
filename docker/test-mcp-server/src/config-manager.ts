@@ -168,23 +168,23 @@ export class ConfigManager {
   }
 
   public getEnabledScenarios() {
-    return this.config.scenarios.filter(scenario => scenario.enabled);
+    return this.config.scenarios.filter((scenario) => scenario.enabled);
   }
 
   public isScenarioEnabled(scenarioName: string): boolean {
-    const scenario = this.config.scenarios.find(s => s.name === scenarioName);
+    const scenario = this.config.scenarios.find((s) => s.name === scenarioName);
     return scenario?.enabled ?? false;
   }
 
   public getToolConfig(toolName: string) {
-    return this.config.tools.find(tool => tool.name === toolName);
+    return this.config.tools.find((tool) => tool.name === toolName);
   }
 
   public getResourceConfig(uri: string) {
-    return this.config.resources.find(resource => resource.uri === uri);
+    return this.config.resources.find((resource) => resource.uri === uri);
   }
 
   public getPromptConfig(promptName: string) {
-    return this.config.prompts.find(prompt => prompt.name === promptName);
+    return this.config.prompts.find((prompt) => prompt.name === promptName);
   }
 }

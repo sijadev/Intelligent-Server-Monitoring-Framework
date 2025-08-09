@@ -4,14 +4,14 @@ import { SimpleMcpServer } from './simple-mcp-server';
 
 async function main() {
   console.log('🔧 Starting Test MCP Server...');
-  
+
   const configPath = process.env.CONFIG_PATH;
-  
+
   const server = new SimpleMcpServer(configPath);
-  
+
   console.log(`📋 Server configuration loaded`);
   console.log(`🚀 Starting with HTTP transport`);
-  
+
   try {
     await server.start();
   } catch (error) {

@@ -5,7 +5,7 @@
 ## Features
 
 - 🔍 **Real-time System Monitoring** - CPU, memory, disk, network, processes
-- 🤖 **AI-powered Problem Detection** - Intelligent analysis and pattern recognition  
+- 🤖 **AI-powered Problem Detection** - Intelligent analysis and pattern recognition
 - 🔧 **Auto-remediation** - Automatic fixes for common system issues
 - 📊 **Plugin Architecture** - Extensible collectors, detectors, and remediators
 - 🌐 **HTTP API** - RESTful API for container communication
@@ -15,11 +15,13 @@
 ## Installation
 
 ### Global Installation
+
 ```bash
 npm install -g @mcp-guard/python-monitoring-framework
 ```
 
 ### Project Installation
+
 ```bash
 npm install @mcp-guard/python-monitoring-framework
 ```
@@ -56,13 +58,16 @@ mcp-guard-python-framework --help
 ### Programmatic Usage
 
 ```typescript
-import { MCPGuardPythonFramework, MCPGuardFrameworkClient } from '@mcp-guard/python-monitoring-framework';
+import {
+  MCPGuardPythonFramework,
+  MCPGuardFrameworkClient,
+} from '@mcp-guard/python-monitoring-framework';
 
 // Start framework programmatically
 const framework = new MCPGuardPythonFramework({
   mode: 'api',
   port: 8000,
-  verbose: true
+  verbose: true,
 });
 
 await framework.start();
@@ -87,12 +92,12 @@ console.log('Problems found:', problems.length);
 
 ### CLI Commands
 
-| Command | Description | Options |
-|---------|-------------|---------|
-| `start` | Start the monitoring framework | `--mode`, `--port`, `--config`, `--verbose` |
-| `status` | Get current framework status | - |
-| `stop` | Stop the running framework | - |
-| `help` | Show help message | - |
+| Command  | Description                    | Options                                     |
+| -------- | ------------------------------ | ------------------------------------------- |
+| `start`  | Start the monitoring framework | `--mode`, `--port`, `--config`, `--verbose` |
+| `status` | Get current framework status   | -                                           |
+| `stop`   | Stop the running framework     | -                                           |
+| `help`   | Show help message              | -                                           |
 
 ### Framework Modes
 
@@ -102,47 +107,47 @@ console.log('Problems found:', problems.length);
 
 ### HTTP API Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/status` | GET | Framework status and statistics |
-| `/metrics` | GET | Current system metrics |
-| `/problems` | GET | Detected problems and issues |
-| `/plugins` | GET | Plugin status and information |
-| `/data` | GET | All framework data combined |
-| `/start` | POST | Start monitoring |
-| `/stop` | POST | Stop monitoring |
-| `/restart` | POST | Restart monitoring |
-| `/health` | GET | Health check endpoint |
+| Endpoint    | Method | Description                     |
+| ----------- | ------ | ------------------------------- |
+| `/status`   | GET    | Framework status and statistics |
+| `/metrics`  | GET    | Current system metrics          |
+| `/problems` | GET    | Detected problems and issues    |
+| `/plugins`  | GET    | Plugin status and information   |
+| `/data`     | GET    | All framework data combined     |
+| `/start`    | POST   | Start monitoring                |
+| `/stop`     | POST   | Stop monitoring                 |
+| `/restart`  | POST   | Restart monitoring              |
+| `/health`   | GET    | Health check endpoint           |
 
 ## Configuration
 
 ### Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `PORT` | API server port | `8000` |
-| `CONFIG_FILE` | Configuration file path | `config.yaml` |
-| `PYTHONPATH` | Python module search path | Auto-configured |
+| Variable      | Description               | Default         |
+| ------------- | ------------------------- | --------------- |
+| `PORT`        | API server port           | `8000`          |
+| `CONFIG_FILE` | Configuration file path   | `config.yaml`   |
+| `PYTHONPATH`  | Python module search path | Auto-configured |
 
 ### Configuration File (`config.yaml`)
 
 ```yaml
 monitoring:
-  interval: 30  # seconds
+  interval: 30 # seconds
   plugins:
     - system_metrics_collector
     - network_monitor
     - process_monitor
     - log_file_monitor
-  
+
 detection:
   thresholds:
     cpu_usage: 80
     memory_usage: 85
     disk_usage: 90
-  
+
 api:
-  host: "0.0.0.0"
+  host: '0.0.0.0'
   port: 8000
   cors_enabled: true
 ```
@@ -161,7 +166,7 @@ services:
       sh -c "npm install -g @mcp-guard/python-monitoring-framework && 
              mcp-guard-python-framework start --mode docker"
     ports:
-      - "8000:8000"
+      - '8000:8000'
     environment:
       - PORT=8000
     volumes:
@@ -187,7 +192,7 @@ class MonitoringService {
       cpuUsage: metrics.cpuUsage,
       memoryUsage: metrics.memoryUsage,
       problems: problems.length,
-      lastUpdate: status.last_update
+      lastUpdate: status.last_update,
     };
   }
 }
@@ -204,7 +209,7 @@ class CustomMetricsCollector:
         self.name = "custom_collector"
         self.version = "1.0.0"
         self.type = "collector"
-    
+
     async def collect(self):
         return {
             "custom_metric": self.get_custom_data(),

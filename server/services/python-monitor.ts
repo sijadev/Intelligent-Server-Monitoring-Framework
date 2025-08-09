@@ -3,14 +3,15 @@ import { EventEmitter } from 'events';
 import path from 'path';
 import fs from 'fs/promises';
 import axios from 'axios';
-import { getPythonApiUrl, isCI, isDevelopment } from '../config';
-import { 
-  type Problem, 
-  type Metrics, 
-  type LogEntry, 
+import YAML from 'yaml';
+import { getPythonApiUrl } from '../config';
+import {
+  type Problem,
+  type Metrics,
+  type LogEntry,
   type Plugin,
-  type FrameworkConfig 
-} from '@shared/schema';
+  type FrameworkConfig,
+} from '../../shared/schema.js';
 import { storage } from '../storage-init';
 import { logAggregator } from './log-aggregator';
 
@@ -31,14 +32,36 @@ export class PythonMonitorService extends EventEmitter {
   private pythonPath: string;
   private configPath: string;
   private pythonApiUrl: string;
+  private stdoutBuffer: string = '';
+  private apiAvailable: boolean = false;
+  private metricsBuffer: Metrics[] = [];
+  private logBuffer: LogEntry[] = [];
+  private bufferFlushInterval: NodeJS.Timeout | null = null;
 
   constructor() {
     super();
     this.setMaxListeners(50); // Increase max listeners to handle multiple test scenarios
-    this.pythonPath = path.join(process.cwd(), 'python-framework', 'enhanced_main.py');
+    this.pythonPath = path.join(process.cwd(), 'python-framework', 'main.py');
     this.configPath = path.join(process.cwd(), 'python-framework', 'config.yaml');
     // Use centralized configuration for Python API URL
     this.pythonApiUrl = getPythonApiUrl();
+    // Start periodic buffer flush
+    this.bufferFlushInterval = setInterval(() => this.flushBuffers().catch(() => {}), 2000);
+  }
+
+  // Report errors without crashing the process if no 'error' listeners are attached
+  private reportFrameworkError(err: unknown): void {
+    const message = err instanceof Error ? err.message : String(err);
+    console.warn('PythonMonitorService error:', message);
+    try {
+      logAggregator.logPythonFramework('error', message);
+    } catch {}
+    // Emit a safe custom event
+    this.emit('framework-error', message);
+    // Only emit the special 'error' event if someone listens for it
+    if (this.listenerCount('error') > 0) {
+      this.emit('error', message);
+    }
   }
 
   async start(): Promise<void> {
@@ -51,29 +74,33 @@ export class PythonMonitorService extends EventEmitter {
       const status = await this.checkPythonApiStatus();
       if (status.running) {
         this.isRunning = true;
+        this.apiAvailable = true;
         console.log('✅ Python framework already running in container');
         return;
       }
 
       // Try to start via API
       await this.startViaApi();
-      
+
       // Fallback to local process if container not available
       if (!this.isRunning) {
         await this.startLocalProcess();
       }
     } catch (error) {
-      console.warn('⚠️ Failed to start via API, trying local process:', error.message);
+      console.warn('⚠️ Failed to start via API, trying local process:', (error as any).message);
+      this.apiAvailable = false;
       await this.startLocalProcess();
     }
   }
 
-  private async checkPythonApiStatus(): Promise<{running: boolean, error?: string}> {
+  private async checkPythonApiStatus(): Promise<{ running: boolean; error?: string }> {
     try {
       const response = await axios.get(`${this.pythonApiUrl}/status`, { timeout: 5000 });
+      this.apiAvailable = !!response.data?.running;
       return response.data;
     } catch (error) {
-      return { running: false, error: error.message };
+      this.apiAvailable = false;
+      return { running: false, error: (error as any).message };
     }
   }
 
@@ -82,8 +109,10 @@ export class PythonMonitorService extends EventEmitter {
       const response = await axios.post(`${this.pythonApiUrl}/restart`, {}, { timeout: 10000 });
       console.log('🚀 Started Python framework via API:', response.data.message);
       this.isRunning = true;
+      this.apiAvailable = true;
     } catch (error) {
-      throw new Error(`Failed to start via API: ${error.message}`);
+      this.apiAvailable = false;
+      throw new Error(`Failed to start via API: ${(error as any).message}`);
     }
   }
 
@@ -93,38 +122,41 @@ export class PythonMonitorService extends EventEmitter {
 
     try {
       // Start Python process - use enhanced version for continuous monitoring
-      const pythonScript = 'enhanced_main.py';
+      const pythonScript = 'main.py';
       const scriptPath = path.join(path.dirname(this.pythonPath), pythonScript);
-      
+
       // Use the virtual environment Python if available
       const venvPython = path.join(process.cwd(), '.venv', 'bin', 'python3');
-      const pythonCmd = await fs.access(venvPython).then(() => venvPython).catch(() => 'python3');
-      
+      const pythonCmd = await fs
+        .access(venvPython)
+        .then(() => venvPython)
+        .catch(() => 'python3');
+
       console.log(`Starting Python Framework with: ${pythonCmd}`);
-      
+
       this.process = spawn(pythonCmd, [scriptPath], {
         stdio: ['pipe', 'pipe', 'pipe'],
         cwd: path.dirname(this.pythonPath),
-        env: { 
+        env: {
           ...process.env,
-          PYTHONPATH: path.join(process.cwd(), '.venv', 'lib', 'python3.12', 'site-packages')
-        }
+        },
       });
 
       this.isRunning = true;
 
-      // Handle stdout data (JSON output from framework)
+      // Handle stdout data (JSONL/NDJSON output from framework) with chunk-safe parsing
       this.process.stdout?.on('data', (data) => {
-        const output = data.toString();
-        console.log('Python Framework Output:', output.trim());
-        logAggregator.logPythonFramework('output', output.trim());
-        this.handlePythonOutput(output);
+        const chunk = data.toString();
+        if (chunk.trim()) {
+          logAggregator.logPythonFramework('output', chunk.trim());
+        }
+        this.handleStdoutChunk(chunk);
       });
 
       // Handle stderr (Python often outputs INFO logs here)
       this.process.stderr?.on('data', (data) => {
         const message = data.toString().trim();
-        
+
         // Parse log level from Python logging format
         let logLevel: 'INFO' | 'WARN' | 'ERROR' | 'DEBUG' = 'INFO';
         if (message.includes(' - ERROR -')) {
@@ -134,14 +166,15 @@ export class PythonMonitorService extends EventEmitter {
         } else if (message.includes(' - DEBUG -')) {
           logLevel = 'DEBUG';
         }
-        
+
         // Log to our aggregator with proper level
         logAggregator.logPythonFramework('log', message, { level: logLevel });
-        
+
         // Only emit error events for actual ERROR level logs
         if (logLevel === 'ERROR') {
           console.error('Python Framework Error:', message);
-          this.emit('error', message);
+          // Don't emit error events to avoid unhandled error crashes
+          // this.emit('error', message);
         } else {
           // Log INFO/WARN/DEBUG as regular console output
           if (logLevel === 'WARN') {
@@ -157,20 +190,27 @@ export class PythonMonitorService extends EventEmitter {
         console.log(`Python Framework exited with code ${code}`);
         this.isRunning = false;
         this.process = null;
+        if (this.bufferFlushInterval) {
+          clearInterval(this.bufferFlushInterval);
+          this.bufferFlushInterval = null;
+        }
         this.emit('exit', code);
       });
 
       // Handle process error
       this.process.on('error', (error) => {
-        console.error('Python Framework Process Error:', error);
+        const msg = error instanceof Error ? error.message : String(error);
+        console.error('Python Framework Process Error:', msg);
         this.isRunning = false;
-        this.emit('error', error.message);
+        this.reportFrameworkError(msg);
       });
 
       console.log('Python Monitoring Framework started');
-      logAggregator.logPythonFramework('started', 'Python monitoring framework successfully started');
+      logAggregator.logPythonFramework(
+        'started',
+        'Python monitoring framework successfully started',
+      );
       this.emit('started');
-
     } catch (error) {
       console.error('Failed to start Python Framework:', error);
       this.isRunning = false;
@@ -187,6 +227,10 @@ export class PythonMonitorService extends EventEmitter {
       this.process!.on('exit', () => {
         this.isRunning = false;
         this.process = null;
+        if (this.bufferFlushInterval) {
+          clearInterval(this.bufferFlushInterval);
+          this.bufferFlushInterval = null;
+        }
         console.log('Python Monitoring Framework stopped');
         logAggregator.logPythonFramework('stopped', 'Python monitoring framework stopped');
         this.emit('stopped');
@@ -212,7 +256,10 @@ export class PythonMonitorService extends EventEmitter {
       console.log('🔄 Restarted Python framework via API');
     } catch (error) {
       // Fallback to local restart
-      console.warn('⚠️ API restart failed, falling back to local restart:', error.message);
+      {
+        const msg = error instanceof Error ? error.message : String(error);
+        console.warn('⚠️ API restart failed, falling back to local restart:', msg);
+      }
       await this.stop();
       await this.start();
     }
@@ -224,19 +271,19 @@ export class PythonMonitorService extends EventEmitter {
       const response = await axios.get(`${this.pythonApiUrl}/data`, { timeout: 5000 });
       return {
         problems: response.data.problems || [],
-        metrics: response.data.metrics || {},
+        metrics: response.data.metrics ?? undefined,
         logEntries: [], // Will be handled separately
         plugins: response.data.plugins || [],
-        status: response.data.status || { running: false }
+        status: response.data.status || { running: false },
       };
     } catch (error) {
       // Return empty data if API not available
       return {
         problems: [],
-        metrics: {},
+        metrics: undefined,
         logEntries: [],
         plugins: [],
-        status: { running: false, error: error.message }
+        status: { running: false, error: error instanceof Error ? error.message : String(error) },
       };
     }
   }
@@ -245,7 +292,7 @@ export class PythonMonitorService extends EventEmitter {
     return {
       running: this.isRunning,
       hasProcess: this.process !== null,
-      apiAvailable: true // Will be updated by health checks
+      apiAvailable: this.apiAvailable,
     };
   }
 
@@ -258,20 +305,51 @@ export class PythonMonitorService extends EventEmitter {
     this.process.stdin.write(message);
   }
 
-  private async handlePythonOutput(output: string): Promise<void> {
-    const lines = output.trim().split('\n');
+  private ensureDate(value: any, context: string): Date {
+    if (value instanceof Date) {
+      return value;
+    }
+    if (typeof value === 'string') {
+      const date = new Date(value);
+      if (isNaN(date.getTime())) {
+        console.warn(`Invalid date string in ${context}: ${value}, using current time`);
+        return new Date();
+      }
+      return date;
+    }
+    if (typeof value === 'number') {
+      return new Date(value);
+    }
+    console.warn(`Invalid timestamp type in ${context}: ${typeof value}, using current time`);
+    return new Date();
+  }
 
-    for (const line of lines) {
+  // Handle stdout chunk with buffer to safely parse line-delimited JSON
+  private async handleStdoutChunk(chunk: string): Promise<void> {
+    const MAX_BUFFER = 1024 * 1024; // 1MB safety cap
+    this.stdoutBuffer += chunk;
+
+    // Prevent unbounded growth
+    if (this.stdoutBuffer.length > MAX_BUFFER) {
+      console.warn('Python stdout buffer exceeded max size, resetting buffer');
+      this.stdoutBuffer = '';
+      return;
+    }
+
+    let newlineIndex: number;
+    while ((newlineIndex = this.stdoutBuffer.indexOf('\n')) !== -1) {
+      const line = this.stdoutBuffer.slice(0, newlineIndex).trim();
+      this.stdoutBuffer = this.stdoutBuffer.slice(newlineIndex + 1);
+
+      if (!line) continue;
+
       try {
-        // Try to parse as JSON
         const data = JSON.parse(line);
         await this.processFrameworkData(data);
-      } catch (error) {
-        // Handle non-JSON output (logs, etc.)
-        if (line.trim()) {
-          console.log('Python Framework Log:', line);
-          logAggregator.logPythonFramework('non-json-output', line);
-        }
+      } catch (err) {
+        // Not JSON, treat as log line
+        logAggregator.logPythonFramework('non-json-output', line);
+        console.log('Python Framework Log:', line);
       }
     }
   }
@@ -285,7 +363,7 @@ export class PythonMonitorService extends EventEmitter {
             type: problem.type,
             severity: problem.severity,
             description: problem.description,
-            timestamp: problem.timestamp,
+            timestamp: this.ensureDate(problem.timestamp, 'problem.timestamp'),
             metadata: problem.metadata || {},
           });
         }
@@ -294,30 +372,28 @@ export class PythonMonitorService extends EventEmitter {
 
       // Store metrics
       if (data.metrics) {
-        await storage.createMetrics({
-          timestamp: data.metrics.timestamp,
-          cpuUsage: data.metrics.cpuUsage,
-          memoryUsage: data.metrics.memoryUsage,
-          diskUsage: data.metrics.diskUsage,
-          loadAverage: data.metrics.loadAverage,
-          networkConnections: data.metrics.networkConnections,
-          processes: data.metrics.processes,
-          metadata: data.metrics.metadata || {},
-        });
+        const buffered: Metrics = {
+          ...data.metrics,
+          timestamp: this.ensureDate(data.metrics.timestamp, 'metrics.timestamp'),
+        } as Metrics;
+        this.metricsBuffer.push(buffered);
+        if (this.metricsBuffer.length > 100) {
+          await this.flushBuffers();
+        }
         this.emit('metrics', data.metrics);
       }
 
       // Store log entries
       if (data.logEntries) {
         for (const logEntry of data.logEntries) {
-          await storage.createLogEntry({
-            timestamp: logEntry.timestamp,
-            level: logEntry.level,
-            message: logEntry.message,
-            source: logEntry.source,
-            rawLine: logEntry.rawLine,
-            metadata: logEntry.metadata || {},
-          });
+          const buffered: LogEntry = {
+            ...logEntry,
+            timestamp: this.ensureDate(logEntry.timestamp, 'logEntry.timestamp'),
+          } as LogEntry;
+          this.logBuffer.push(buffered);
+        }
+        if (this.logBuffer.length > 250) {
+          await this.flushBuffers();
         }
         this.emit('logEntries', data.logEntries);
       }
@@ -340,10 +416,34 @@ export class PythonMonitorService extends EventEmitter {
       if (data.status) {
         this.emit('status', data.status);
       }
-
     } catch (error) {
       console.error('Error processing framework data:', error);
       this.emit('error', error);
+    }
+  }
+
+  private async flushBuffers(): Promise<void> {
+    try {
+      if (this.metricsBuffer.length > 0) {
+        const items = this.metricsBuffer.splice(0, this.metricsBuffer.length);
+        for (const m of items) {
+          await storage.createMetrics({
+            ...m,
+            metadata: (m as any).metadata ?? {},
+          });
+        }
+      }
+      if (this.logBuffer.length > 0) {
+        const items = this.logBuffer.splice(0, this.logBuffer.length);
+        for (const l of items) {
+          await storage.createLogEntry({
+            ...l,
+            metadata: (l as any).metadata ?? {},
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('Buffer flush error:', err instanceof Error ? err.message : String(err));
     }
   }
 
@@ -363,42 +463,30 @@ export class PythonMonitorService extends EventEmitter {
   }
 
   private convertToYaml(config: FrameworkConfig): string {
-    return `
-# Intelligent Monitoring Framework Configuration
-server_type: ${config.serverType}
-monitoring_interval: ${config.monitoringInterval}
-learning_enabled: ${config.learningEnabled}
-auto_remediation: ${config.autoRemediation}
-log_level: ${config.logLevel}
-data_dir: ${config.dataDir}
+    const cfg: any = {
+      // Intelligent Monitoring Framework Configuration
+      server_type: config.serverType,
+      monitoring_interval: config.monitoringInterval,
+      learning_enabled: config.learningEnabled,
+      auto_remediation: config.autoRemediation,
+      log_level: config.logLevel,
+      data_dir: config.dataDir,
+      log_files: Array.isArray((config as any).logFiles)
+        ? (config as any).logFiles.map((f: any) => ({ path: String(f.path), type: String(f.type) }))
+        : [],
+      plugins: {
+        collectors: ['log_file_collector', 'system_metrics_collector'],
+        detectors: ['log_pattern_detector', 'threshold_detector'],
+        remediators: ['system_remediation'],
+      },
+      thresholds: {
+        cpu_usage: { warning: 80, critical: 95 },
+        memory_usage: { warning: 85, critical: 95 },
+        disk_usage: { warning: 85, critical: 95 },
+      },
+    };
 
-# Log files to monitor
-log_files:
-${Array.isArray(config.logFiles) ? config.logFiles.map((file: any) => `  - path: "${file.path}"\n    type: "${file.type}"`).join('\n') : ''}
-
-# Plugin configuration
-plugins:
-  collectors:
-    - log_file_collector
-    - system_metrics_collector
-  detectors:
-    - log_pattern_detector
-    - threshold_detector
-  remediators:
-    - system_remediation
-
-# Threshold configuration
-thresholds:
-  cpu_usage:
-    warning: 80
-    critical: 95
-  memory_usage:
-    warning: 85
-    critical: 95
-  disk_usage:
-    warning: 85
-    critical: 95
-`.trim();
+    return YAML.stringify(cfg);
   }
 }
 

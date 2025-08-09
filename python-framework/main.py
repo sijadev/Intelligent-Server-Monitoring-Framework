@@ -2,6 +2,9 @@
 """
 Intelligent Monitoring Framework - Python Prototype
 Ein erweiterbares, lernfähiges Framework für Server-Monitoring mit Log-Analyse
+
+🚀 ENHANCED FOR COMPLETE DEVELOPMENT ENVIRONMENT
+Provides full monitoring capabilities with FastAPI server integration
 """
 
 import asyncio
@@ -1028,6 +1031,14 @@ async def main():
         logger.error(f"Unexpected error: {e}")
     finally:
         await framework.stop()
+
+# Create aliases for backwards compatibility
+MonitoringFramework = IntelligentMonitoringFramework
+SystemMetricsCollector = SystemMetricsCollectorPlugin
+LogFileMonitor = LogFileCollectorPlugin
+ThresholdDetector = ThresholdDetectorPlugin
+PerformanceAnalyzer = SystemMetricsCollectorPlugin  # Alias for performance analysis
+AutoRemediator = SystemRemediationPlugin  # Alias for auto remediation
 
 if __name__ == "__main__":
     asyncio.run(main())

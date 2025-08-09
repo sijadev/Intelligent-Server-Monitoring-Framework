@@ -1,26 +1,27 @@
-import { Switch, Route } from "wouter";
-import { useState } from "react";
-import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { Sidebar } from "@/components/layout/sidebar";
-import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Switch, Route } from 'wouter';
+import { useState } from 'react';
+import { queryClient } from './lib/queryClient';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from '@/components/ui/toaster';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { Sidebar } from '@/components/layout/sidebar';
+import { Button } from '@/components/ui/button';
+import { Menu, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 // Pages
-import Dashboard from "@/pages/dashboard";
-import Problems from "@/pages/problems";
-import Metrics from "@/pages/metrics";
-import Logs from "@/pages/logs";
-import Configuration from "@/pages/configuration";
-import CodeAnalysis from "@/pages/code-analysis";
-import AiDashboard from "@/pages/ai-dashboard";
-import MCPDashboard from "@/pages/mcp-dashboard";
-import TestManager from "@/pages/test-manager";
-import Plugins from "@/pages/plugins";
-import NotFound from "@/pages/not-found";
+import Dashboard from '@/pages/dashboard';
+import Problems from '@/pages/problems';
+import Metrics from '@/pages/metrics';
+import Logs from '@/pages/logs';
+import Configuration from '@/pages/configuration';
+import CodeAnalysis from '@/pages/code-analysis';
+import AiDashboard from '@/pages/ai-dashboard';
+import MCPDashboard from '@/pages/mcp-dashboard';
+import TestManager from '@/pages/test-manager';
+import { ErrorBoundary } from '@/components/error-boundary';
+import Plugins from '@/pages/plugins';
+import NotFound from '@/pages/not-found';
 
 function AppLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -30,7 +31,10 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 md:hidden">
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
+          <div
+            className="fixed inset-0 bg-gray-600 bg-opacity-75"
+            onClick={() => setSidebarOpen(false)}
+          />
           <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white">
             <div className="absolute top-0 right-0 -mr-12 pt-2">
               <Button
@@ -55,18 +59,14 @@ function AppLayout({ children }: { children: React.ReactNode }) {
         {/* Mobile menu button */}
         <div className="md:hidden">
           <div className="flex items-center justify-between px-4 py-2 bg-white border-b border-gray-200">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSidebarOpen(true)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(true)}>
               <Menu className="h-6 w-6" />
             </Button>
             <h1 className="text-lg font-semibold">MCP.Guard Dashboard</h1>
             <div className="w-10" /> {/* Spacer for centering */}
           </div>
         </div>
-        
+
         {children}
       </div>
     </div>
@@ -81,7 +81,14 @@ function Router() {
       <Route path="/metrics" component={Metrics} />
       <Route path="/ai-dashboard" component={AiDashboard} />
       <Route path="/mcp-dashboard" component={MCPDashboard} />
-      <Route path="/test-manager" component={TestManager} />
+      <Route
+        path="/test-manager"
+        component={() => (
+          <ErrorBoundary>
+            <TestManager />
+          </ErrorBoundary>
+        )}
+      />
       <Route path="/plugins" component={Plugins} />
       <Route path="/logs" component={Logs} />
       <Route path="/configuration" component={Configuration} />

@@ -6,13 +6,13 @@
 import { imfApplication, IMFApplication } from './imf-application';
 import { serviceRegistry } from './service-registry';
 import { container } from './dependency-container';
-import { 
+import {
   IService,
   IPythonFrameworkService,
   ITestManagerService,
   ServiceHealthStatus,
   DetectedProblem,
-  MetricsData
+  MetricsData,
 } from '../interfaces/service.interfaces';
 import { DomainRepositories } from '../repositories/domain.repositories';
 import { BaseService, PeriodicService } from './base-service';
@@ -50,25 +50,26 @@ class MonitoringService extends PeriodicService {
 
     // Example: Check for critical problems
     const problems = await this.repositories.problems.findBySeverity('CRITICAL');
-    
+
     if (problems.length > 0) {
-      await this.logger?.log('WARN', this.name,
-        `Found ${problems.length} critical problems`,
-        { problemIds: problems.map(p => p.id) }
-      );
-      
+      await this.logger?.log('WARN', this.name, `Found ${problems.length} critical problems`, {
+        problemIds: problems.map((p) => p.id),
+      });
+
       this.safeEmit('critical:problems', problems);
     }
 
     // Example: Clean up old data
     const cleanupResults = await this.repositories.cleanup({
       metricsKeepDays: 30,
-      logsKeepDays: 7
+      logsKeepDays: 7,
     });
 
     if (cleanupResults.metricsDeleted > 0 || cleanupResults.logsDeleted > 0) {
-      await this.logger?.log('INFO', this.name,
-        `Cleanup completed: ${cleanupResults.metricsDeleted} metrics, ${cleanupResults.logsDeleted} logs deleted`
+      await this.logger?.log(
+        'INFO',
+        this.name,
+        `Cleanup completed: ${cleanupResults.metricsDeleted} metrics, ${cleanupResults.logsDeleted} logs deleted`,
       );
     }
   }
@@ -84,12 +85,12 @@ class MonitoringService extends PeriodicService {
 class MonitoringServiceFactory {
   async createMonitoringService(name: string, config?: any): Promise<MonitoringService> {
     const service = new MonitoringService();
-    
+
     // Register with dependency container
     container.register(name, () => service, {
-      dependencies: ['application', 'logger']
+      dependencies: ['application', 'logger'],
     });
-    
+
     return await container.resolve<MonitoringService>(name);
   }
 }
@@ -102,29 +103,36 @@ class MonitoringServiceFactory {
  * Example of how to use the new patterns in your application
  */
 export class PatternsDemo {
-  
   /**
    * Demonstrate dependency injection pattern
    */
   static async demonstrateDependencyInjection(): Promise<void> {
     console.log('🎯 Demonstrating Dependency Injection Pattern');
-    
+
     // Register a custom service
     container.register('customService', () => {
       return {
         name: 'custom-service',
         version: '1.0.0',
-        async initialize() { console.log('Custom service initialized'); },
-        async cleanup() { console.log('Custom service cleaned up'); },
+        async initialize() {
+          console.log('Custom service initialized');
+        },
+        async cleanup() {
+          console.log('Custom service cleaned up');
+        },
         getHealthStatus(): ServiceHealthStatus {
           return { healthy: true, status: 'running', lastCheck: new Date() };
         },
-        customMethod() { return 'Hello from custom service!'; }
+        customMethod() {
+          return 'Hello from custom service!';
+        },
       };
     });
 
     // Resolve and use the service
-    const customService = await container.resolve<IService & { customMethod(): string }>('customService');
+    const customService = await container.resolve<IService & { customMethod(): string }>(
+      'customService',
+    );
     console.log('✅', customService.customMethod());
   }
 
@@ -133,7 +141,7 @@ export class PatternsDemo {
    */
   static async demonstrateRepositoryPattern(): Promise<void> {
     console.log('🎯 Demonstrating Repository Pattern');
-    
+
     // Initialize application to get repositories
     await imfApplication.initialize();
     const repositories = imfApplication.getRepositories();
@@ -142,7 +150,7 @@ export class PatternsDemo {
     const recentProblems = await repositories.problems.findAll({
       limit: 5,
       orderBy: 'timestamp',
-      orderDirection: 'DESC'
+      orderDirection: 'DESC',
     });
 
     console.log('✅ Recent problems:', recentProblems.length);
@@ -157,12 +165,13 @@ export class PatternsDemo {
    */
   static async demonstrateServiceComposition(): Promise<void> {
     console.log('🎯 Demonstrating Service Composition Pattern');
-    
+
     await imfApplication.initialize();
 
     // Access composed services
     try {
-      const pythonFramework = await imfApplication.getService<IPythonFrameworkService>('pythonFramework');
+      const pythonFramework =
+        await imfApplication.getService<IPythonFrameworkService>('pythonFramework');
       const status = pythonFramework.getStatus();
       console.log('✅ Python framework status:', status.running ? 'Running' : 'Stopped');
     } catch (error) {
@@ -183,7 +192,7 @@ export class PatternsDemo {
    */
   static async demonstrateApplicationOrchestration(): Promise<void> {
     console.log('🎯 Demonstrating Application Orchestration');
-    
+
     await imfApplication.initialize();
 
     // Get application metrics
@@ -209,7 +218,7 @@ export class PatternsDemo {
    */
   static async demonstrateErrorHandling(): Promise<void> {
     console.log('🎯 Demonstrating Error Handling Patterns');
-    
+
     try {
       // This will throw an error to demonstrate error handling
       await container.resolve('non-existent-service');
@@ -222,15 +231,15 @@ export class PatternsDemo {
       constructor() {
         super('demo-service', '1.0.0');
       }
-      
+
       protected async onInitialize(): Promise<void> {
         // Simulate initialization
       }
-      
+
       protected async onCleanup(): Promise<void> {
         // Simulate cleanup
       }
-      
+
       async riskyOperation(): Promise<string> {
         return await this.executeWithErrorHandling(async () => {
           if (Math.random() > 0.5) {
@@ -242,7 +251,7 @@ export class PatternsDemo {
     })();
 
     await customService.initialize();
-    
+
     try {
       const result = await customService.riskyOperation();
       console.log('✅ Risky operation result:', result);
@@ -257,24 +266,23 @@ export class PatternsDemo {
   static async runAll(): Promise<void> {
     try {
       console.log('🚀 Running Pattern Demonstrations\n');
-      
+
       await this.demonstrateDependencyInjection();
       console.log();
-      
+
       await this.demonstrateRepositoryPattern();
       console.log();
-      
+
       await this.demonstrateServiceComposition();
       console.log();
-      
+
       await this.demonstrateApplicationOrchestration();
       console.log();
-      
+
       await this.demonstrateErrorHandling();
       console.log();
-      
+
       console.log('✅ All pattern demonstrations completed successfully!');
-      
     } catch (error) {
       console.error('❌ Pattern demonstration failed:', error);
     } finally {
@@ -303,7 +311,7 @@ export async function createIMFApplication(): Promise<IMFApplication> {
 export function registerCustomService<T extends IService>(
   name: string,
   serviceFactory: () => T | Promise<T>,
-  dependencies: string[] = []
+  dependencies: string[] = [],
 ): void {
   serviceRegistry.registerService(name, serviceFactory, dependencies);
 }
@@ -320,7 +328,7 @@ export async function getTypedService<T extends IService>(name: string): Promise
  */
 export async function executeWithPatterns<T>(
   operation: () => Promise<T>,
-  operationName: string
+  operationName: string,
 ): Promise<T> {
   return await imfApplication.executeOperation(async () => {
     return await operation();
@@ -328,10 +336,4 @@ export async function executeWithPatterns<T>(
 }
 
 // Export the main application instance and patterns
-export { 
-  imfApplication,
-  serviceRegistry, 
-  container,
-  MonitoringService,
-  MonitoringServiceFactory
-};
+export { imfApplication, serviceRegistry, container, MonitoringService, MonitoringServiceFactory };

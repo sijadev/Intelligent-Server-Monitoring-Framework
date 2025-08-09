@@ -1,10 +1,10 @@
-import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { TestTube, Play, Clock, CheckCircle, AlertCircle } from "lucide-react";
-import { api } from "@/lib/api";
-import { Link } from "wouter";
+import { useQuery } from '@tanstack/react-query';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { TestTube, Play, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { api } from '@/lib/api';
+import { Link } from 'wouter';
 
 export function TestManagerWidget() {
   // Fetch test manager status
@@ -25,13 +25,13 @@ export function TestManagerWidget() {
           active: false,
           activeGenerations: [],
           generationCapacity: 0,
-          error: error instanceof Error ? error.message : String(error)
+          error: error instanceof Error ? error.message : String(error),
         };
       }
     },
     refetchInterval: 10000,
     retry: false, // Don't retry automatically
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
   });
 
   // Fetch recent profiles
@@ -88,8 +88,8 @@ export function TestManagerWidget() {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Status</span>
-              <Badge variant={(status?.initialized || status?.active) ? "default" : "destructive"}>
-                {(status?.initialized || status?.active) ? (
+              <Badge variant={status?.initialized || status?.active ? 'default' : 'destructive'}>
+                {status?.initialized || status?.active ? (
                   <>
                     <CheckCircle className="h-3 w-3 mr-1" />
                     Active
@@ -107,7 +107,7 @@ export function TestManagerWidget() {
                 )}
               </Badge>
             </div>
-            
+
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Active Generations</span>
               <div className="flex items-center">
@@ -117,13 +117,13 @@ export function TestManagerWidget() {
                 <span className="font-medium">{status?.activeGenerations?.length || 0}</span>
               </div>
             </div>
-            
+
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Capacity</span>
               <span className="font-medium">{status?.generationCapacity || 0}</span>
             </div>
           </div>
-          
+
           <div className="mt-4">
             <Link href="/test-manager">
               <Button size="sm" className="w-full">
@@ -155,11 +155,15 @@ export function TestManagerWidget() {
           ) : (
             <div className="space-y-2">
               {profiles.map((profile: any) => (
-                <div key={profile.id} className="flex items-center justify-between p-2 border rounded">
+                <div
+                  key={profile.id}
+                  className="flex items-center justify-between p-2 border rounded"
+                >
                   <div>
                     <div className="font-medium text-sm">{profile.name}</div>
                     <div className="text-xs text-muted-foreground">
-                      {profile.scenarios?.length || 0} scenarios • {profile.sourceConfig?.languages?.join(', ') || 'N/A'}
+                      {profile.scenarios?.length || 0} scenarios •{' '}
+                      {profile.sourceConfig?.languages?.join(', ') || 'N/A'}
                     </div>
                   </div>
                   <Badge variant="outline" className="text-xs">
@@ -167,7 +171,7 @@ export function TestManagerWidget() {
                   </Badge>
                 </div>
               ))}
-              
+
               <Link href="/test-manager">
                 <Button size="sm" variant="outline" className="w-full mt-2">
                   View All Profiles
@@ -203,28 +207,32 @@ export function TestManagerWidget() {
                       Complete
                     </Badge>
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                     <div>
-                      <strong>Log Entries:</strong> {data.statistics?.totalLogEntries?.toLocaleString() || 0}
+                      <strong>Log Entries:</strong>{' '}
+                      {data.statistics?.totalLogEntries?.toLocaleString() || 0}
                     </div>
                     <div>
-                      <strong>Problems:</strong> {data.statistics?.totalCodeProblems?.toLocaleString() || 0}
+                      <strong>Problems:</strong>{' '}
+                      {data.statistics?.totalCodeProblems?.toLocaleString() || 0}
                     </div>
                     <div>
-                      <strong>Metrics:</strong> {data.statistics?.totalMetricPoints?.toLocaleString() || 0}
+                      <strong>Metrics:</strong>{' '}
+                      {data.statistics?.totalMetricPoints?.toLocaleString() || 0}
                     </div>
                     <div>
                       <strong>Size:</strong> {formatFileSize(data.statistics?.dataSize || 0)}
                     </div>
                   </div>
-                  
+
                   <div className="text-xs text-muted-foreground mt-1">
-                    Generated: {data.generatedAt ? new Date(data.generatedAt).toLocaleDateString() : 'Unknown'}
+                    Generated:{' '}
+                    {data.generatedAt ? new Date(data.generatedAt).toLocaleDateString() : 'Unknown'}
                   </div>
                 </div>
               ))}
-              
+
               <Link href="/test-manager">
                 <Button size="sm" variant="outline" className="w-full mt-2">
                   View All Datasets

@@ -7,13 +7,13 @@ import { spawn, ChildProcess } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import axios, { AxiosInstance, AxiosError } from 'axios';
-import { 
-  IPythonFrameworkService, 
+import {
+  IPythonFrameworkService,
   PythonFrameworkStatus,
   MetricsData,
   DetectedProblem,
   ILoggerService,
-  IConfigurationProvider 
+  IConfigurationProvider,
 } from '../interfaces/service.interfaces';
 import { BaseService } from '../core/base-service';
 
@@ -66,14 +66,14 @@ class PythonApiClient {
       timeout,
       headers: {
         'Content-Type': 'application/json',
-        'User-Agent': 'IMF-Server/1.0.0'
-      }
+        'User-Agent': 'IMF-Server/1.0.0',
+      },
     });
 
     // Add response interceptor for consistent error handling
     this.client.interceptors.response.use(
-      response => response,
-      error => this.handleApiError(error)
+      (response) => response,
+      (error) => this.handleApiError(error),
     );
   }
 
@@ -85,8 +85,7 @@ class PythonApiClient {
       const response = await this.client.get('/health');
       return response.status === 200 && response.data?.status === 'healthy';
     } catch (error) {
-      await this.logger?.log('DEBUG', 'python-api-client', 
-        `Health check failed: ${error.message}`);
+      await this.logger?.log('DEBUG', 'python-api-client', `Health check failed: ${error.message}`);
       return false;
     }
   }
@@ -99,8 +98,7 @@ class PythonApiClient {
       const response = await this.client.get<PythonApiResponse<PythonFrameworkData>>('/status');
       return response.data.data || null;
     } catch (error) {
-      await this.logger?.log('WARN', 'python-api-client',
-        `Failed to get status: ${error.message}`);
+      await this.logger?.log('WARN', 'python-api-client', `Failed to get status: ${error.message}`);
       return null;
     }
   }
@@ -113,7 +111,7 @@ class PythonApiClient {
       const response = await this.client.post<PythonApiResponse>('/command', {
         command,
         data,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       if (!response.data.success) {
@@ -122,8 +120,11 @@ class PythonApiClient {
 
       return response.data.data;
     } catch (error) {
-      await this.logger?.log('ERROR', 'python-api-client',
-        `Command '${command}' failed: ${error.message}`);
+      await this.logger?.log(
+        'ERROR',
+        'python-api-client',
+        `Command '${command}' failed: ${error.message}`,
+      );
       throw error;
     }
   }
@@ -136,8 +137,11 @@ class PythonApiClient {
       const response = await this.client.get<PythonApiResponse<MetricsData>>('/metrics');
       return response.data.data || null;
     } catch (error) {
-      await this.logger?.log('DEBUG', 'python-api-client',
-        `Failed to get metrics: ${error.message}`);
+      await this.logger?.log(
+        'DEBUG',
+        'python-api-client',
+        `Failed to get metrics: ${error.message}`,
+      );
       return null;
     }
   }
@@ -150,8 +154,11 @@ class PythonApiClient {
       const response = await this.client.get<PythonApiResponse<DetectedProblem[]>>('/problems');
       return response.data.data || [];
     } catch (error) {
-      await this.logger?.log('DEBUG', 'python-api-client',
-        `Failed to get problems: ${error.message}`);
+      await this.logger?.log(
+        'DEBUG',
+        'python-api-client',
+        `Failed to get problems: ${error.message}`,
+      );
       return [];
     }
   }
@@ -170,10 +177,10 @@ class PythonApiClient {
     const message = error.response?.data?.error || error.message;
     const status = error.response?.status;
 
-    await this.logger?.log('ERROR', 'python-api-client',
-      `API error (${status}): ${message}`,
-      { url: error.config?.url, method: error.config?.method }
-    );
+    await this.logger?.log('ERROR', 'python-api-client', `API error (${status}): ${message}`, {
+      url: error.config?.url,
+      method: error.config?.method,
+    });
 
     throw new Error(`Python API error: ${message}`);
   }
@@ -193,7 +200,7 @@ class PythonProcessManager {
 
   constructor(
     private readonly config: PythonFrameworkConfig,
-    logger?: ILoggerService
+    logger?: ILoggerService,
   ) {
     this.logger = logger;
   }
@@ -203,37 +210,44 @@ class PythonProcessManager {
    */
   async start(): Promise<void> {
     if (this.process && !this.process.killed) {
-      await this.logger?.log('WARN', 'python-process-manager', 
-        'Python process is already running');
+      await this.logger?.log('WARN', 'python-process-manager', 'Python process is already running');
       return;
     }
 
     try {
-      await this.logger?.log('INFO', 'python-process-manager',
-        `Starting Python framework: ${this.config.pythonPath}`);
+      await this.logger?.log(
+        'INFO',
+        'python-process-manager',
+        `Starting Python framework: ${this.config.pythonPath}`,
+      );
 
       this.process = spawn('python', [this.config.pythonPath], {
         cwd: path.dirname(this.config.pythonPath),
         env: {
           ...process.env,
           PYTHONPATH: path.dirname(this.config.pythonPath),
-          IMF_CONFIG_PATH: this.config.configPath
+          IMF_CONFIG_PATH: this.config.configPath,
         },
-        stdio: ['pipe', 'pipe', 'pipe']
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
 
       this.setupProcessHandlers();
-      
+
       // Wait for process to start
       await this.waitForProcessStart();
-      
-      this.restartAttempts = 0;
-      await this.logger?.log('INFO', 'python-process-manager',
-        `Python framework started with PID: ${this.process.pid}`);
 
+      this.restartAttempts = 0;
+      await this.logger?.log(
+        'INFO',
+        'python-process-manager',
+        `Python framework started with PID: ${this.process.pid}`,
+      );
     } catch (error) {
-      await this.logger?.log('ERROR', 'python-process-manager',
-        `Failed to start Python framework: ${error.message}`);
+      await this.logger?.log(
+        'ERROR',
+        'python-process-manager',
+        `Failed to start Python framework: ${error.message}`,
+      );
       throw error;
     }
   }
@@ -247,12 +261,11 @@ class PythonProcessManager {
     }
 
     try {
-      await this.logger?.log('INFO', 'python-process-manager', 
-        'Stopping Python framework process');
+      await this.logger?.log('INFO', 'python-process-manager', 'Stopping Python framework process');
 
       // Graceful shutdown
       this.process.kill('SIGTERM');
-      
+
       // Wait for graceful shutdown
       const shutdownPromise = new Promise<void>((resolve) => {
         const timeout = setTimeout(() => {
@@ -271,12 +284,13 @@ class PythonProcessManager {
       await shutdownPromise;
       this.process = undefined;
 
-      await this.logger?.log('INFO', 'python-process-manager',
-        'Python framework process stopped');
-
+      await this.logger?.log('INFO', 'python-process-manager', 'Python framework process stopped');
     } catch (error) {
-      await this.logger?.log('ERROR', 'python-process-manager',
-        `Error stopping Python framework: ${error.message}`);
+      await this.logger?.log(
+        'ERROR',
+        'python-process-manager',
+        `Error stopping Python framework: ${error.message}`,
+      );
       throw error;
     }
   }
@@ -285,11 +299,10 @@ class PythonProcessManager {
    * Restart Python framework process
    */
   async restart(): Promise<void> {
-    await this.logger?.log('INFO', 'python-process-manager', 
-      'Restarting Python framework');
+    await this.logger?.log('INFO', 'python-process-manager', 'Restarting Python framework');
 
     await this.stop();
-    await new Promise(resolve => setTimeout(resolve, this.config.restartDelay));
+    await new Promise((resolve) => setTimeout(resolve, this.config.restartDelay));
     await this.start();
   }
 
@@ -322,20 +335,29 @@ class PythonProcessManager {
     });
 
     this.process.on('error', async (error) => {
-      await this.logger?.log('ERROR', 'python-process-manager',
-        `Python process error: ${error.message}`);
+      await this.logger?.log(
+        'ERROR',
+        'python-process-manager',
+        `Python process error: ${error.message}`,
+      );
     });
 
     this.process.on('exit', async (code, signal) => {
-      await this.logger?.log('INFO', 'python-process-manager',
-        `Python process exited with code: ${code}, signal: ${signal}`);
-      
+      await this.logger?.log(
+        'INFO',
+        'python-process-manager',
+        `Python process exited with code: ${code}, signal: ${signal}`,
+      );
+
       // Auto-restart on unexpected exit
       if (code !== 0 && this.restartAttempts < this.config.maxRestartAttempts) {
         this.restartAttempts++;
-        await this.logger?.log('INFO', 'python-process-manager',
-          `Auto-restarting Python framework (attempt ${this.restartAttempts}/${this.config.maxRestartAttempts})`);
-        
+        await this.logger?.log(
+          'INFO',
+          'python-process-manager',
+          `Auto-restarting Python framework (attempt ${this.restartAttempts}/${this.config.maxRestartAttempts})`,
+        );
+
         setTimeout(() => this.start(), this.config.restartDelay);
       }
     });
@@ -389,21 +411,18 @@ export class PythonFrameworkService extends BaseService implements IPythonFramew
 
     // Default configuration
     this.config = {
-      pythonPath: path.join(process.cwd(), 'python-framework', 'enhanced_main.py'),
+      pythonPath: path.join(process.cwd(), 'python-framework', 'main.py'),
       configPath: path.join(process.cwd(), 'python-framework', 'config.yaml'),
       apiUrl: 'http://localhost:8000',
       healthCheckInterval: 30000, // 30 seconds
       maxRestartAttempts: 3,
       restartDelay: 5000, // 5 seconds
       timeout: 10000, // 10 seconds
-      ...config
+      ...config,
     };
 
     this.processManager = new PythonProcessManager(this.config);
-    this.apiClient = new PythonApiClient(
-      this.config.apiUrl, 
-      this.config.timeout
-    );
+    this.apiClient = new PythonApiClient(this.config.apiUrl, this.config.timeout);
   }
 
   /**
@@ -426,12 +445,11 @@ export class PythonFrameworkService extends BaseService implements IPythonFramew
     // Try to connect to existing Python API first
     const isHealthy = await this.apiClient.checkHealth();
     if (isHealthy) {
-      await logger?.log('INFO', this.name,
-        'Connected to existing Python framework API');
+      await logger?.log('INFO', this.name, 'Connected to existing Python framework API');
     } else {
       // Start Python process if API is not available
       await this.processManager.start();
-      
+
       // Wait for API to be ready
       await this.waitForApiReady();
     }
@@ -488,7 +506,7 @@ export class PythonFrameworkService extends BaseService implements IPythonFramew
   async sendCommand(command: string, data?: any): Promise<any> {
     return await this.executeWithErrorHandling(
       () => this.apiClient.sendCommand(command, data),
-      `sendCommand(${command})`
+      `sendCommand(${command})`,
     );
   }
 
@@ -500,7 +518,7 @@ export class PythonFrameworkService extends BaseService implements IPythonFramew
       running: this.isRunning(),
       pid: this.processManager.getPid(),
       apiUrl: this.config.apiUrl,
-      error: this._lastError?.message
+      error: this._lastError?.message,
     };
   }
 
@@ -540,13 +558,12 @@ export class PythonFrameworkService extends BaseService implements IPythonFramew
       const isHealthy = await this.apiClient.checkHealth();
       if (isHealthy) {
         const logger = this.dependencies.logger as ILoggerService;
-        await logger?.log('INFO', this.name,
-          `Python API is ready after ${attempt} attempts`);
+        await logger?.log('INFO', this.name, `Python API is ready after ${attempt} attempts`);
         return;
       }
 
       if (attempt < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
     }
 
@@ -562,8 +579,11 @@ export class PythonFrameworkService extends BaseService implements IPythonFramew
         const isHealthy = await this.apiClient.checkHealth();
         if (!isHealthy && this.isRunning()) {
           const logger = this.dependencies.logger as ILoggerService;
-          await logger?.log('WARN', this.name,
-            'Python API health check failed, attempting restart');
+          await logger?.log(
+            'WARN',
+            this.name,
+            'Python API health check failed, attempting restart',
+          );
           await this.restart();
         }
       } catch (error) {
@@ -582,7 +602,7 @@ export class PythonFrameworkService extends BaseService implements IPythonFramew
       processPid: this.processManager.getPid(),
       apiUrl: this.config.apiUrl,
       restartAttempts: this.processManager['restartAttempts'] || 0,
-      maxRestartAttempts: this.config.maxRestartAttempts
+      maxRestartAttempts: this.config.maxRestartAttempts,
     };
   }
 }

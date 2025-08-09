@@ -6,7 +6,7 @@ services:
     image: registry:2
     restart: always
     ports:
-      - "5000:5000"
+      - '5000:5000'
     environment:
       REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /var/lib/registry
     volumes:
@@ -20,7 +20,7 @@ services:
     image: joxit/docker-registry-ui:static
     restart: always
     ports:
-      - "5001:80"
+      - '5001:80'
     environment:
       - REGISTRY_TITLE=IMF Local Registry
       - REGISTRY_URL=http://registry:5000

@@ -1,0 +1,25 @@
+{
+  "templates": [
+    {
+      "id": "template-low",
+      "complexity": "low",
+      "sampleCount": 500,
+      "varianceLevel": "low",
+      "duration": 300
+    },
+    {
+      "id": "template-medium",
+      "complexity": "medium",
+      "sampleCount": 750,
+      "varianceLevel": "medium",
+      "duration": 300
+    },
+    {
+      "id": "template-high",
+      "complexity": "high",
+      "sampleCount": 1000,
+      "varianceLevel": "high",
+      "duration": 300
+    }
+  ]
+}

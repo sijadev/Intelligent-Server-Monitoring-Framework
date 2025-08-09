@@ -6,12 +6,12 @@
 import { eq, sql, and, or, desc, asc, count as drizzleCount } from 'drizzle-orm';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { PgTable, PgColumn } from 'drizzle-orm/pg-core';
-import { 
-  IRepository, 
-  QueryOptions, 
-  IStorageService, 
+import {
+  IRepository,
+  QueryOptions,
+  IStorageService,
   ITransaction,
-  ILoggerService 
+  ILoggerService,
 } from '../interfaces/service.interfaces';
 import { BaseRepository } from '../core/base-service';
 
@@ -28,7 +28,7 @@ export class DrizzleRepository<T, K = string> extends BaseRepository<T, K> {
     protected readonly table: PgTable,
     protected readonly primaryKey: PgColumn,
     tableName: string,
-    logger?: ILoggerService
+    logger?: ILoggerService,
   ) {
     super(tableName, logger);
   }
@@ -43,7 +43,7 @@ export class DrizzleRepository<T, K = string> extends BaseRepository<T, K> {
         .from(this.table)
         .where(eq(this.primaryKey, id as any))
         .limit(1);
-      
+
       return results[0] || null;
     }, `findById(${id})`);
   }
@@ -52,36 +52,39 @@ export class DrizzleRepository<T, K = string> extends BaseRepository<T, K> {
    * Find all entities with optional filtering
    */
   async findAll(options: QueryOptions = {}): Promise<T[]> {
-    return this.executeQuery(async () => {
-      let query = this.db.select().from(this.table);
+    return this.executeQuery(
+      async () => {
+        let query = this.db.select().from(this.table);
 
-      // Apply filtering
-      if (options.filter) {
-        const conditions = this.buildDrizzleConditions(options.filter);
-        if (conditions.length > 0) {
-          query = query.where(and(...conditions));
+        // Apply filtering
+        if (options.filter) {
+          const conditions = this.buildDrizzleConditions(options.filter);
+          if (conditions.length > 0) {
+            query = query.where(and(...conditions));
+          }
         }
-      }
 
-      // Apply ordering
-      if (options.orderBy) {
-        const orderColumn = (this.table as any)[options.orderBy];
-        if (orderColumn) {
-          const orderFn = options.orderDirection === 'DESC' ? desc : asc;
-          query = query.orderBy(orderFn(orderColumn));
+        // Apply ordering
+        if (options.orderBy) {
+          const orderColumn = (this.table as any)[options.orderBy];
+          if (orderColumn) {
+            const orderFn = options.orderDirection === 'DESC' ? desc : asc;
+            query = query.orderBy(orderFn(orderColumn));
+          }
         }
-      }
 
-      // Apply pagination
-      if (options.limit) {
-        query = query.limit(options.limit);
-      }
-      if (options.offset) {
-        query = query.offset(options.offset);
-      }
+        // Apply pagination
+        if (options.limit) {
+          query = query.limit(options.limit);
+        }
+        if (options.offset) {
+          query = query.offset(options.offset);
+        }
 
-      return await query;
-    }, `findAll(${JSON.stringify(options)})`);
+        return await query;
+      },
+      `findAll(${JSON.stringify(options)})`,
+    );
   }
 
   /**
@@ -93,11 +96,11 @@ export class DrizzleRepository<T, K = string> extends BaseRepository<T, K> {
         .insert(this.table)
         .values(entity as any)
         .returning();
-      
+
       if (results.length === 0) {
         throw new Error('Failed to create entity - no result returned');
       }
-      
+
       return results[0];
     }, `create(${this.tableName})`);
   }
@@ -112,7 +115,7 @@ export class DrizzleRepository<T, K = string> extends BaseRepository<T, K> {
         .set(updates as any)
         .where(eq(this.primaryKey, id as any))
         .returning();
-      
+
       return results[0] || null;
     }, `update(${id})`);
   }
@@ -126,7 +129,7 @@ export class DrizzleRepository<T, K = string> extends BaseRepository<T, K> {
         .delete(this.table)
         .where(eq(this.primaryKey, id as any))
         .returning();
-      
+
       return results.length > 0;
     }, `delete(${id})`);
   }
@@ -135,21 +138,22 @@ export class DrizzleRepository<T, K = string> extends BaseRepository<T, K> {
    * Count entities with optional filter
    */
   async count(filter?: any): Promise<number> {
-    return this.executeQuery(async () => {
-      let query = this.db
-        .select({ count: drizzleCount() })
-        .from(this.table);
+    return this.executeQuery(
+      async () => {
+        let query = this.db.select({ count: drizzleCount() }).from(this.table);
 
-      if (filter) {
-        const conditions = this.buildDrizzleConditions(filter);
-        if (conditions.length > 0) {
-          query = query.where(and(...conditions));
+        if (filter) {
+          const conditions = this.buildDrizzleConditions(filter);
+          if (conditions.length > 0) {
+            query = query.where(and(...conditions));
+          }
         }
-      }
 
-      const result = await query;
-      return result[0]?.count || 0;
-    }, `count(${JSON.stringify(filter)})`);
+        const result = await query;
+        return result[0]?.count || 0;
+      },
+      `count(${JSON.stringify(filter)})`,
+    );
   }
 
   /**
@@ -157,8 +161,8 @@ export class DrizzleRepository<T, K = string> extends BaseRepository<T, K> {
    */
   async findByAny(conditions: Record<string, any>[]): Promise<T[]> {
     return this.executeQuery(async () => {
-      const orConditions = conditions.map(condition => 
-        and(...this.buildDrizzleConditions(condition))
+      const orConditions = conditions.map((condition) =>
+        and(...this.buildDrizzleConditions(condition)),
       );
 
       return await this.db
@@ -173,7 +177,7 @@ export class DrizzleRepository<T, K = string> extends BaseRepository<T, K> {
    */
   async executeCustomQuery<R>(
     queryFn: (db: PostgresJsDatabase<any>) => Promise<R>,
-    operationName: string
+    operationName: string,
   ): Promise<R> {
     return this.executeQuery(() => queryFn(this.db), operationName);
   }
@@ -245,7 +249,7 @@ export class DrizzleRepository<T, K = string> extends BaseRepository<T, K> {
 export class RepositoryFactory {
   constructor(
     private readonly db: PostgresJsDatabase<any>,
-    private readonly logger?: ILoggerService
+    private readonly logger?: ILoggerService,
   ) {}
 
   /**
@@ -254,15 +258,9 @@ export class RepositoryFactory {
   create<T, K = string>(
     table: PgTable,
     primaryKey: PgColumn,
-    tableName: string
+    tableName: string,
   ): DrizzleRepository<T, K> {
-    return new DrizzleRepository<T, K>(
-      this.db, 
-      table, 
-      primaryKey, 
-      tableName, 
-      this.logger
-    );
+    return new DrizzleRepository<T, K>(this.db, table, primaryKey, tableName, this.logger);
   }
 
   /**
@@ -274,16 +272,12 @@ export class RepositoryFactory {
       table: PgTable;
       primaryKey: PgColumn;
       tableName: string;
-    }>
+    }>,
   ): T {
     const repositories = {} as T;
 
     for (const config of configs) {
-      repositories[config.name] = this.create(
-        config.table,
-        config.primaryKey,
-        config.tableName
-      );
+      repositories[config.name] = this.create(config.table, config.primaryKey, config.tableName);
     }
 
     return repositories;
@@ -304,7 +298,7 @@ export class TransactionManager {
    * Execute operations within a transaction
    */
   async executeInTransaction<T>(
-    operations: (tx: PostgresJsDatabase<any>) => Promise<T>
+    operations: (tx: PostgresJsDatabase<any>) => Promise<T>,
   ): Promise<T> {
     return await this.db.transaction(async (tx) => {
       return await operations(tx);
@@ -315,16 +309,16 @@ export class TransactionManager {
    * Execute multiple repository operations in a transaction
    */
   async executeRepositoryOperations<T>(
-    operations: Array<(repositories: any) => Promise<any>>
+    operations: Array<(repositories: any) => Promise<any>>,
   ): Promise<T[]> {
     return await this.db.transaction(async (tx) => {
       const results: T[] = [];
-      
+
       for (const operation of operations) {
         const result = await operation(tx);
         results.push(result);
       }
-      
+
       return results;
     });
   }

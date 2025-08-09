@@ -12,7 +12,9 @@ router.put('/profiles/:profileId', (req, res) => testManagerController.updatePro
 router.delete('/profiles/:profileId', (req, res) => testManagerController.deleteProfile(req, res));
 
 // Test Data Generation Routes
-router.post('/profiles/:profileId/generate', (req, res) => testManagerController.generateTestData(req, res));
+router.post('/profiles/:profileId/generate', (req, res) =>
+  testManagerController.generateTestData(req, res),
+);
 router.get('/generated-data', (req, res) => testManagerController.getGeneratedData(req, res));
 
 // Status and Monitoring Routes

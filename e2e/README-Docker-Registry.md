@@ -5,16 +5,19 @@ Dieses System vermeidet ständige Downloads durch ein lokales Docker Registry un
 ## 🏗️ Komponenten
 
 ### 1. Lokales Docker Registry
+
 - **Registry**: `localhost:5000` - Speichert Docker Images lokal
 - **Registry UI**: `localhost:5001` - Web-Interface für das Registry
 - **Automatisches Caching**: Lädt alle benötigten Images herunter und cached sie
 
 ### 2. Container Backup System
+
 - **Backup**: Erstellt komprimierte Archive aller Images
 - **Restore**: Stellt Images aus Backups wieder her
 - **Export/Import**: Einzelne Images verwalten
 
 ### 3. Optimierte E2E Tests
+
 - **Lokale Images**: Nutzt Images aus dem lokalen Registry
 - **Schnelle Starts**: Keine Downloads mehr bei Testläufen
 - **Offline-Fähigkeit**: Tests laufen auch ohne Internet
@@ -71,7 +74,9 @@ e2e/
 ## 🔧 Konfiguration
 
 ### Registry Images
+
 Automatisch gecacht:
+
 - `postgres:15`
 - `redis:7-alpine`
 - `node:20-alpine`
@@ -80,10 +85,12 @@ Automatisch gecacht:
 - `localhost:5000/imf-playwright:latest`
 
 ### Registry Ports
+
 - **5000**: Registry API
 - **5001**: Registry Web UI
 
 ### Backup-Optionen
+
 - Automatische Komprimierung
 - Manifest mit Metadaten
 - Cleanup alter Backups
@@ -91,16 +98,19 @@ Automatisch gecacht:
 ## 📊 Vorteile
 
 ### Geschwindigkeit
+
 - ⚡ **90% schneller**: Keine Downloads bei wiederholten Tests
 - 🚀 **Offline-Tests**: Funktioniert ohne Internet
 - 💾 **Lokaler Cache**: Images bleiben erhalten
 
 ### Zuverlässigkeit
+
 - 🔒 **Konsistente Images**: Gleiche Versionen bei allen Tests
 - 💿 **Backups**: Images können wiederhergestellt werden
 - 🛡️ **Fehlerresistenz**: Unabhängig von externen Registries
 
 ### Entwicklung
+
 - 👀 **Registry UI**: Einfache Verwaltung über Web-Interface
 - 🔄 **Versionierung**: Verschiedene Image-Versionen parallel
 - 🧹 **Cleanup**: Automatisches Löschen alter Images
@@ -108,11 +118,12 @@ Automatisch gecacht:
 ## 🎛️ Commands
 
 ### Registry Management
+
 ```bash
 # Registry starten
 cd docker-registry && docker-compose -f docker-compose.registry.yml up -d
 
-# Registry stoppen  
+# Registry stoppen
 cd docker-registry && docker-compose -f docker-compose.registry.yml down
 
 # Registry Status
@@ -120,6 +131,7 @@ curl -s http://localhost:5000/v2/_catalog | jq
 ```
 
 ### Backup Commands
+
 ```bash
 # Vollbackup erstellen
 ./backup-containers.sh backup
@@ -138,6 +150,7 @@ curl -s http://localhost:5000/v2/_catalog | jq
 ```
 
 ### Test Commands
+
 ```bash
 # E2E Tests mit lokalem Registry
 ./run-local-registry-e2e.sh
@@ -152,6 +165,7 @@ curl -s http://localhost:5000/v2/_catalog | jq
 ## 🚨 Troubleshooting
 
 ### Registry nicht verfügbar
+
 ```bash
 # Registry Status prüfen
 curl http://localhost:5000/v2/
@@ -162,6 +176,7 @@ docker-compose -f docker-compose.registry.yml restart
 ```
 
 ### Images fehlen
+
 ```bash
 # Images neu cachen
 ./setup-local-registry.sh
@@ -171,6 +186,7 @@ curl -s http://localhost:5000/v2/_catalog | jq '.repositories[]'
 ```
 
 ### Tests schlagen fehl
+
 ```bash
 # Lokale Registry Tests
 ./run-local-registry-e2e.sh
@@ -183,6 +199,7 @@ curl -s http://localhost:5000/v2/_catalog | jq '.repositories[]'
 ```
 
 ### Speicherplatz
+
 ```bash
 # Registry Größe prüfen
 docker system df
@@ -197,13 +214,15 @@ docker image prune -a
 ## ⚙️ Wartung
 
 ### Regelmäßige Aufgaben
+
 1. **Wöchentlich**: `./backup-containers.sh backup`
 2. **Monatlich**: `./backup-containers.sh clean`
 3. **Bei Updates**: `./setup-local-registry.sh`
 
 ### Monitoring
+
 - Registry UI: http://localhost:5001
-- Registry API: http://localhost:5000/v2/_catalog
+- Registry API: http://localhost:5000/v2/\_catalog
 - Backup Größe: `du -sh docker-backups/`
 
 ## 🎯 Best Practices

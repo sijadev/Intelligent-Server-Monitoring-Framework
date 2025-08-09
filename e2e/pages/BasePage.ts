@@ -29,7 +29,7 @@ export class BasePage {
   async waitForPageLoad() {
     // Wait for DOM content to load first
     await this.page.waitForLoadState('domcontentloaded');
-    
+
     // Then wait for network to be idle with a shorter timeout
     try {
       await this.page.waitForLoadState('networkidle', { timeout: 10000 });
@@ -37,7 +37,7 @@ export class BasePage {
       // If networkidle times out, wait for load state instead
       await this.page.waitForLoadState('load');
     }
-    
+
     // Wait for any loading indicators to disappear
     await this.loadingIndicator.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {
       // Loading indicator might not be present, that's ok
@@ -77,9 +77,9 @@ export class BasePage {
    * Take screenshot with custom name
    */
   async takeScreenshot(name: string) {
-    await this.page.screenshot({ 
+    await this.page.screenshot({
       path: `test-results/${name}-${Date.now()}.png`,
-      fullPage: true 
+      fullPage: true,
     });
   }
 
@@ -89,11 +89,11 @@ export class BasePage {
   async waitForToast(message?: string, timeout: number = 10000) {
     const toast = this.page.locator('[data-testid="toast"]');
     await toast.waitFor({ state: 'visible', timeout });
-    
+
     if (message) {
       await expect(toast).toContainText(message);
     }
-    
+
     return toast;
   }
 

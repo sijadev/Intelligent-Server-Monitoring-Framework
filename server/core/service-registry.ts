@@ -5,15 +5,15 @@
 
 import { EventEmitter } from 'events';
 import { container, DependencyContainer } from './dependency-container';
-import { 
-  IService, 
+import {
+  IService,
   IServiceFactory,
   ServiceHealthStatus,
   IStorageService,
   IPythonFrameworkService,
   ITestManagerService,
   ILoggerService,
-  IConfigurationProvider
+  IConfigurationProvider,
 } from '../interfaces/service.interfaces';
 
 // ============================================================================
@@ -54,28 +54,24 @@ export class ServiceRegistry extends EventEmitter {
     this.container.registerInstance('config', await this.createConfigProvider());
 
     // Logger Service
-    this.container.register('logger', 
-      () => this.createLoggerService(),
-      { dependencies: ['config'] }
-    );
+    this.container.register('logger', () => this.createLoggerService(), {
+      dependencies: ['config'],
+    });
 
-    // Storage Service  
-    this.container.register('storage',
-      () => this.createStorageService(),
-      { dependencies: ['config', 'logger'] }
-    );
+    // Storage Service
+    this.container.register('storage', () => this.createStorageService(), {
+      dependencies: ['config', 'logger'],
+    });
 
     // Python Framework Service
-    this.container.register('pythonFramework',
-      () => this.createPythonFrameworkService(),
-      { dependencies: ['config', 'logger'] }
-    );
+    this.container.register('pythonFramework', () => this.createPythonFrameworkService(), {
+      dependencies: ['config', 'logger'],
+    });
 
     // Test Manager Service
-    this.container.register('testManager',
-      () => this.createTestManagerService(), 
-      { dependencies: ['config', 'logger'] }
-    );
+    this.container.register('testManager', () => this.createTestManagerService(), {
+      dependencies: ['config', 'logger'],
+    });
 
     console.log('✅ Core services registered');
   }
@@ -138,7 +134,7 @@ export class ServiceRegistry extends EventEmitter {
   registerService<T extends IService>(
     name: string,
     factory: () => T | Promise<T>,
-    dependencies: string[] = []
+    dependencies: string[] = [],
   ): void {
     this.container.register(name, factory, { dependencies });
     this.emit('service:registered', name);
@@ -156,9 +152,9 @@ export class ServiceRegistry extends EventEmitter {
    * Create service using factory
    */
   async createServiceFromFactory<T extends IService>(
-    factoryName: string, 
-    serviceName: string, 
-    config?: any
+    factoryName: string,
+    serviceName: string,
+    config?: any,
   ): Promise<T> {
     const factory = this.serviceFactories.get(factoryName);
     if (!factory) {
@@ -175,13 +171,12 @@ export class ServiceRegistry extends EventEmitter {
   private async performInitialization(): Promise<void> {
     try {
       console.log('🚀 Initializing IMF service registry...');
-      
+
       await this.registerCoreServices();
       await this.container.initializeAll();
-      
+
       console.log('✅ IMF service registry initialized successfully');
       this.emit('registry:initialized');
-      
     } catch (error) {
       console.error('❌ Failed to initialize service registry:', error);
       this.emit('registry:error', error);
@@ -192,19 +187,18 @@ export class ServiceRegistry extends EventEmitter {
   private async performShutdown(): Promise<void> {
     try {
       console.log('🛑 Shutting down IMF service registry...');
-      
+
       await this.container.shutdownAll();
-      
+
       // Cleanup factories
       for (const [name, factory] of this.serviceFactories) {
         if (typeof factory.destroyAll === 'function') {
           await factory.destroyAll();
         }
       }
-      
+
       console.log('✅ IMF service registry shut down successfully');
       this.emit('registry:shutdown');
-      
     } catch (error) {
       console.error('❌ Error during service registry shutdown:', error);
       this.emit('registry:error', error);
@@ -217,7 +211,7 @@ export class ServiceRegistry extends EventEmitter {
 
   private async createConfigProvider(): Promise<IConfigurationProvider> {
     const { config, isDevelopment, isProduction, isTest } = await import('../config');
-    
+
     return {
       get: <T = any>(key: string, defaultValue?: T): T => {
         return (config as any)[key] ?? defaultValue;
@@ -232,7 +226,7 @@ export class ServiceRegistry extends EventEmitter {
         // Return all config keys that start with section prefix
         const result: Record<string, any> = {};
         const prefix = section.toUpperCase() + '_';
-        
+
         for (const [key, value] of Object.entries(config)) {
           if (key.startsWith(prefix)) {
             result[key.substring(prefix.length).toLowerCase()] = value;
@@ -246,98 +240,97 @@ export class ServiceRegistry extends EventEmitter {
       environment: config.NODE_ENV as any,
       isDevelopment,
       isProduction,
-      isTest
+      isTest,
     };
   }
 
   private async createLoggerService(): Promise<ILoggerService> {
     const { logAggregator } = await import('../services/log-aggregator');
-    
+
     return {
       name: 'logger',
       version: '1.0.0',
-      
+
       async initialize() {
         // LogAggregator is already initialized
       },
-      
+
       async cleanup() {
         // Cleanup if needed
       },
-      
+
       getHealthStatus(): ServiceHealthStatus {
         return {
           healthy: true,
           status: 'running',
           lastCheck: new Date(),
-          details: { aggregatorActive: true }
+          details: { aggregatorActive: true },
         };
       },
-      
+
       async log(level: string, source: string, message: string, metadata?: any) {
         await logAggregator.log(level as any, source, message, metadata);
       },
-      
+
       async getRecentLogs(limit = 100, filter?) {
         // Implement if logAggregator has this method
         return [];
       },
-      
+
       async captureLog(entry) {
         await this.log(entry.level, entry.source, entry.message, entry.metadata);
-      }
+      },
     };
   }
 
   private async createStorageService(): Promise<IStorageService> {
     const { storage } = await import('../storage-init');
-    
+
     return {
       name: 'storage',
       version: '1.0.0',
-      
+
       async initialize() {
         if (typeof storage.initialize === 'function') {
           await storage.initialize();
         }
       },
-      
+
       async cleanup() {
         // Implement cleanup if needed
       },
-      
+
       getHealthStatus(): ServiceHealthStatus {
-        const isConnected = typeof storage.isConnected === 'function' ? 
-          storage.isConnected() : true;
-          
+        const isConnected =
+          typeof storage.isConnected === 'function' ? storage.isConnected() : true;
+
         return {
           healthy: isConnected,
           status: isConnected ? 'running' : 'error',
           lastCheck: new Date(),
-          details: { connected: isConnected }
+          details: { connected: isConnected },
         };
       },
-      
+
       isConnected() {
-        return typeof storage.isConnected === 'function' ? 
-          storage.isConnected() : true;
+        return typeof storage.isConnected === 'function' ? storage.isConnected() : true;
       },
-      
+
       getConnection() {
         return storage;
       },
-      
+
       async beginTransaction() {
         // Implement transaction support
         throw new Error('Transactions not yet implemented');
       },
-      
+
       async query(sql: string, params?: any[]) {
         if (typeof storage.query === 'function') {
           return await storage.query(sql, params);
         }
         throw new Error('Query method not available');
-      }
+      },
     };
   }
 
@@ -348,31 +341,31 @@ export class ServiceRegistry extends EventEmitter {
 
   private async createTestManagerService(): Promise<ITestManagerService> {
     const { TestManagerService } = await import('../services/test-manager.service');
-    
+
     // Create a wrapper that implements the interface
     const testManager = new TestManagerService();
-    
+
     return {
       name: 'test-manager',
       version: '1.0.0',
-      
+
       async initialize() {
         await testManager.initialize();
       },
-      
+
       async cleanup() {
         // Cleanup if needed
       },
-      
+
       getHealthStatus(): ServiceHealthStatus {
         return {
           healthy: testManager.isInitialized,
           status: testManager.isInitialized ? 'running' : 'stopped',
           lastCheck: new Date(),
-          details: { initialized: testManager.isInitialized }
+          details: { initialized: testManager.isInitialized },
         };
       },
-      
+
       async runTest(testId: string, options?) {
         // Implement test running
         return {
@@ -380,15 +373,15 @@ export class ServiceRegistry extends EventEmitter {
           name: `Test ${testId}`,
           status: 'pending' as const,
           duration: 0,
-          startTime: new Date()
+          startTime: new Date(),
         };
       },
-      
+
       async getTestResults(testId?) {
         // Implement test results retrieval
         return [];
       },
-      
+
       async generateTestData(scenario: string, count = 10) {
         const result = await testManager.generateTestData(scenario, count);
         return {
@@ -396,19 +389,19 @@ export class ServiceRegistry extends EventEmitter {
           scenario,
           dataCount: count,
           generatedAt: new Date(),
-          data: result || []
+          data: result || [],
         };
       },
-      
+
       async validateTestEnvironment() {
         return {
           valid: true,
           errors: [],
           warnings: [],
-          checkedItems: ['test-workspace', 'dependencies']
+          checkedItems: ['test-workspace', 'dependencies'],
         };
       },
-      
+
       // EventEmitter methods
       on: testManager.on.bind(testManager),
       emit: testManager.emit.bind(testManager),
@@ -424,7 +417,7 @@ export class ServiceRegistry extends EventEmitter {
       prependListener: testManager.prependListener.bind(testManager),
       prependOnceListener: testManager.prependOnceListener.bind(testManager),
       eventNames: testManager.eventNames.bind(testManager),
-      rawListeners: testManager.rawListeners.bind(testManager)
+      rawListeners: testManager.rawListeners.bind(testManager),
     };
   }
 }

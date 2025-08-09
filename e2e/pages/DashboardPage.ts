@@ -36,7 +36,7 @@ export class DashboardPage extends BasePage {
     await super.goto('/');
     // Wait for page to load, but be flexible about title
     await this.page.waitForLoadState('networkidle');
-    
+
     // Optional title check - don't fail if no title is set
     const title = await this.page.title();
     if (title && title.trim() !== '') {
@@ -51,10 +51,10 @@ export class DashboardPage extends BasePage {
    */
   async verifyDashboardLoads() {
     await this.goto();
-    
+
     // Check main components are visible
     await expect(this.statusCards).toBeVisible();
-    
+
     // Check status cards are present
     const cards = await this.statusCards.locator('.card, [class*="card"]').count();
     expect(cards).toBeGreaterThan(0);
@@ -65,7 +65,9 @@ export class DashboardPage extends BasePage {
    */
   async getServerStatus(): Promise<'Online' | 'Offline' | string> {
     if (await this.serverStatusCard.isVisible()) {
-      const statusText = await this.serverStatusCard.locator('.status-text, [class*="status"]').textContent();
+      const statusText = await this.serverStatusCard
+        .locator('.status-text, [class*="status"]')
+        .textContent();
       return statusText?.trim() || 'Unknown';
     }
     return 'Card not found';
@@ -111,14 +113,14 @@ export class DashboardPage extends BasePage {
   async verifyRealTimeUpdates() {
     // Get initial metrics count
     const initialCount = await this.getActiveProblemsCount();
-    
+
     // Wait for potential updates (simulate real-time behavior)
     await this.page.waitForTimeout(5000);
-    
+
     // Refresh and compare
     await this.refreshDashboard();
     const updatedCount = await this.getActiveProblemsCount();
-    
+
     // Both counts should be numbers (indicating the component works)
     expect(typeof initialCount).toBe('number');
     expect(typeof updatedCount).toBe('number');
@@ -132,7 +134,7 @@ export class DashboardPage extends BasePage {
       // Check for common system info fields
       const systemInfoText = await this.systemInfo.textContent();
       expect(systemInfoText).toBeTruthy();
-      
+
       // Could contain uptime, version, etc.
       return true;
     }
@@ -183,7 +185,7 @@ export class DashboardPage extends BasePage {
       systemInfo: await this.verifySystemInfo(),
       pluginStatus: await this.verifyPluginStatus(),
       logViewer: await this.verifyLogViewer(),
-      testManager: await this.verifyTestManagerWidget()
+      testManager: await this.verifyTestManagerWidget(),
     };
 
     console.log('Dashboard component verification:', results);

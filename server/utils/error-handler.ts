@@ -52,7 +52,7 @@ export class IMFError extends Error {
     message: string,
     severity: ErrorSeverity = ErrorSeverity.MEDIUM,
     code?: string,
-    details?: any
+    details?: any,
   ) {
     super(message);
     this.name = 'IMFError';
@@ -61,7 +61,7 @@ export class IMFError extends Error {
     this.code = code;
     this.details = details;
     this.timestamp = new Date();
-    
+
     // Capture stack trace
     Error.captureStackTrace(this, IMFError);
   }
@@ -86,16 +86,16 @@ export class ErrorHandler {
    */
   static handle(error: unknown, context: string, res?: Response): ErrorResponse {
     const errorResponse = this.createErrorResponse(error, context);
-    
+
     // Log the error
     this.logError(error, context, errorResponse);
-    
+
     // Send HTTP response if res is provided
     if (res) {
       const statusCode = this.getHttpStatusCode(errorResponse.error.type);
       res.status(statusCode).json(errorResponse);
     }
-    
+
     return errorResponse;
   }
 
@@ -147,7 +147,7 @@ export class ErrorHandler {
   private static logError(error: unknown, context: string, errorResponse: ErrorResponse) {
     const severity = error instanceof IMFError ? error.severity : ErrorSeverity.HIGH;
     const logLevel = this.getLogLevel(severity);
-    
+
     logAggregator.log(
       logLevel,
       context,
@@ -158,7 +158,7 @@ export class ErrorHandler {
         errorDetails: errorResponse.error.details,
         severity,
         timestamp: errorResponse.error.timestamp,
-      }
+      },
     );
   }
 
@@ -191,7 +191,7 @@ export class ErrorHandler {
 export function handleAsyncError<T>(
   asyncFn: () => Promise<T>,
   context: string,
-  res?: Response
+  res?: Response,
 ): Promise<T | ErrorResponse> {
   return asyncFn().catch((error) => {
     return ErrorHandler.handle(error, context, res);
@@ -224,8 +224,7 @@ export const createAuthorizationError = (message: string = 'Access denied') =>
   new IMFError(ErrorType.AUTHORIZATION, message, ErrorSeverity.MEDIUM);
 
 // Type guards
-export const isIMFError = (error: unknown): error is IMFError =>
-  error instanceof IMFError;
+export const isIMFError = (error: unknown): error is IMFError => error instanceof IMFError;
 
 export const isErrorResponse = (response: any): response is ErrorResponse =>
   response && typeof response === 'object' && response.success === false && response.error;

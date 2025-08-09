@@ -1,29 +1,29 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { usePageTitle } from "@/hooks/use-page-title";
-import { Header } from "@/components/layout/header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Server, 
-  Activity, 
-  Network, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { usePageTitle } from '@/hooks/use-page-title';
+import { Header } from '@/components/layout/header';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Server,
+  Activity,
+  Network,
+  Clock,
+  CheckCircle,
+  XCircle,
   AlertCircle,
   Play,
   Square,
   Eye,
   BarChart3,
   Wifi,
-  Settings
-} from "lucide-react";
-import { api } from "@/lib/api";
-import { useToast } from "@/hooks/use-toast";
+  Settings,
+} from 'lucide-react';
+import { api } from '@/lib/api';
+import { useToast } from '@/hooks/use-toast';
 
 interface MCPServer {
   id: string;
@@ -72,14 +72,18 @@ interface MCPDashboardData {
 }
 
 export default function MCPDashboard() {
-  usePageTitle("MCP Dashboard");
+  usePageTitle('MCP Dashboard');
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [selectedTab, setSelectedTab] = useState("overview");
+  const [selectedTab, setSelectedTab] = useState('overview');
   const [selectedServer, setSelectedServer] = useState<string | null>(null);
 
   // Query MCP dashboard data
-  const { data: dashboardData, isLoading: dashboardLoading, refetch: refetchDashboard } = useQuery({
+  const {
+    data: dashboardData,
+    isLoading: dashboardLoading,
+    refetch: refetchDashboard,
+  } = useQuery({
     queryKey: ['/api/mcp/dashboard'],
     queryFn: () => api.httpGet('/api/mcp/dashboard') as Promise<MCPDashboardData>,
     refetchInterval: 30000, // Refresh every 30 seconds
@@ -95,18 +99,23 @@ export default function MCPDashboard() {
   // Query metrics for selected server
   const { data: serverMetrics } = useQuery({
     queryKey: ['/api/mcp/servers', selectedServer, 'metrics'],
-    queryFn: () => selectedServer ? api.httpGet(`/api/mcp/servers/${selectedServer}/metrics?limit=50`) as Promise<MCPServerMetrics[]> : Promise.resolve([]),
+    queryFn: () =>
+      selectedServer
+        ? (api.httpGet(`/api/mcp/servers/${selectedServer}/metrics?limit=50`) as Promise<
+            MCPServerMetrics[]
+          >)
+        : Promise.resolve([]),
     enabled: !!selectedServer,
     refetchInterval: 10000,
   });
 
   // Mutation for server actions
   const serverActionMutation = useMutation({
-    mutationFn: ({ serverId, action }: { serverId: string; action: string }) => 
+    mutationFn: ({ serverId, action }: { serverId: string; action: string }) =>
       api.httpPost(`/api/mcp/servers/${serverId}/${action}`),
     onSuccess: (_, { action }) => {
       toast({
-        title: "Action Completed",
+        title: 'Action Completed',
         description: `Server ${action} completed successfully.`,
       });
       queryClient.invalidateQueries({ queryKey: ['/api/mcp/servers'] });
@@ -114,9 +123,9 @@ export default function MCPDashboard() {
     },
     onError: (_, { action }) => {
       toast({
-        title: "Action Failed",
+        title: 'Action Failed',
         description: `Failed to ${action} server. Please try again.`,
-        variant: "destructive",
+        variant: 'destructive',
       });
     },
   });
@@ -152,7 +161,7 @@ export default function MCPDashboard() {
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMins / 60);
     const diffDays = Math.floor(diffHours / 24);
-    
+
     if (diffDays > 0) return `${diffDays}d ago`;
     if (diffHours > 0) return `${diffHours}h ago`;
     if (diffMins > 0) return `${diffMins}m ago`;
@@ -163,7 +172,7 @@ export default function MCPDashboard() {
     if (!seconds) return 'Unknown';
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
-    
+
     if (hours > 24) {
       const days = Math.floor(hours / 24);
       return `${days}d ${hours % 24}h`;
@@ -187,7 +196,7 @@ export default function MCPDashboard() {
         onRefresh={() => refetchDashboard()}
         isRefreshing={dashboardLoading}
       />
-      
+
       <main className="flex-1 relative overflow-y-auto focus:outline-none">
         <div className="py-6 px-6">
           <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
@@ -209,9 +218,7 @@ export default function MCPDashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">{dashboardData?.totalServers || 0}</div>
-                    <p className="text-xs text-muted-foreground">
-                      MCP servers discovered
-                    </p>
+                    <p className="text-xs text-muted-foreground">MCP servers discovered</p>
                   </CardContent>
                 </Card>
 
@@ -221,10 +228,16 @@ export default function MCPDashboard() {
                     <Activity className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-green-600">{dashboardData?.runningServers || 0}</div>
-                    <Progress 
-                      value={dashboardData?.totalServers ? (dashboardData.runningServers / dashboardData.totalServers) * 100 : 0} 
-                      className="mt-2" 
+                    <div className="text-2xl font-bold text-green-600">
+                      {dashboardData?.runningServers || 0}
+                    </div>
+                    <Progress
+                      value={
+                        dashboardData?.totalServers
+                          ? (dashboardData.runningServers / dashboardData.totalServers) * 100
+                          : 0
+                      }
+                      className="mt-2"
                     />
                   </CardContent>
                 </Card>
@@ -236,11 +249,11 @@ export default function MCPDashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
-                      {dashboardData?.averageResponseTime ? `${dashboardData.averageResponseTime.toFixed(0)}ms` : '0ms'}
+                      {dashboardData?.averageResponseTime
+                        ? `${dashboardData.averageResponseTime.toFixed(0)}ms`
+                        : '0ms'}
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      Average server response
-                    </p>
+                    <p className="text-xs text-muted-foreground">Average server response</p>
                   </CardContent>
                 </Card>
 
@@ -251,9 +264,7 @@ export default function MCPDashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">{dashboardData?.totalRequests || 0}</div>
-                    <p className="text-xs text-muted-foreground">
-                      Requests processed
-                    </p>
+                    <p className="text-xs text-muted-foreground">Requests processed</p>
                   </CardContent>
                 </Card>
               </div>
@@ -297,15 +308,17 @@ export default function MCPDashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      {dashboardData?.serversByProtocol ? Object.entries(dashboardData.serversByProtocol).map(([protocol, count]) => (
-                        <div key={protocol} className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            {getProtocolIcon(protocol)}
-                            <span className="capitalize">{protocol}</span>
+                      {dashboardData?.serversByProtocol ? (
+                        Object.entries(dashboardData.serversByProtocol).map(([protocol, count]) => (
+                          <div key={protocol} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              {getProtocolIcon(protocol)}
+                              <span className="capitalize">{protocol}</span>
+                            </div>
+                            <span className="font-medium">{count}</span>
                           </div>
-                          <span className="font-medium">{count}</span>
-                        </div>
-                      )) : (
+                        ))
+                      ) : (
                         <div className="text-center text-gray-500">No data available</div>
                       )}
                     </div>
@@ -337,13 +350,9 @@ export default function MCPDashboard() {
                                 <Badge className={getStatusColor(server.status)}>
                                   {server.status}
                                 </Badge>
-                                <Badge variant="outline">
-                                  {server.protocol}
-                                </Badge>
+                                <Badge variant="outline">{server.protocol}</Badge>
                                 {server.containerName && (
-                                  <Badge variant="secondary">
-                                    Container
-                                  </Badge>
+                                  <Badge variant="secondary">Container</Badge>
                                 )}
                               </div>
                               <p className="text-sm text-gray-600 mb-2">
@@ -382,7 +391,11 @@ export default function MCPDashboard() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => setSelectedServer(selectedServer === server.serverId ? null : server.serverId)}
+                                onClick={() =>
+                                  setSelectedServer(
+                                    selectedServer === server.serverId ? null : server.serverId,
+                                  )
+                                }
                               >
                                 <Eye className="h-3 w-3" />
                               </Button>
@@ -390,7 +403,12 @@ export default function MCPDashboard() {
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  onClick={() => serverActionMutation.mutate({ serverId: server.serverId, action: 'stop' })}
+                                  onClick={() =>
+                                    serverActionMutation.mutate({
+                                      serverId: server.serverId,
+                                      action: 'stop',
+                                    })
+                                  }
                                   disabled={serverActionMutation.isPending}
                                 >
                                   <Square className="h-3 w-3" />
@@ -399,7 +417,12 @@ export default function MCPDashboard() {
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  onClick={() => serverActionMutation.mutate({ serverId: server.serverId, action: 'start' })}
+                                  onClick={() =>
+                                    serverActionMutation.mutate({
+                                      serverId: server.serverId,
+                                      action: 'start',
+                                    })
+                                  }
                                   disabled={serverActionMutation.isPending}
                                 >
                                   <Play className="h-3 w-3" />
@@ -411,9 +434,7 @@ export default function MCPDashboard() {
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-8 text-gray-500">
-                      No MCP servers discovered
-                    </div>
+                    <div className="text-center py-8 text-gray-500">No MCP servers discovered</div>
                   )}
                 </CardContent>
               </Card>
@@ -425,7 +446,9 @@ export default function MCPDashboard() {
                 <CardHeader>
                   <CardTitle>Server Metrics</CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    {selectedServer ? `Metrics for server ${selectedServer}` : 'Select a server to view detailed metrics'}
+                    {selectedServer
+                      ? `Metrics for server ${selectedServer}`
+                      : 'Select a server to view detailed metrics'}
                   </p>
                 </CardHeader>
                 <CardContent>
@@ -443,7 +466,9 @@ export default function MCPDashboard() {
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                               <div>
                                 <div className="text-gray-500">Response Time</div>
-                                <div className="font-medium">{metric.responseTime.toFixed(0)}ms</div>
+                                <div className="font-medium">
+                                  {metric.responseTime.toFixed(0)}ms
+                                </div>
                               </div>
                               <div>
                                 <div className="text-gray-500">Requests</div>
@@ -488,15 +513,24 @@ export default function MCPDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {dashboardData?.serversByDiscoveryMethod ? Object.entries(dashboardData.serversByDiscoveryMethod).map(([method, count]) => (
-                      <div key={method} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex items-center gap-2">
-                          <Settings className="h-4 w-4 text-gray-500" />
-                          <span className="font-medium capitalize">{method.replace('_', ' ')}</span>
-                        </div>
-                        <Badge variant="secondary">{count} servers</Badge>
-                      </div>
-                    )) : (
+                    {dashboardData?.serversByDiscoveryMethod ? (
+                      Object.entries(dashboardData.serversByDiscoveryMethod).map(
+                        ([method, count]) => (
+                          <div
+                            key={method}
+                            className="flex items-center justify-between p-3 border rounded-lg"
+                          >
+                            <div className="flex items-center gap-2">
+                              <Settings className="h-4 w-4 text-gray-500" />
+                              <span className="font-medium capitalize">
+                                {method.replace('_', ' ')}
+                              </span>
+                            </div>
+                            <Badge variant="secondary">{count} servers</Badge>
+                          </div>
+                        ),
+                      )
+                    ) : (
                       <div className="text-center py-8 text-gray-500">
                         No discovery data available
                       </div>

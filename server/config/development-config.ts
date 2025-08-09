@@ -12,7 +12,6 @@ interface DevelopmentConfig {
   services: {
     testManager: {
       enabled: boolean;
-      mockMode: boolean;
       cliRequired: boolean;
       reason: string;
     };
@@ -42,7 +41,7 @@ interface DevelopmentConfig {
   development: {
     hotReload: boolean;
     debugMode: boolean;
-    mockExternalServices: boolean;
+    useFallbackImplementations: boolean;
     bypassAuthentication: boolean;
     enableTestRoutes: boolean;
   };
@@ -76,7 +75,7 @@ export async function loadDevelopmentConfig(): Promise<DevelopmentConfig | null>
   }
 
   const configPath = path.join(process.cwd(), '.config', 'development.json');
-  
+
   try {
     if (await fs.pathExists(configPath)) {
       developmentConfig = await fs.readJson(configPath);
@@ -84,7 +83,10 @@ export async function loadDevelopmentConfig(): Promise<DevelopmentConfig | null>
       return developmentConfig;
     }
   } catch (error) {
-    console.warn('⚠️ Failed to load development config:', error.message);
+    console.warn(
+      '⚠️ Failed to load development config:',
+      error instanceof Error ? error.message : String(error),
+    );
   }
 
   return null;
@@ -100,7 +102,7 @@ export function getDevConfig<T>(path: string, fallback: T): T {
 
   const keys = path.split('.');
   let value: any = developmentConfig;
-  
+
   for (const key of keys) {
     if (value && typeof value === 'object' && key in value) {
       value = value[key];
@@ -108,7 +110,7 @@ export function getDevConfig<T>(path: string, fallback: T): T {
       return fallback;
     }
   }
-  
+
   return value !== undefined ? value : fallback;
 }
 
@@ -124,17 +126,6 @@ export function isServiceEnabled(serviceName: string): boolean {
 }
 
 /**
- * Check if service should run in mock mode
- */
-export function isServiceMockMode(serviceName: string): boolean {
-  if (config.NODE_ENV !== 'development') {
-    return false; // Never mock in non-development
-  }
-
-  return getDevConfig(`services.${serviceName}.mockMode`, false);
-}
-
-/**
  * Check if external service is required
  */
 export function isExternalServiceRequired(serviceName: string): boolean {
@@ -142,7 +133,10 @@ export function isExternalServiceRequired(serviceName: string): boolean {
     return true; // Always required in non-development
   }
 
-  return getDevConfig(`external.require${serviceName.charAt(0).toUpperCase()}${serviceName.slice(1)}`, false);
+  return getDevConfig(
+    `external.require${serviceName.charAt(0).toUpperCase()}${serviceName.slice(1)}`,
+    false,
+  );
 }
 
 /**
@@ -161,7 +155,7 @@ export function useGracefulFallback(): boolean {
 
 // Auto-load development config if in development mode
 if (config.NODE_ENV === 'development') {
-  loadDevelopmentConfig().catch(err => {
+  loadDevelopmentConfig().catch((err) => {
     console.warn('Failed to auto-load development config:', err.message);
   });
 }
