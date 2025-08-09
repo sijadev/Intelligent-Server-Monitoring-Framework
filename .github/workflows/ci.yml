@@ -58,10 +58,18 @@ jobs:
             api)        echo "files=tests/api-paths.test.ts tests/api-contract.test.ts" >> $GITHUB_OUTPUT ;;
             integration) echo "files=tests/profile-factory.integration.test.ts tests/smoke.test.ts" >> $GITHUB_OUTPUT ;;
           esac
-      - name: Run vitest (${{ matrix.group }}) with coverage
+      - name: Run vitest (${{ matrix.group }}) with coverage + json
         run: |
-          mkdir -p coverage/${{ matrix.group }}
-          npx vitest run ${{ steps.select.outputs.files }} --reporter=default --coverage.enabled --coverage.reportsDirectory coverage/${{ matrix.group }}
+          mkdir -p coverage/${{ matrix.group }} test-results/${{ matrix.group }}
+          npx vitest run ${{ steps.select.outputs.files }} \
+            --reporter=default --reporter=json --outputFile=test-results/${{ matrix.group }}/results.json \
+            --coverage.enabled --coverage.reportsDirectory coverage/${{ matrix.group }}
+      - name: Upload test results (json)
+        uses: actions/upload-artifact@v4
+        with:
+          name: tests-${{ matrix.group }}-json
+          path: test-results/${{ matrix.group }}/results.json
+          if-no-files-found: error
       - name: Upload coverage (partial)
         uses: actions/upload-artifact@v4
         with:
