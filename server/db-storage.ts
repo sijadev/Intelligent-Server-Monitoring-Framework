@@ -230,8 +230,12 @@ export class DatabaseStorage implements IStorage {
 
   private recordOfflineOp(op: OfflineOperation) {
     if (!this.mirroredEntities.includes(op.entity)) return;
+    const baseTimestamp =
+      (op.data?.updatedAt || op.data?.lastUpdate) &&
+      new Date(op.data.updatedAt || op.data.lastUpdate).toISOString();
     this.offlineOps.push({
       ...op,
+      baseTimestamp,
       timestamp: new Date(),
       id: op.id ?? op.data?.id ?? op.data?.name,
     });
@@ -271,9 +275,48 @@ export class DatabaseStorage implements IStorage {
             /* duplicate or other */
           }
         } else if (op.type === 'update' && op.id) {
+          // Conflict strategy: optimistic based on updatedAt
+          const merged = { ...op.data };
+          if (op.baseTimestamp) {
+            try {
+              const existing = await this.db
+                .select()
+                .from(testProfiles)
+                .where(eq(testProfiles.id, op.id))
+                .limit(1);
+              const current = existing[0] as any;
+              if (
+                current &&
+                current.updatedAt &&
+                new Date(current.updatedAt).toISOString() !== op.baseTimestamp
+              ) {
+                // Conflict detected: shallow-merge object sections
+                const objectFields = ['sourceConfig', 'expectations', 'generationRules'];
+                for (const f of objectFields) {
+                  if (current[f] && op.data?.[f]) {
+                    merged[f] = { ...current[f], ...op.data[f] };
+                  }
+                }
+                // Merge scenarios array (union by JSON string)
+                if (Array.isArray(current.scenarios) && Array.isArray(op.data?.scenarios)) {
+                  const seen = new Set<string>();
+                  const combined = [...current.scenarios, ...op.data.scenarios].filter((s) => {
+                    const key = JSON.stringify(s);
+                    if (seen.has(key)) return false;
+                    seen.add(key);
+                    return true;
+                  });
+                  merged.scenarios = combined;
+                }
+                console.warn('⚠️ Conflict resolved for test_profile', op.id);
+              }
+            } catch {
+              // ignore conflict fetch errors
+            }
+          }
           await this.db
             .update(testProfiles)
-            .set({ ...op.data, updatedAt: new Date() })
+            .set({ ...merged, updatedAt: new Date() })
             .where(eq(testProfiles.id, op.id));
         } else if (op.type === 'delete' && op.id) {
           await this.db.delete(testProfiles).where(eq(testProfiles.id, op.id));
@@ -317,9 +360,29 @@ export class DatabaseStorage implements IStorage {
           }
         } else if (op.type === 'update') {
           const identifier = op.id ? eq(plugins.id, op.id) : eq(plugins.name, op.data?.name);
+          const merged = { ...op.data };
+          if (op.baseTimestamp) {
+            try {
+              const existing = await this.db.select().from(plugins).where(identifier).limit(1);
+              const current = existing[0] as any;
+              if (
+                current &&
+                current.lastUpdate &&
+                new Date(current.lastUpdate).toISOString() !== op.baseTimestamp
+              ) {
+                // Merge config objects (offline wins for new keys / overrides)
+                if (current.config && op.data?.config) {
+                  merged.config = { ...current.config, ...op.data.config };
+                }
+                console.warn('⚠️ Conflict resolved for plugin', op.id || op.data?.name);
+              }
+            } catch {
+              // ignore
+            }
+          }
           await this.db
             .update(plugins)
-            .set({ ...op.data, lastUpdate: new Date() })
+            .set({ ...merged, lastUpdate: new Date() })
             .where(identifier);
         } else if (op.type === 'delete' && op.id) {
           await this.db.delete(plugins).where(eq(plugins.id, op.id));
@@ -1044,5 +1107,10 @@ interface OfflineOperation {
   type: 'create' | 'update' | 'delete';
   id?: string;
   data?: any;
+  // Timestamp of the record (updatedAt/lastUpdate) when the offline op was queued (optimistic concurrency base)
+  baseTimestamp?: string; // ISO string to survive serialization if persisted later
+  // Set true if a conflict was detected and merged during replay
+  conflictResolved?: boolean;
+  conflictType?: string; // e.g. 'test_profile.updatedAt'
   timestamp: Date;
 }
