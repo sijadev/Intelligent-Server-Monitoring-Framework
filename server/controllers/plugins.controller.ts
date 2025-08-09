@@ -31,9 +31,22 @@ export class PluginsController extends BaseController {
 
   async createPlugin(req: Request, res: Response): Promise<void> {
     try {
-      const plugin = insertPluginSchema.parse(req.body);
-      plugin.status = 'running';
-      const created = await this.storage.createOrUpdatePlugin(plugin);
+      const raw = req.body || {};
+      // Merge metadata (legacy front-end format) into config so code & description persist
+      const mergedConfig = {
+        ...(raw.config || {}),
+        ...(raw.metadata?.description ? { description: raw.metadata.description } : {}),
+        ...(raw.metadata?.code ? { code: raw.metadata.code } : {}),
+      };
+      const parsed = insertPluginSchema.parse({
+        name: raw.name,
+        version: raw.version || '1.0.0',
+        type: raw.type,
+        status: raw.status || 'running',
+        config: mergedConfig,
+      });
+      parsed.status = 'running';
+      const created = await this.storage.createOrUpdatePlugin(parsed);
 
       // Notify Python framework about new plugin
       try {
@@ -45,16 +58,23 @@ export class PluginsController extends BaseController {
       }
 
       res.json(created);
-    } catch (error) {
+    } catch {
       this.handleValidationError(res, 'Invalid plugin data');
     }
   }
 
   async updatePlugin(req: Request, res: Response): Promise<void> {
     try {
-      // For updates, we allow partial data, so don't use the full schema validation
-      const updates = req.body;
-      const updated = await this.storage.updatePlugin(req.params.id, updates);
+      const updates = req.body || {};
+      const mergedConfig = {
+        ...(updates.config || {}),
+        ...(updates.metadata?.description ? { description: updates.metadata.description } : {}),
+        ...(updates.metadata?.code ? { code: updates.metadata.code } : {}),
+      };
+      const updated = await this.storage.updatePlugin(req.params.id, {
+        ...updates,
+        config: mergedConfig,
+      });
 
       if (!updated) {
         this.handleNotFound(res, 'Plugin');
