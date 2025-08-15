@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable no-undef */
 
 /**
  * Robust JSON Test Data Generator for IMF CI
@@ -7,10 +8,6 @@
 
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 // Configuration
 const TEST_WORKSPACE_DIR = './test-workspace';
@@ -194,6 +191,7 @@ function generateAllTestData() {
       const profile = createProfile(profileConfig);
       const profilePath = path.join(TEST_WORKSPACE_DIR, 'profiles', `${profileConfig.id}.json`);
       fs.writeFileSync(profilePath, JSON.stringify(profile, null, 2));
+
       console.log(`✅ Generated profile: ${profileConfig.id}`);
 
       // Generate test data
@@ -205,6 +203,7 @@ function generateAllTestData() {
         `testdata-${profileConfig.id}-${timestamp}-ci.json`,
       );
       fs.writeFileSync(testDataPath, JSON.stringify(testData, null, 2));
+
       console.log(
         `✅ Generated test data: ${profileConfig.id} (${testData.data.scenarios[0].statistics.successRate})`,
       );
@@ -216,6 +215,7 @@ function generateAllTestData() {
       });
     } catch (error) {
       console.error(`❌ Failed to generate ${profileConfig.id}:`, error.message);
+
       process.exit(1);
     }
   });
@@ -242,30 +242,39 @@ function generateAllTestData() {
 
   const configPath = path.join(TEST_WORKSPACE_DIR, 'imf-config.json');
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+
   console.log('⚙️ Generated CI configuration');
 
   // Validate all generated JSON files
+
   console.log('\n🔍 Validating generated JSON files...');
   generatedFiles.forEach((file) => {
     try {
       JSON.parse(fs.readFileSync(file.profile, 'utf8'));
       JSON.parse(fs.readFileSync(file.testData, 'utf8'));
+
       console.log(
         `✅ Valid JSON: ${path.basename(file.profile)} & ${path.basename(file.testData)}`,
       );
     } catch (error) {
       console.error(`❌ Invalid JSON in ${file.profile} or ${file.testData}:`, error.message);
+
       process.exit(1);
     }
   });
 
   console.log('\n🎯 Summary:');
+
   console.log(`📁 Workspace: ${TEST_WORKSPACE_DIR}`);
+
   console.log(`📋 Profiles: ${PROFILES.length}`);
+
   console.log(`📊 Test Data Files: ${generatedFiles.length}`);
+
   console.log(
     `✅ Success Rates: ${generatedFiles.map((f) => f.successRate.toFixed(3)).join(', ')}`,
   );
+
   console.log('🚀 Ready for CI tests!');
 }
 
