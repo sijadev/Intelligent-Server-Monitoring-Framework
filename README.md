@@ -2,11 +2,11 @@
 
 ![images](https://github.com/user-attachments/assets/e371ae0c-bccd-4ad6-aa39-91b34bccdbcd)
 
-MCP.Guard is a comprehensive full‑stack platform unifying: 
-(1) smart test profile workflows (combine use‑case defined test profiles with contextual data), 
-(2) intelligent non‑functional monitoring & anomaly detection with AI assistance, and 
+MCP.Guard is a comprehensive full‑stack platform unifying:
+(1) smart test profile workflows (combine use‑case defined test profiles with contextual data),
+(2) intelligent non‑functional monitoring & anomaly detection with AI assistance, and
 (3) real‑time infrastructure & MCP server observability. Long log file analysis is replaced by focused, c
-ode‑area level insights; issues can optionally be auto‑remediated or proposed as fixes through intelligent learning. 
+ode‑area level insights; issues can optionally be auto‑remediated or proposed as fixes through intelligent learning.
 Robust forecasting & early warnings help prevent outages—so your tests (and your infrastructure) stay a step ahead.
 
 ## 🚀 Features

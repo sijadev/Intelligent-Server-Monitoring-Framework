@@ -3,8 +3,8 @@
   "name": "CI Low Complexity",
   "version": "1.0.0",
   "description": "CI test profile for low complexity scenarios",
-  "createdAt": "2025-08-05T20:07:33.082Z",
-  "updatedAt": "2025-08-05T20:07:33.082Z",
+  "createdAt": "2025-08-15T13:37:05.036Z",
+  "updatedAt": "2025-08-15T13:37:05.036Z",
   "sourceConfig": {
     "directories": ["./src", "./server"],
     "languages": ["typescript", "javascript"],
