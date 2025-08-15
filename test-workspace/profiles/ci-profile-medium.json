@@ -3,8 +3,8 @@
   "name": "CI Medium Complexity",
   "version": "1.0.0",
   "description": "CI test profile for medium complexity scenarios",
-  "createdAt": "2025-08-05T20:07:33.083Z",
-  "updatedAt": "2025-08-05T20:07:33.083Z",
+  "createdAt": "2025-08-15T13:37:05.037Z",
+  "updatedAt": "2025-08-15T13:37:05.037Z",
   "sourceConfig": {
     "directories": ["./src", "./server"],
     "languages": ["typescript", "javascript"],

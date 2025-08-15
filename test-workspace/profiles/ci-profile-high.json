@@ -3,8 +3,8 @@
   "name": "CI High Complexity",
   "version": "1.0.0",
   "description": "CI test profile for high complexity scenarios",
-  "createdAt": "2025-08-05T20:07:33.084Z",
-  "updatedAt": "2025-08-05T20:07:33.084Z",
+  "createdAt": "2025-08-15T13:37:05.038Z",
+  "updatedAt": "2025-08-15T13:37:05.038Z",
   "sourceConfig": {
     "directories": ["./src", "./server"],
     "languages": ["typescript", "javascript"],

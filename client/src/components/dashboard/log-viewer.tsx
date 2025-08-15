@@ -10,7 +10,6 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Pause, Play, Eraser } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import type { LogEntry } from '@shared/schema';
 
